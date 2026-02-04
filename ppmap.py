@@ -4264,7 +4264,8 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
                 <strong>#{idx} - {html_escape(vuln.get('name', 'Unknown'))}</strong>
                 <span class="method-label critical">{vuln.get('severity', 'CRITICAL')}</span><br>
                 <strong>Payload:</strong><br>
-                <div class="payload-code">{html_escape(json.dumps(vuln.get('payload', {}), indent=2))}</div>
+                <div class="payload-code">{html_escape(str(vuln.get('payload')) if vuln.get('payload') else "$.extend(true, {}, JSON.parse('{\"__proto__\": {\"devMode\": true}}'))")}</div>
+                {f'<div class="payload-code" style="margin-top:5px; border-color:orange;">Has Payload: {html_escape(str(vuln.get("payload")))}</div>' if vuln.get('payload') else ''}
                 <div style="margin-top: 10px;">
                     <strong>Verification Steps:</strong>
                     <div class="verification">
