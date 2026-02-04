@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Analytics Test - PPMAP Lab</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📊 Google Analytics Gadget Test</h1>
+        <p>This page simulates Google Analytics <code>hitCallback</code> gadget vulnerability.</p>
+
+        <h2>Test Payload:</h2>
+        <code>?__proto__[hitCallback]=alert(document.domain)</code>
+
+        <h2>Current Query:</h2>
+        <pre><%= JSON.stringify(query, null, 2) %></pre>
+    </div>
+
+    <script>
+        // Simulate Google Analytics with hitCallback gadget
+        (function () {
+            const ga = function (command, hitType, options) {
+                if (options && options.hitCallback) {
+                    // Vulnerable: executes callback from prototype
+                    if (typeof options.hitCallback === 'function') {
+                        options.hitCallback();
+                    } else if (typeof options.hitCallback === 'string') {
+                        eval(options.hitCallback); // Dangerous!
+                    }
+                }
+            };
+
+            // Pollute prototype from query params
+            const params = <%= JSON.stringify(query) %>;
+            Object.assign(Object.prototype, params);
+
+            // Trigger analytics
+            ga('send', 'pageview', {});
+        })();
+    </script>
+</body>
+
+</html>

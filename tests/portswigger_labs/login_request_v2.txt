@@ -1,0 +1,20 @@
+POST /login HTTP/2
+Host: 0a110075037b639981a1391a00bc003d.web-security-academy.net
+Cookie: session=kGPHUudMNEWxFSrREtYxKtUJPEOG70Kr
+Content-Length: 75
+Sec-Ch-Ua-Platform: "Linux"
+Accept-Language: en-US,en;q=0.9
+Sec-Ch-Ua: "Not(A:Brand";v="8", "Chromium";v="144"
+Content-Type: application/json
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+Accept: */*
+Origin: https://0a110075037b639981a1391a00bc003d.web-security-academy.net
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://0a110075037b639981a1391a00bc003d.web-security-academy.net/login
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+
+{"csrf":"xJONih7qPlm4nT4kP0xrRtokyxiUzhQn","username":"aa","password":"aa"}

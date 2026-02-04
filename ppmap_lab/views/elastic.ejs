@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Elastic XSS Test - PPMAP Lab</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Elastic XSS Test (HackerOne #998398)</h1>
+        <p>Simulating Elastic UI prototype pollution to XSS</p>
+
+        <div id="content"></div>
+    </div>
+
+    <script>
+        // Pollute prototype from query params
+        const params = <%= JSON.stringify(query) %>;
+        Object.assign(Object.prototype, params);
+
+        // Simulate Elastic UI rendering (vulnerable)
+        const contentDiv = document.getElementById('content');
+
+        // Vulnerable: uses innerHTML from prototype
+        if (Object.prototype.innerHTML) {
+            contentDiv.innerHTML = Object.prototype.innerHTML;
+        } else {
+            contentDiv.innerHTML = '<p>No XSS payload detected. Try: <code>?__proto__[innerHTML]=&lt;img src=x onerror=alert(1)&gt;</code></p>';
+        }
+    </script>
+</body>
+
+</html>

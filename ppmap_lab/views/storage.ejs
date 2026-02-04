@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Storage API Test - PPMAP Lab</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .vulnerable {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .safe {
+            color: #388e3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>💾 Storage API Pollution Test</h1>
+        <p>Testing localStorage/sessionStorage direct access vulnerability</p>
+
+        <h2>Test Results:</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Pollute prototype from query params
+        const params = <%= JSON.stringify(query) %>;
+        Object.assign(Object.prototype, params);
+
+        const results = document.getElementById('results');
+
+        // Test localStorage direct access (vulnerable)
+        Object.prototype.testItem = 'PPMAP_POLLUTED';
+        const directAccess = localStorage.testItem;
+        const safeAccess = localStorage.getItem('testItem');
+
+        results.innerHTML = `
+            <div class="result">
+                <h3>localStorage Test:</h3>
+                <p><strong>Direct Access (localStorage.testItem):</strong> 
+                    <span class="${directAccess === 'PPMAP_POLLUTED' ? 'vulnerable' : 'safe'}">
+                        ${directAccess || 'undefined'} 
+                        ${directAccess === 'PPMAP_POLLUTED' ? '❌ VULNERABLE' : '✅ SAFE'}
+                    </span>
+                </p>
+                <p><strong>Safe Access (localStorage.getItem('testItem')):</strong> 
+                    <span class="safe">${safeAccess || 'null'} ✅ SAFE</span>
+                </p>
+            </div>
+
+            <div class="result">
+                <h3>sessionStorage Test:</h3>
+                <p><strong>Direct Access (sessionStorage.sessionTest):</strong> 
+                    <span class="${sessionStorage.sessionTest === 'PPMAP_POLLUTED' ? 'vulnerable' : 'safe'}">
+                        ${sessionStorage.sessionTest || 'undefined'}
+                        ${sessionStorage.sessionTest === 'PPMAP_POLLUTED' ? '❌ VULNERABLE' : '✅ SAFE'}
+                    </span>
+                </p>
+            </div>
+
+            <div class="result">
+                <h3>Recommendation:</h3>
+                <p>Always use <code>.getItem()</code> and <code>.setItem()</code> instead of direct property access!</p>
+            </div>
+        `;
+
+        // Cleanup
+        delete Object.prototype.testItem;
+    </script>
+</body>
+
+</html>

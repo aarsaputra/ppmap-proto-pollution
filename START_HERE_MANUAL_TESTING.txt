@@ -1,0 +1,194 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  PPMAP v3.2 - MANUAL TESTING GUIDE - START HERE                          ║
+║  Panduan Testing Manual untuk Hasil Scan Tools                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+📌 QUICK START (3 MENIT):
+
+1. Buka file: MANUAL_TESTING_CHEATSHEET.md (copy-paste payload)
+2. Buka browser: http://zero.webappsecurity.com/
+3. Tekan: F12 → Console tab
+4. Copy & paste payload dari cheatsheet
+5. Jalankan verification code
+6. Catat hasil
+
+═══════════════════════════════════════════════════════════════════════════
+
+📚 DOKUMENTASI AVAILABLE:
+
+1. MANUAL_TESTING_GUIDE.md
+   ├─ Penjelasan detail setiap vulnerability
+   ├─ Step-by-step testing methodology
+   ├─ Contoh payload dengan expected output
+   └─ Ideal untuk: Pemula yang ingin mengerti setiap detail
+
+2. MANUAL_TESTING_CHEATSHEET.md  ← START DENGAN INI!
+   ├─ Copy-paste payload ready
+   ├─ Quick reference commands
+   ├─ Verification checklist
+   └─ Ideal untuk: Testing cepat & praktis
+
+3. MANUAL_TESTING_VIDEO_GUIDE.md
+   ├─ Step-by-step visual guide dengan screenshots
+   ├─ Timing untuk setiap test
+   ├─ Expected console output
+   └─ Ideal untuk: Visual learners & video recording
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 HASIL SCAN ANDA:
+
+Target: http://zero.webappsecurity.com/
+jQuery: 1.8.2 (VULNERABLE)
+Total Findings: 20
+
+VULNERABILITIES:
+✗ jQuery PP (CVE-2019-11358) - CRITICAL
+✗ Function.prototype Chain - HIGH  
+✗ React Flight Protocol - CRITICAL
+✗ UTF-7 Charset Override - HIGH
+✗ WAF Bypass (9 methods) - HIGH
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔧 TESTING METHODS:
+
+METHOD 1: Fastest (5 menit)
+- Buka MANUAL_TESTING_CHEATSHEET.md
+- Copy-paste payload
+- Run di console
+- Catat hasil
+
+METHOD 2: Learning (15 menit)
+- Baca MANUAL_TESTING_GUIDE.md
+- Pahami setiap step
+- Jalankan dengan understanding
+- Dokumentasi lengkap
+
+METHOD 3: Video Guide (4 menit/vulnerability)
+- Buka MANUAL_TESTING_VIDEO_GUIDE.md
+- Ikuti screenshot tutorial
+- Record proses testing
+- Buat proof of concept
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ TESTING CHECKLIST:
+
+QUICK TEST SEQUENCE:
+
+1. jQuery PP Testing
+   └─ Run: $.extend(true, {}, {"__proto__": {"polluted": "YES"}});
+   └─ Check: Object.prototype.polluted
+   └─ Expected: "YES" = VULNERABLE ✓
+
+2. Function.proto Testing
+   └─ Run: constructor.constructor.prototype.test = "HACKED"
+   └─ Check: ({}).test
+   └─ Expected: "HACKED" = VULNERABLE ✓
+
+3. React Flight Testing
+   └─ Check: typeof React !== 'undefined'
+   └─ Expected: true = VULNERABLE ✓
+
+4. Charset Override Testing
+   └─ Run: Object.prototype.charset = "utf-7"
+   └─ Check: document.charset
+   └─ Expected: "utf-7" = VULNERABLE ✓
+
+═══════════════════════════════════════════════════════════════════════════
+
+📺 LIVE TESTING EXAMPLE:
+
+Browser Console Output:
+
+>> jQuery.fn.jquery
+"1.8.2"
+
+>> $.extend(true, {}, {"__proto__": {"polluted": "YES"}});
+undefined
+
+>> Object.prototype.polluted
+"YES"  ← ✅ VULNERABLE CONFIRMED!
+
+>> constructor.constructor.prototype.test = "HACKED"
+"HACKED"
+
+>> ({}).test
+"HACKED"  ← ✅ FUNCTION.PROTO VULNERABLE!
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 EXPECTED RESULTS:
+
+VULNERABLE = This output appears:
+✓ "YES"     (jQuery PP test)
+✓ "HACKED"  (Function.proto test)  
+✓ true      (React check)
+✓ "utf-7"   (Charset test)
+
+SAFE = This output appears:
+✓ undefined
+✓ error di console
+✓ false
+✓ null
+
+═══════════════════════════════════════════════════════════════════════════
+
+📁 FILE STRUCTURE:
+
+pentest_proto/
+├── MANUAL_TESTING_GUIDE.md          (Detailed guide)
+├── MANUAL_TESTING_CHEATSHEET.md     (Quick copy-paste) ← USE THIS!
+├── MANUAL_TESTING_VIDEO_GUIDE.md    (Visual tutorial)
+├── START_HERE_MANUAL_TESTING.txt    (This file)
+└── ppmap.py                          (Main tool)
+
+═══════════════════════════════════════════════════════════════════════════
+
+🚀 NEXT STEPS:
+
+1. [ ] Open MANUAL_TESTING_CHEATSHEET.md
+2. [ ] Copy payload for jQuery PP
+3. [ ] Paste to browser console
+4. [ ] Verify result
+5. [ ] Repeat for other vulnerabilities
+6. [ ] Document findings with screenshots
+7. [ ] Create testing report
+
+═══════════════════════════════════════════════════════════════════════════
+
+💡 TIPS:
+
+- Always test on authorized systems only!
+- Use headless browser for server-side testing
+- Take screenshots for documentation
+- Save console output to file
+- Create detailed testing report
+- Report vulnerabilities responsibly
+
+═══════════════════════════════════════════════════════════════════════════
+
+❓ HELP:
+
+Q: Saya tidak tahu caranya?
+A: Baca MANUAL_TESTING_GUIDE.md (detailed instructions)
+
+Q: Saya ingin cepat?
+A: Gunakan MANUAL_TESTING_CHEATSHEET.md (copy-paste ready)
+
+Q: Saya visual learner?
+A: Ikuti MANUAL_TESTING_VIDEO_GUIDE.md (screenshot tutorial)
+
+Q: Bagaimana verify hasil?
+A: Lihat expected output di setiap payload guide
+
+═══════════════════════════════════════════════════════════════════════════
+
+Ready to test? 🎉
+
+Open: MANUAL_TESTING_CHEATSHEET.md and start testing!
+
+Happy testing! 🔒
+
+═══════════════════════════════════════════════════════════════════════════

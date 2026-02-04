@@ -1,0 +1,115 @@
+# PPMAP v3.7.0 Configuration File
+# Customize scanning behavior here
+
+# ============================================================================
+# SCANNING CONFIGURATION
+# ============================================================================
+scanning:
+  timeout: 15                    # Timeout per request in seconds
+  max_workers: 3                 # Maximum concurrent threads
+  max_retries: 2                 # Retry failed requests
+  stealth_mode: false            # Enable stealth headers & anti-detection
+  headless: true                 # Run browser in headless mode
+  disable_ssl_verify: true       # Disable SSL certificate verification
+  
+# ============================================================================
+# RATE LIMITING & STEALTH
+# ============================================================================
+rate_limiting:
+  enabled: false                 # Enable rate limiting
+  requests_per_minute: 60        # Requests per minute limit
+  delay_between_requests: 0.5    # Delay between requests in seconds
+  random_delay: true             # Add random jitter to delays
+  
+# ============================================================================
+# ENDPOINT DISCOVERY
+# ============================================================================
+discovery:
+  enabled: true                  # Enable endpoint discovery
+  max_depth: 1                   # Crawl depth (1-3)
+  max_endpoints: 20              # Maximum endpoints to discover
+  follow_external: false         # Follow external links
+  
+# ============================================================================
+# PAYLOAD CONFIGURATION
+# ============================================================================
+payloads:
+  jquery_pp:
+    - {"__proto__": {"polluted": true}}
+    - {"constructor": {"prototype": {"hacked": true}}}
+    - {"__proto__": {"isAdmin": true}}
+    - {"__proto__": {"debug": true}}
+  
+  xss:
+    - "<img src=x onerror=\"alert('XSS')\">"
+    - "<svg onload=\"alert('XSS')\">"
+    - "<iframe src=\"javascript:alert('XSS')\">"
+    - "<body onload=\"alert('XSS')\">"
+    - "<input onfocus=\"alert('XSS')\" autofocus>"
+  
+  common_parameters:
+    - q
+    - search
+    - query
+    - id
+    - name
+    - keyword
+    - s
+    - p
+    - filter
+    - category
+    - tag
+    - page
+    - sort
+    - order
+    
+# ============================================================================
+# TESTING MODES
+# ============================================================================
+testing:
+  jquery_pp: true               # Test jQuery Prototype Pollution
+  xss: true                     # Test XSS vulnerabilities
+  post_parameters: true         # Test POST parameters
+  server_side_pp: true          # Test server-side PP
+  waf_bypass: true              # Test WAF bypass techniques
+  confidence_scoring: true      # Enable confidence scoring
+  endpoint_discovery: true      # Enable endpoint discovery
+  
+# ============================================================================
+# REPORTING
+# ============================================================================
+reporting:
+  format: ["json", "html"]      # Output formats: json, html, markdown, jupyter
+  output_dir: "./reports"       # Reports output directory
+  include_poc: true             # Include PoC in reports
+  include_raw_response: false    # Include raw HTTP responses
+  template: "modern"            # Report template: modern, minimal, detailed
+  
+# ============================================================================
+# LOGGING
+# ============================================================================
+logging:
+  level: INFO                   # Log level: DEBUG, INFO, WARNING, ERROR
+  file_output: true             # Write logs to file
+  console_output: true          # Write logs to console
+  log_dir: "./logs"             # Logs directory
+  
+# ============================================================================
+# CVE DATABASE
+# ============================================================================
+cve_database:
+  enabled: true                 # Enable CVE checking
+  auto_update: false            # Auto-update CVE database
+  update_interval: 7            # Update interval in days
+  check_online: false           # Check NVD API online
+  
+# ============================================================================
+# ADVANCED OPTIONS
+# ============================================================================
+advanced:
+  enable_dom_clobbering: false  # Test DOM clobbering
+  enable_supply_chain: false    # Check JS supply chain vulnerabilities
+  enable_plugin_system: false   # Enable plugin system
+  fingerprint_frameworks: true  # Fingerprint web frameworks
+  detect_csp: true              # Detect CSP headers
+  detect_waf: true              # Detect WAF presence
