@@ -1,4 +1,4 @@
-# 🚀 PPMAP v3.7.0 - Prototype Pollution Scanner
+# 🚀 PPMAP v4.0.0 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -38,6 +38,7 @@
 - HTTP status code override
 - Function.prototype chain
 - Persistence verification
+- **Out-of-Band (OOB) Detection** (Interact.sh integration)
 
 **Tier 2 - Modern Frameworks:**
 - React 19/Next.js Flight Protocol (RESEARCH-2024-REACT-FLIGHT)
@@ -145,7 +146,7 @@ open report/target_domain_timestamp/report.html
 
 ## 📊 Project Statistics
 
-- **Version:** 3.7.0 (2026 Research Integration - COMPLETE)
+- **Version:** 4.0.0 (Blind Detection & OOB Update)
 - **Code Lines:** 4,140+
 - **Detection Methods:** 28
 - **Gadget Properties:** 40
@@ -166,6 +167,8 @@ pentest_proto/
 │   ├── browser.py               # Browser Automation
 │   └── ...
 ├── ppmap_lab/                    # Vulnerable Lab Environment (Express.js)
+│   ├── server.js                # Lab Server
+│   └── start.sh                 # Quick Start Script
 ├── utils/                        # Utilities & Payloads
 ├── reports/                      # Scan Reports
 ├── config.example.yaml           # Configuration Template
@@ -188,6 +191,11 @@ python3 ppmap.py --scan "https://example.com"
 ### With Options
 ```bash
 python3 ppmap.py --scan "https://example.com" --headless
+```
+
+### With OOB Detection
+```bash
+python3 ppmap.py --scan "https://example.com" --oob --headless
 ```
 
 ### View HTML Report
@@ -264,6 +272,35 @@ Edit `config.yaml` to customize:
 
 ---
 
+## 🧪 Vulnerable Lab (ppmap_lab)
+
+Practice your skills safely with the included vulnerable application.
+
+### Setup & Run
+1. Navigate to the lab directory:
+   ```bash
+   cd ppmap_lab
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the lab:
+   ```bash
+   npm start
+   # OR
+   node server.js
+   ```
+4. Access the lab at `http://localhost:3000`
+
+### Testing against Lab
+Run PPMAP against your local lab to verify detection:
+```bash
+python3 ppmap.py --scan http://localhost:3000
+```
+
+---
+
 ## 🛠️ Helper Tools
 
 Locate these in the `tools/` directory:
@@ -273,6 +310,9 @@ Locate these in the `tools/` directory:
 | **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py` |
 | **generate_full_report.py** | Merge JSON reports into one Markdown summary | `python3 tools/generate_full_report.py` |
 | **find_library_issues.py** | Scan reports for specific library vulnerabilities | `python3 tools/find_library_issues.py` |
+| **find_library_issues.py** | Scan reports for specific library vulnerabilities | `python3 tools/find_library_issues.py` |
 | **organize_reports.py** | Clean and organize the report directory | `python3 tools/organize_reports.py` |
 | **manual_testing_interactive.py** | Interactive CLI for manual cleanup/testing | `python3 tools/manual_testing_interactive.py` |
+| **quickpoc_local.py** | Local Quick PoC runner using Playwright | `python3 tools/quickpoc_local.py` |
+| **analyze_scan_results.py** | Deep analysis of scan findings | `python3 tools/analyze_scan_results.py` |
 
