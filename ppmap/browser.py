@@ -169,8 +169,8 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
     try:
         from playwright.sync_api import sync_playwright
 
-        pw = sync_playwright()
-        pw.start()
+        pw_manager = sync_playwright()
+        pw = pw_manager.start()
         browser = pw.chromium.launch(headless=headless)
         context = browser.new_context()
         page = context.new_page()
