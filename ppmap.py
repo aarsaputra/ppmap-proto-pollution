@@ -3,11 +3,11 @@ r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |
-   |  __/|  __/| |  | |/ ___ \|  __/ 
+   |  __/|  __/| |  | |/ ___ \|  __/
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -178,7 +178,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """ + Colors.ENDC + f"""
 
 {Colors.WARNING}⚠️  DISCLAIMER:{Colors.ENDC}
@@ -499,7 +499,16 @@ def run_quick_poc(target_url, headless=True):
 class CompleteSecurityScanner:
     """Complete jQuery Prototype Pollution & XSS Scanner"""
     
-    def __init__(self, timeout=15, max_workers=3, verify_ssl=True):
+    def __init__(self, timeout=15, max_workers=3, verify_ssl=True, oob_enabled=False):
+        self.timeout = timeout
+        self.max_workers = max_workers
+        self.session = requests.Session()
+        self.session.verify = verify_ssl
+        self.oob_enabled = oob_enabled
+        self.oob_detector = None
+        
+        if self.oob_enabled:
+            pass # We will lazy init in test_blind_oob or main scan to avoid startup delay
         self.timeout = timeout
         self.max_workers = max_workers
         self.session = requests.Session()
@@ -3259,29 +3268,43 @@ class CompleteSecurityScanner:
                         # Verify with browser if available
                         if hasattr(self, 'driver') and self.driver:
                             try:
+                                # Only verify if driver is healthy
+                                if not self.driver or not self.driver.session_id:
+                                    continue
+                                    
                                 print(f"{Colors.BOLD}[*] Verifying Elastic XSS with Browser...{Colors.ENDC}")
-                                self.driver.get(test_url)
+                                
+                                # Navigate with safety check
+                                try:
+                                    self.driver.get(test_url)
+                                except Exception:
+                                    # Start fresh session if navigation aborted
+                                    self.driver.refresh()
+                                    self.driver.get(test_url)
+
                                 time.sleep(1)
                                 
                                 # Check for alerts or DOM execution
-                                alert_start = self.driver.get_alert_text()
-                                if alert_start:
-                                    print(f"{Colors.FAIL}[!] CRITICAL: Browser Confirmed XSS Execution!{Colors.ENDC}")
-                                    findings.append({
-                                        'type': 'elastic_xss_verified',
-                                        'method': 'ELASTIC_XSS_VERIFIED',
-                                        'severity': 'CRITICAL',
-                                        'component': test['component'],
-                                        'impact': 'Proven Reflected XSS',
-                                        'payload': test['payload'],
-                                        'test_url': test_url,
-                                        'description': 'Elastic XSS Verified via Browser Execution',
-                                        'reference': 'HackerOne #998398'
-                                    })
-                                else:
+                                try:
+                                    alert_start = self.driver.switch_to.alert.text
+                                    if alert_start:
+                                        print(f"{Colors.FAIL}[!] CRITICAL: Browser Confirmed XSS Execution!{Colors.ENDC}")
+                                        self.driver.switch_to.alert.accept() # Close alert
+                                        findings.append({
+                                            'type': 'elastic_xss_verified',
+                                            'method': 'ELASTIC_XSS_VERIFIED',
+                                            'severity': 'CRITICAL',
+                                            'component': test['component'],
+                                            'impact': 'Proven Reflected XSS',
+                                            'payload': test['payload'],
+                                            'test_url': test_url,
+                                            'description': 'Elastic XSS Verified via Browser Execution',
+                                            'reference': 'HackerOne #998398'
+                                        })
+                                except Exception:
                                      print(f"{Colors.YELLOW}[!] Browser Verification Failed: No XSS execution detected.{Colors.ENDC}")
                             except Exception as ex:
-                                print(f"Browser verify error: {ex}")
+                                print(f"Browser verify warning: {str(ex)[:50]}")
                 
                 except Exception as e:
                     logger.debug(f"Elastic XSS test error: {e}")
@@ -3496,6 +3519,66 @@ class CompleteSecurityScanner:
             print(f"{Colors.FAIL}[!] Target unreachable: {str(e)[:100]}{Colors.ENDC}")
             return False
 
+    def test_blind_oob(self, target_url):
+        """Test for Blind OOB RCE via Prototype Pollution (v4.0)"""
+        print(f"{Colors.CYAN}[→] Testing Blind OOB RCE (Interact.sh)...{Colors.ENDC}")
+        findings = []
+        
+        if not self.oob_detector:
+            try:
+                from ppmap.oob import OOBDetector
+                self.oob_detector = OOBDetector()
+                if not self.oob_detector.register():
+                    print(f"{Colors.WARNING}[!] Failed to register OOB session. Skipping blind tests.{Colors.ENDC}")
+                    return []
+            except ImportError:
+                 print(f"{Colors.FAIL}[!] ppmap.oob module not found. Skipping.{Colors.ENDC}")
+                 return []
+            except Exception as e:
+                 print(f"{Colors.FAIL}[!] OOB Init Error: {e}{Colors.ENDC}")
+                 return []
+
+        oob_domain = self.oob_detector.get_payload_domain()
+        print(f"{Colors.BLUE}[*] OOB Domain: {oob_domain}{Colors.ENDC}")
+        
+        try:
+             # Get payloads from utils
+             from utils.payloads import SERVER_SIDE_PP_PAYLOADS
+             oob_payloads = SERVER_SIDE_PP_PAYLOADS.get('blind_oob', [])
+             
+             for raw_payload in oob_payloads:
+                 # Replace %OOB% with actual domain
+                 payload_str = raw_payload.replace('%OOB%', oob_domain)
+                 
+                 try:
+                     # Try parsing as JSON first
+                     payload_json = json.loads(payload_str)
+                     
+                     # Send Payload (POST JSON)
+                     self.session.post(target_url, json=payload_json, timeout=self.timeout, verify=self.session.verify)
+                 except:
+                     pass
+             
+             print(f"{Colors.BLUE}[*] Waiting for OOB interactions...{Colors.ENDC}")
+             time.sleep(2) # Wait for DNS propagation/callback
+             interactions = self.oob_detector.poll()
+             if interactions:
+                 for i in interactions:
+                    findings.append({
+                        'type': 'blind_server_side_pp_oob',
+                        'method': 'INTERACTSH_CALLBACK',
+                        'severity': 'CRITICAL',
+                        'description': f"Received OOB interaction from {i.get('remote-address')} via {i.get('protocol')}",
+                        'payload': f"OOB Domain: {oob_domain}",
+                        'verified': True,
+                        'impact': 'Confirmed Remote Code Execution (RCE) or SSRF capability'
+                    })
+                    print(f"{Colors.FAIL}[!] CRITICAL: OOB Interaction received! Blind PP Confirmed.{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.WARNING}[⚠] OOB test error: {e}{Colors.ENDC}")
+            
+        return findings
+
     def scan_target(self, target_url, request_data=None):
         """Scan single target"""
         
@@ -3581,6 +3664,11 @@ class CompleteSecurityScanner:
             blitzjs_findings = self.test_blitzjs_rce_chain(target_url)
             elastic_xss_findings = self.test_elastic_xss(target_url)
             
+            # v4.0 OOB & BLIND DETECTION (NEW)
+            oob_findings = []
+            if self.oob_enabled:
+                oob_findings = self.test_blind_oob(target_url)
+            
             # None-safe aggregation (prevent "can only concatenate list (not NoneType)" error)
             all_findings = (
                 (jquery_findings or []) + (xss_findings or []) + (post_findings or []) + 
@@ -3596,7 +3684,9 @@ class CompleteSecurityScanner:
                 (blind_gadget_findings or []) + (cors_findings or []) + 
                 (third_party_gadget_findings or []) + (storage_api_findings or []) +
                 (cve_findings or []) + (kibana_findings or []) + 
-                (blitzjs_findings or []) + (elastic_xss_findings or [])
+                (cve_findings or []) + (kibana_findings or []) + 
+                (blitzjs_findings or []) + (elastic_xss_findings or []) +
+                (oob_findings or [])
             )
             total = len(all_findings)
             
@@ -4277,14 +4367,14 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         
         <div class="section">
             <h2>⚖️ Disclaimer</h2>
-            <p>This report was generated by PPMAP v3.7 for authorized security testing only.
+            <p>This report was generated by PPMAP v4.0 for authorized security testing only.
             The findings should be validated and addressed by qualified security professionals.
             Always obtain proper authorization before performing security assessments on any target.
             Unauthorized access to computer systems is illegal.</p>
         </div>
         
         <footer>
-            <p>PPMAP v3.7 | Prototype Pollution Multi-Purpose Assessment Platform</p>
+            <p>PPMAP v4.0 | Prototype Pollution Multi-Purpose Assessment Platform</p>
             <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>
@@ -4305,7 +4395,7 @@ def main():
     logger.info("PPMAP started")
     
     parser = argparse.ArgumentParser(
-        description="PPMAP v3.7.0 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.0.0 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
@@ -4372,13 +4462,14 @@ ADVANCED OPTIONS:
     parser.add_argument("--no-poc", action="store_true", help="Don't include PoC in reports")
     parser.add_argument("--async-scan", action="store_true", help="Enable async scanning engine (EXPERIMENTAL)")
     parser.add_argument("--async-workers", type=int, default=10, help="Max async concurrent workers (default: 10)")
+    parser.add_argument("--oob", action="store_true", help="Enable OOB/Blind detection (Uses Interact.sh)")
     
     # Additional options
     parser.add_argument("--verify-ssl", action="store_true", help="Verify SSL certificates")
     parser.add_argument("--insecure", action="store_true", help="Disable SSL certificate verification (insecure)")
     parser.add_argument("--proxy", type=str, help="HTTP proxy (http://proxy:port)")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Verbose output (-v, -vv, -vvv)")
-    parser.add_argument("--version", action="version", version="PPMAP v3.7")
+    parser.add_argument("--version", action="version", version="PPMAP v4.0")
     
     args = parser.parse_args()
     
@@ -4457,7 +4548,8 @@ ADVANCED OPTIONS:
             ppmap = CompleteSecurityScanner(
                 timeout=args.timeout,
                 max_workers=args.workers,
-                verify_ssl=True
+                verify_ssl=True,
+                oob_enabled=args.oob
             )
             
             # Setup authenticated session
@@ -4553,7 +4645,8 @@ ADVANCED OPTIONS:
             scanner = CompleteSecurityScanner(
                 timeout=PPMAP_CONFIG['scanning']['timeout'],
                 max_workers=PPMAP_CONFIG['scanning']['max_workers'],
-                verify_ssl=not PPMAP_CONFIG['scanning'].get('disable_ssl_verify', False)
+                verify_ssl=not PPMAP_CONFIG['scanning'].get('disable_ssl_verify', False),
+                oob_enabled=args.oob
             )
             for target in normalized_targets:
                 try:
