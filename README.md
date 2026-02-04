@@ -13,6 +13,11 @@
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
 
+<p align="center">
+  <img src="images/1.png" width="45%" alt="PPMAP CLI Preview">
+  <img src="images/2.png" width="45%" alt="PPMAP Scan Preview">
+</p>
+
 ---
 
 ## ✨ Features
