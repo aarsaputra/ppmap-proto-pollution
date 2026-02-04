@@ -160,6 +160,7 @@ open report/target_domain_timestamp/report.html
 
 ## 📁 Project Structure
 
+```text
 pentest_proto/
 ├── ppmap.py                      # CLI Wrapper & Entry Point
 ├── ppmap/                        # Core Package
@@ -178,6 +179,7 @@ pentest_proto/
 ├── MANUAL_TESTING_*.md         # Testing guides
 ├── refrensi.md                 # Research & References
 └── tools/                      # Helper scripts (analyze_reports.py, etc.)
+```
 
 ---
 
