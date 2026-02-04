@@ -70,6 +70,27 @@
 
 ---
 
+## 🚀 PPMAP v4.0 - Experience The Future (Planned)
+
+Based on community feedback and professional analysis, the next major version (v4.0) will focus on **speed**, **blind detection**, and **deep analysis**.
+
+### 1. Hybrid Scanning Engine (Speed + Accuracy) 🏎️
+- **Concept:** Default to high-speed HTTP requests (ala Go-based tools) for initial reconnaissance.
+- **Mechanism:** Only spawn the heavy Browser Engine (Playwright) when a potential vector is identified or for deep verification.
+- **Benefit:** Drastic reduction in RAM/CPU usage and significantly faster mass-scanning.
+
+### 2. OOB & Blind Detection (Interact.sh) 👁️
+- **Concept:** Native integration with ProjectDiscovery's interact.sh.
+- **Mechanism:** Add `--oob` flag to inject unique callbacks.
+- **Benefit:** Detect **Blind Server-Side Prototype Pollution** where no visible reflection occurs (the "missing link" in current tools).
+
+### 3. Static Analysis Module (AST/Regex) 📜
+- **Concept:** Analyze JavaScript files (`.js`) statically before dynamic fuzzing.
+- **Mechanism:** Use AST parsing to find known dangerous patterns and gadget chains in source code.
+- **Benefit:** Identify complex attack vectors that require specific user interactions (which dynamic scanners often miss).
+
+---
+
 ## 🔮 Future Enhancements (Tier 3+)
 
 ### **Tier 3 - Advanced Detection** (Not Implemented)
