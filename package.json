@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "wappalyzer": "^7.0.3",
+    "wappalyzer-cli": "^1.0.0"
+  }
+}

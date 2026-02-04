@@ -1,0 +1,20 @@
+POST /my-account/change-address HTTP/2
+Host: 0a42008104c5bb5584dcb4040086006b.web-security-academy.net
+Cookie: session=GspkANofBrNSxqJSU3R9s6j97lkKvKiF
+Content-Length: 168
+Sec-Ch-Ua-Platform: "Linux"
+Accept-Language: en-US,en;q=0.9
+Sec-Ch-Ua: "Not(A:Brand";v="8", "Chromium";v="144"
+Content-Type: application/json;charset=UTF-8
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+Accept: */*
+Origin: https://0a42008104c5bb5584dcb4040086006b.web-security-academy.net
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://0a42008104c5bb5584dcb4040086006b.web-security-academy.net/my-account?id=wiener
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+
+{"address_line_1":"Wiener HQ","address_line_2":"One Wiener Way","city":"Wienerville","postcode":"BU1 1RP","country":"UK","sessionId":"GspkANofBrNSxqJSU3R9s6j97lkKvKiF"}

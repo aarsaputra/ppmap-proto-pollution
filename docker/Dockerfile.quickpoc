@@ -1,0 +1,16 @@
+# Dockerfile for running QuickPoC with Playwright (includes browsers)
+# Base image with Python and Playwright browsers preinstalled
+FROM mcr.microsoft.com/playwright/python:latest
+
+WORKDIR /usr/src/app
+
+COPY . /usr/src/app
+
+# Install Python deps
+RUN python -m pip install --upgrade pip
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+
+# Ensure Playwright browsers are installed (image may already include them)
+RUN playwright install --with-deps || true
+
+ENTRYPOINT ["python3", "tools/quickpoc_local.py"]

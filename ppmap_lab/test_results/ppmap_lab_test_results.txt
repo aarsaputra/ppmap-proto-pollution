@@ -1,0 +1,155 @@
+[1m[96m
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                             PPMAP v2.0                                    ║
+║          Prototype Pollution Multi-Purpose Assessment Platform            ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+[0m
+
+[93m⚠️  DISCLAIMER:[0m
+This tool is for AUTHORIZED SECURITY TESTING ONLY.
+Unauthorized access to systems is ILLEGAL.
+Author assumes NO liability for misuse or damages.
+Use only with explicit permission on target systems.
+
+[92mRun with -h for help, --poc for quick PoC, --scan for full scan[0m
+
+[INFO    ] PPMAP started
+[INFO    ] Loaded configuration from config.yaml
+[INFO    ] Loaded configuration from config.yaml
+[INFO    ] Starting Full Scan mode on 1 target(s)
+[INFO    ] Scanning target: http://localhost:3000
+
+[96m================================================================================
+  FULL SCAN MODE - Target: http://localhost:3000
+================================================================================[0m
+[INFO    ] Attempting to use CHROMIUM driver
+[INFO    ] ====== WebDriver manager ======
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] WebDriver version 144.0.7559.109 selected
+[INFO    ] Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/144.0.7559.109/linux64/chromedriver-linux64.zip
+[INFO    ] About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/144.0.7559.109/linux64/chromedriver-linux64.zip
+[INFO    ] Driver downloading response is 200
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] Driver has been saved in cache [/home/lota1337/.wdm/drivers/chromedriver/linux64/144.0.7559.109]
+[INFO    ] Selenium backend initialized successfully
+[92m[✓] Browser ready[0m
+[94m[*] Detecting frameworks and technologies...[0m
+Detected Frameworks:
+  - JQUERY (confidence: 95%)
+  - EXPRESS (confidence: 70%)
+[92m[+] Prioritizing payload categories: jquery_extend, jquery_variations, express, nodejs_rce, json_spaces[0m
+[96m[→] Testing jQuery Prototype Pollution...[0m
+[94m[*] jQuery 3.4.1 detected[0m
+[91m[!] VULNERABLE to CVE-2019-11358 (Prototype Pollution)[0m
+    jQuery 3.4.1 < 3.5.0 is vulnerable!
+[91m[!] VULNERABLE to CVE-2020-11022 (HTML Prefilter XSS)[0m
+[91m[!] Total jQuery CVEs found: 2[0m
+[96m[→] Testing XSS payloads...[0m
+[94m[*] Discovering parameters from forms...[0m
+[92m[✓] Discovered 8 parameters: id, keyword, name, p, q[0m
+Testing XSS Params:   0%|          | 0/5 [00:00<?, ?param/s]Testing XSS Params:  20%|██        | 1/5 [00:01<00:04,  1.19s/param]Testing XSS Params:  80%|████████  | 4/5 [00:01<00:00,  3.91param/s]Testing XSS Params: 100%|██████████| 5/5 [00:01<00:00,  3.73param/s]
+[93m[⚠] Error testing id: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing keyword: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing keyword: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing name: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing name: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing p: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing p: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing q: Message: aborted by navigation: Not attached to an[0m
+[93m[⚠] Error testing q: Message: aborted by navigation: Not attached to an[0m
+[92m[✓] No confirmed XSS detected[0m
+[96m[→] Testing POST parameters...[0m
+[93m[⚠] Error testing POST parameters: Message: aborted by navigation: Not attached to an[0m
+[92m[✓] No POST vulnerabilities detected[0m
+[96m[→] Testing Server-Side Prototype Pollution...[0m
+Testing SSPP Params:   0%|          | 0/6 [00:00<?, ?param/s]Testing SSPP Params: 100%|██████████| 6/6 [00:00<00:00, 202.21param/s]
+[91m[!] Server-Side PP FOUND: Parameter 'data'[0m
+[91m[!] Server-Side PP FOUND: Parameter 'json'[0m
+[91m[!] Server-Side PP FOUND: Parameter 'payload'[0m
+[91m[!] Server-Side PP FOUND: Parameter 'input'[0m
+[91m[!] Server-Side PP FOUND: Parameter 'params'[0m
+[91m[!] Server-Side PP FOUND: Parameter 'query'[0m
+[96m[→] Testing DOM-based XSS with Prototype Pollution...[0m
+[93m[!] Object.defineProperty detected - using DESCRIPTOR payloads only[0m
+[92m[✓] Using 5 targeted payloads for detected gadget[0m
+[94m[→] Testing: __proto__[value]=data:,alert(1)//...[0m
+[93m[!] HIGH: DOM XSS+PP potential indicators found![0m
+[94m[→] Testing: __proto__[value]=data:,alert(document.domain)//...[0m
+[93m[!] HIGH: DOM XSS+PP potential indicators found![0m
+[94m[→] Testing: constructor[prototype][value]=data:,alert(1)//...[0m
+[93m[!] HIGH: DOM XSS+PP potential indicators found![0m
+[94m[→] Testing: __proto__[writable]=true...[0m
+[93m[!] HIGH: DOM XSS+PP potential indicators found![0m
+[94m[→] Testing: __proto__[configurable]=true...[0m
+[93m[!] HIGH: DOM XSS+PP potential indicators found![0m
+[92m[✓] Found 5 DOM XSS+PP vulnerabilities![0m
+[96m[→] Testing with WAF bypass techniques...[0m
+[93m[!] Baseline checks bypassed (Status 200). No active WAF or permissive ruleset detected.[0m
+[92m[✓] Skipping WAF bypass tests (No WAF to bypass)[0m
+[96m[→] Testing with confidence scoring...[0m
+[93m[⚠] Confidence scoring error: Message: aborted by navigation: Not attached to an[0m
+[92m[✓] No PP detected via confidence scoring[0m
+[96m[→] Discovering endpoints for testing...[0m
+[INFO    ] Discovering endpoints (depth=1) for http://localhost:3000...
+[INFO    ] Discovered 0 endpoints
+[92m[✓] Tested 0 endpoints[0m
+[96m[→] Testing blind JSON spaces overflow detection...[0m
+[96m[→] Testing status code override detection...[0m
+[96m[→] Testing Function.prototype chain pollution...[0m
+Function.prototype:   0%|                                        | 0/4 [00:00<?]                                                                                [93m[!] HIGH: URL-based Function.prototype pollution detected![0m
+[96m[→] Testing PP persistence across requests...[0m
+[91m[!] CRITICAL: PP is PERSISTENT - affects entire application![0m
+[96m[→] Testing React 19/Next.js Flight Protocol...[0m
+[92m[✓] React Flight Protocol test completed[0m
+[96m[→] Testing SvelteKit/Superforms for PP...[0m
+[92m[✓] SvelteKit/Superforms test completed[0m
+[96m[→] Testing charset override attacks...[0m
+[92m[✓] Charset override test completed[0m
+[96m[→] Testing fetch() API header pollution...[0m
+[92m[✓] fetch() API pollution test completed[0m
+[96m[→] Testing Object.defineProperty() bypass...[0m
+[91m[!] CRITICAL: Object.defineProperty() bypass detected![0m
+[96m[→] Testing child_process RCE (Safe Detection)...[0m
+[92m[✓] child_process RCE test completed (No vulnerability detected)[0m
+[96m[→] Testing constructor-based pollution (Modern Bypass)...[0m
+Constructor PP:   0%|                                            | 0/8 [00:00<?]                                                                                [91m[!] CRITICAL: Constructor-based pollution detected![0m
+[96m[→] Testing sanitization bypass (Recursive Filter Evasion)...[0m
+[91m[!] HIGH: Sanitization bypass detected![0m
+[96m[→] Testing Object.defineProperty descriptor pollution...[0m
+Descriptor PP:   0%|                                             | 0/6 [00:00<?]                                                                                [93m[!] HIGH: Potential descriptor pollution detected[0m
+[92m[✓] Found 1 descriptor pollution issue(s)[0m
+[1m[→] Testing Blind Gadget Properties (pp-finder list)...[0m
+Fuzzing Gadgets:   0%|                                          | 0/64 [00:00<?]Fuzzing Gadgets:  31%|███████████▌                         | 20/64 [00:00<00:00]Fuzzing Gadgets:  66%|████████████████████████▎            | 42/64 [00:00<00:00]Fuzzing Gadgets:  98%|████████████████████████████████████▍| 63/64 [00:00<00:00]                                                                                [92m[✓] Blind gadget fuzzing completed (No obvious crashes)[0m
+[1m[→] Testing CORS Header Pollution...[0m
+CORS PP:   0%|                                                   | 0/4 [00:00<?]                                                                                [92m[✓] CORS header pollution test completed (No vulnerability)[0m
+[1m[→] Testing Third-Party Library Gadgets...[0m
+Gadget Tests:   0%|                                              | 0/6 [00:00<?]                                                                                [91m[!] Gadget Found: Google Analytics (hitCallback)[0m
+[91m[!] Gadget Found: Google Tag Manager (sequence)[0m
+[91m[!] Gadget Found: Google Tag Manager (event_callback)[0m
+[91m[!] Gadget Found: Adobe DTM (cspNonce)[0m
+[91m[!] Gadget Found: Vue.js (template)[0m
+[91m[!] Gadget Found: DOMPurify (ALLOWED_ATTR)[0m
+[1m[→] Testing Storage API Pollution...[0m
+[1m[→] Testing CVE-Specific Payloads...[0m
+[96m[*] Detected Lodash - Testing CVE-2025-13465[0m
+[96m[*] Detected @75lb/deep-merge - Testing CVE-2024-38986[0m
+[96m[*] Detected Lodash - Testing CVE-2020-8203[0m
+CVE Tests:   0%|                                                 | 0/3 [00:00<?]                                                                                [92m[✓] CVE-specific payload test completed (No vulnerability)[0m
+[1m[→] Testing Kibana Telemetry RCE (HackerOne #852613)...[0m
+[96m[*] Kibana/Elastic detected - Running targeted tests[0m
+Kibana RCE:   0%|                                                | 0/3 [00:00<?]                                                                                [92m[✓] Kibana Telemetry RCE test completed (No vulnerability)[0m
+[1m[→] Testing Blitz.js RCE Chain (CVE-2022-23631)...[0m
+[96m[*] Blitz.js/superjson detected - Running targeted tests[0m
+Blitz.js RCE:   0%|                                              | 0/3 [00:00<?]                                                                                [92m[✓] Blitz.js RCE Chain test completed (No vulnerability)[0m
+[1m[→] Testing Elastic XSS (HackerOne #998398)...[0m
+[96m[*] Elastic/Kibana detected - Running XSS tests[0m
+Elastic XSS:   0%|                                               | 0/3 [00:00<?]                                                                                [91m[!] HIGH: Elastic XSS detected![0m
+    Component: Elastic UI
+[91m[!] HIGH: Elastic XSS detected![0m
+    Component: DOM Renderer
+[91m[!] HIGH: Elastic XSS detected![0m
+    Component: Event Handler
+[91m[!] Scan error: can only concatenate list (not "NoneType") to list[0m
+[INFO    ] PPMAP completed

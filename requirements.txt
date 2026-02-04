@@ -1,0 +1,62 @@
+# PPMAP v3.0 - Production Dependencies
+
+# Core Web Framework
+selenium>=4.15.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+webdriver-manager>=4.0.0
+lxml>=4.9.0
+
+# Async & Performance
+aiohttp>=3.9.0
+asyncio-contextmanager>=1.0.0
+aiofiles>=23.2.0
+
+# Configuration Management
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+pyyaml>=6.0.1
+
+# Data Processing & Type Hints
+typing-extensions>=4.8.0
+dataclasses-json>=0.6.1
+
+# Progress & UI
+tqdm>=4.66.0
+colorama>=0.4.6
+tabulate>=0.9.0
+
+# Reporting & Export
+jinja2>=3.1.0
+markdown>=3.5.0
+nbformat>=5.9.0
+jupyter>=1.0.0
+reportlab>=4.0.0
+python-docx>=0.8.11
+
+# Security & Cryptography
+cryptography>=41.0.0
+pyOpenSSL>=23.3.0
+
+# Logging & Monitoring
+python-json-logger>=2.0.7
+prometheus-client>=0.19.0
+
+# Testing & Code Quality
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.12.0
+flake8>=6.1.0
+mypy>=1.7.0
+ruff>=0.12.0
+
+# Optional browser automation (Playwright preferred to avoid ChromeDriver mismatches)
+playwright>=1.40.0
+
+# Development
+ipython>=8.18.0
+ipdb>=0.13.13
+
+# Dev extras
+webdriver-manager>=4.0.0
+selenium>=4.15.0

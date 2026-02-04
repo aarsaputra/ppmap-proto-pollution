@@ -1,0 +1,121 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║           PPMAP v3.5 - PANDUAN MEMBACA FITUR                  ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📚 DIMANA MEMBACA SEMUA FITUR?
+
+┌─────────────────────────────────────────────────────────────┐
+│ 1. QUICK START (5 menit) - MULAI DI SINI!                  │
+│    File: QUICKSTART.md                                      │
+│    Isi: Instalasi, basic usage, contoh command             │
+│    Baca: cat QUICKSTART.md                                  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 2. SEMUA FITUR LENGKAP (30 menit)                          │
+│    File: DOCUMENTATION.md                                   │
+│    Isi: 28 detection methods, tier 0-6, advanced usage     │
+│    Baca: cat DOCUMENTATION.md                               │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 3. APA YANG BARU v3.5 (15 menit)                           │
+│    File: CHANGELOG.md                                       │
+│    Isi: Phase 1, 2, 3 features, version history            │
+│    Baca: cat CHANGELOG.md                                   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 4. ROADMAP & STATISTIK (10 menit)                          │
+│    File: ROADMAP.md                                         │
+│    Isi: What's implemented, version comparison, future     │
+│    Baca: cat ROADMAP.md                                     │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 5. PANDUAN LENGKAP FITUR (Baru!)                           │
+│    File: FEATURES.md                                        │
+│    Isi: Semua 28 methods, usage examples, quick links      │
+│    Baca: cat FEATURES.md                                    │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+🎯 REKOMENDASI URUTAN BACA:
+
+Pemula (30 menit):
+  1. README.md          (5 min)  - Overview
+  2. QUICKSTART.md      (5 min)  - Getting started
+  3. FEATURES.md        (10 min) - Feature list
+  4. Test di lab        (10 min) - Hands-on
+
+Intermediate (2 jam):
+  1. DOCUMENTATION.md   (30 min) - All features
+  2. CHANGELOG.md       (15 min) - What's new
+  3. ROADMAP.md         (15 min) - Version history
+  4. Lab testing        (60 min) - Test all methods
+
+Advanced (4 jam):
+  1. Semua dokumentasi  (1 jam)
+  2. Source code review (1 jam)
+  3. Lab testing        (1.5 jam)
+  4. PortSwigger study  (30 min)
+
+═══════════════════════════════════════════════════════════════
+
+📊 28 DETECTION METHODS:
+
+Tier 0 (7):  jQuery, Server-side PP, POST XSS, DOM XSS, WAF, 
+             Confidence, Endpoint Discovery
+Tier 1 (4):  JSON Spaces, Status Override, Function.prototype,
+             Persistence
+Tier 2 (3):  React Flight, SvelteKit, Charset Override
+Tier 3 (3):  fetch() API, defineProperty(), child_process RCE
+Tier 4 (4):  Constructor PP, Sanitization Bypass, Descriptor,
+             Blind Gadget Fuzzer
+Tier 5 (3):  CORS, Third-Party Gadgets, Storage API [NEW v3.5]
+Tier 6 (4):  CVE-Specific, Kibana RCE, Blitz.js, Elastic XSS
+             [NEW v3.5]
+
+═══════════════════════════════════════════════════════════════
+
+🚀 QUICK COMMANDS:
+
+# Baca feature guide
+cat FEATURES.md
+
+# Baca quick start
+cat QUICKSTART.md
+
+# Baca changelog (what's new)
+cat CHANGELOG.md
+
+# Lihat semua 28 methods
+grep "def test_" ppmap.py | wc -l
+
+# Test di lab
+cd ppmap_lab && npm start
+python3 ppmap.py --scan http://localhost:3000
+
+═══════════════════════════════════════════════════════════════
+
+�� FILE DOKUMENTASI:
+
+README.md                  - Project overview (7.2KB)
+QUICKSTART.md              - Quick start guide (7.7KB)
+DOCUMENTATION.md           - Complete docs (13KB)
+ROADMAP.md                 - Version history (7KB)
+CHANGELOG.md               - What's new (6.1KB) [NEW]
+FEATURES.md                - Feature guide (NEW)
+CONTRIBUTING.md            - How to contribute (8.1KB) [NEW]
+MANUAL_TESTING_GUIDE.md    - Manual techniques (12KB)
+ppmap_lab/README.md        - Lab setup
+ppmap_lab/TESTING_GUIDE.md - Lab testing
+
+═══════════════════════════════════════════════════════════════
+
+Version: 3.5.0
+Last Updated: January 31, 2026
+Status: Production Ready ✅

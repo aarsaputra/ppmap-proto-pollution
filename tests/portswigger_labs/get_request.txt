@@ -1,0 +1,4 @@
+GET /my-account?id=wiener HTTP/2
+Host: 0a2600f203b781fc8076cbe6009b00de.web-security-academy.net
+Cookie: session=hSJ5ORNNaAqvzqGX6gP08alCP2yCzwtK
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
