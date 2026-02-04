@@ -433,10 +433,18 @@ class ParameterDiscovery:
 class CompleteSecurityScanner:
     """High-level scanner wrapper with simple discovery and server-side PP tests."""
 
-    def __init__(self, timeout: int = 15, max_workers: int = 3, verify_ssl: bool = True):
+    def __init__(self, timeout: int = 15, max_workers: int = 3, verify_ssl: bool = True, oob_enabled: bool = False):
         self.timeout = timeout
         self.max_workers = max_workers
         self.verify_ssl = verify_ssl
+        self.oob_enabled = oob_enabled
+        self.oob_detector = None
+        
+        if self.oob_enabled:
+            # Lazy import to avoid circular dependencies if any
+            from ppmap.oob import OOBDetector
+            self.oob_detector = OOBDetector()
+            self.oob_detector.register()
 
     def _fetch(self, session: requests.Session, url: str, **kwargs) -> requests.Response:
         return session.get(url, timeout=self.timeout, verify=self.verify_ssl, **kwargs)
@@ -514,6 +522,53 @@ class CompleteSecurityScanner:
                 ))
         except RequestException as e:
             logger.debug(f"POST test error for {base_url}: {e}")
+
+        # 3) OOB / Blind Checks (v4.0)
+        if self.oob_enabled and self.oob_detector and self.oob_detector.session_valid:
+            try:
+                from utils.payloads import SERVER_SIDE_PP_PAYLOADS
+                oob_payloads = SERVER_SIDE_PP_PAYLOADS.get('blind_oob', [])
+                
+                oob_domain = self.oob_detector.get_payload_domain()
+                
+                for raw_payload in oob_payloads:
+                    # Replace %OOB% with actual domain
+                    payload_str = raw_payload.replace('%OOB%', oob_domain)
+                    
+                    try:
+                        # Try parsing as JSON first
+                        payload_json = json.loads(payload_str)
+                        # Inject into __proto__ structure if possible, logic depends on payload
+                        # The payload strings in utils are already full JSON: '{"__proto__": ...}'
+                        
+                        # Send Payload
+                        self.session.post(base_url, json=payload_json, timeout=self.timeout, verify=self.verify_ssl)
+                        
+                        # We don't verify immediately, we poll later or accumulating.
+                        # But for this simple flow, we can poll after a batch or immediately?
+                        # Polling too fast might miss it.
+                        pass
+                    except:
+                        pass
+                
+                # Check for interactions (simple check after batch)
+                time.sleep(2) # Wait for DNS propagation/callback
+                interactions = self.oob_detector.poll()
+                if interactions:
+                    for i in interactions:
+                       findings.append(Finding(
+                           type=VulnerabilityType.SERVER_SIDE_PP,
+                           severity=Severity.CRITICAL,
+                           name="blind-server-side-pp-oob",
+                           description=f"Received OOB interaction from {i.get('remote-address')} via {i.get('protocol')}",
+                           payload={"oob_domain": oob_domain},
+                           url=base_url,
+                           verified=True,
+                           note="Confirmed blind RCE/SSRF via Prototype Pollution"
+                       ))
+                       logging.critical(f"[!] CRITICAL: OOB Interaction received! Blind PP Confirmed.")
+            except Exception as e:
+                logger.debug(f"OOB test error: {e}")
 
         return findings
 

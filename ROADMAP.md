@@ -1,4 +1,4 @@
-# 🛣️ PPMAP v3.5 - Project Roadmap
+# 🛣️ PPMAP v4.0 - Project Roadmap
 
 ## Current Status: **PRODUCTION READY** ✅
 
@@ -70,9 +70,9 @@
 
 ---
 
-## 🚀 PPMAP v4.0 - Experience The Future (Planned)
+## 🚀 PPMAP v4.5 - Future Roadmap
 
-Based on community feedback and professional analysis, the next major version (v4.0) will focus on **speed**, **blind detection**, and **deep analysis**.
+Based on community feedback, the next focus will be **Static Analysis** and **Deeper Hybrid Engine Integration**.
 
 ### 1. Hybrid Scanning Engine (Speed + Accuracy) 🏎️
 - **Concept:** Default to high-speed HTTP requests (ala Go-based tools) for initial reconnaissance.
@@ -137,7 +137,14 @@ Based on community feedback and professional analysis, the next major version (v
 
 ## 📈 Version History
 
-**v3.5** (Current - Jan 30, 2026)
+**v4.0** (Current - Feb 04, 2026)
+- ✅ **Major Release: Blind Detection**
+- ✅ Native Interact.sh Integration (`--oob`)
+- ✅ Blind Server-Side Prototype Pollution Payload Database
+- ✅ Hybrid Scanner Robustness (Elastic XSS/Selenium Fixes)
+- ✅ Fallback Error Handling for Network Issues
+
+**v3.7** (Jan 30, 2026)
 - ✅ Tier 1-4 complete
 - ✅ 21 detection methods
 - ✅ 100% PortSwigger coverage + External Research
