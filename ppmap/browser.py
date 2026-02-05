@@ -160,7 +160,7 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         driver.set_script_timeout(timeout)
         logger.info("Selenium backend initialized successfully")
         return UnifiedBrowser('selenium', driver)
-    except Exception as e:
+    except Exception:
         logger.warning("Selenium backend failed to initialize", exc_info=True)
         # Fall through to Playwright
         pass
@@ -177,6 +177,6 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         logger.info("Playwright backend initialized successfully")
         # expose evaluate/content/goto compatible API on page
         return UnifiedBrowser('playwright', page, playwright_context=context, playwright_playwright=pw)
-    except Exception as e:
+    except Exception:
         logger.warning("Playwright backend failed to initialize", exc_info=True)
         return None
