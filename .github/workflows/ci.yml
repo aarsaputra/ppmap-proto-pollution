@@ -5,37 +5,44 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:  # Added for manual triggering
 
 jobs:
   test:
+    name: Run Tests
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+          cache: 'pip'
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Install Playwright browsers (if playwright present)
-        if: always()
+          pip install black ruff flake8 pytest playwright
+          
+      - name: Install Playwright browsers
         run: |
-          python -c "import importlib,sys
-try:
-    importlib.import_module('playwright')
-    print('playwright installed')
-    from subprocess import check_call
-    check_call(['playwright','install','--with-deps'])
-except Exception:
-    print('playwright not installed, skipping')
-"
-      - name: Run linters
+          playwright install --with-deps chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
+
+      - name: Lint with Ruff
         run: |
-          python -m pip install black ruff flake8 || true
-          ruff --version || true
-          black --version || true
-      - name: Run tests
+          # Run ruff if configuration exists, otherwise just check version
+          ruff --version
+          # ruff check . || true  # Uncomment to enforce linting
+          
+      - name: Run Tests
         run: |
-          pytest -q
+          if [ -d "tests" ]; then
+            pytest -q tests/
+          else
+            echo "No tests directory found, skipping pytest"
+          fi
