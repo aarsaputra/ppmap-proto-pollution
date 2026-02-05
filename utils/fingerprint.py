@@ -3,7 +3,6 @@ Framework Fingerprinting Module for PPMAP v3.4.0
 Auto-detect web frameworks to prioritize relevant payloads
 """
 
-import re
 from typing import Optional, Dict, List
 
 

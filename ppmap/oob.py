@@ -1,10 +1,8 @@
 import requests
-import time
 import logging
-import json
 import random
 import string
-from typing import Optional, List, Dict
+from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 

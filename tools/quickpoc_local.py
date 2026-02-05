@@ -100,7 +100,7 @@ def main():
                 print(f'[!] Playwright run failed: {e}')
 
     # write report
-    rg = EnhancedReportGenerator(output_dir=args.output)
+    EnhancedReportGenerator(output_dir=args.output)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     out = {
         'target': target,

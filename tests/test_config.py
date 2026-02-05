@@ -1,5 +1,3 @@
-import os
-import tempfile
 import yaml
 
 from ppmap import config as cfg

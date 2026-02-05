@@ -1,7 +1,6 @@
 
 import json
 import glob
-import os
 
 
 def check_reports():
@@ -45,7 +44,6 @@ def check_reports():
             for find in findings:
                 ftype = find.get('type', '').lower()
                 desc = find.get('description', '').lower()
-                payload = find.get('payload', '').lower()
                 
                 # Check for jQuery or Vue or Older Libraries
                 # Also checks for 'vulnerable' keyword in description just in case
