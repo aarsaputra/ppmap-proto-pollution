@@ -63,30 +63,38 @@
 
 ---
 
-## 🚀 PPMAP v5.0 - Strategic Roadmap (AI & Community Driven)
+## 🚀 PPMAP v5.0 - Strategic Roadmap (DeepSeek & AI Enhanced)
 
-Based on recent comprehensive reviews and AI analysis, the roadmap focuses on **Enterprise Grade Features** and **Ecosystem Integration**.
+Based on recent comprehensive reviews and AI analysis, the roadmap follows a **Phased Approach** to ensure stability before expansion.
 
-### 1. Performance & Scalability ⚡
-- **Adaptive Rate Limiting:** Implement smart throttling based on server response times to avoid blocking (429/403).
-- **Scanning State/Resume:** Ability to pause/resume long scans (SQLite backend).
-- **Result Caching:** Avoid re-scanning identical endpoints/hashes.
-- **Hybrid Engine v2:** Complete separation of lightweight HTTP fuzzing vs heavy browser verification.
+### **Phase 1: Stabilization (1-2 Months)** 🛡️
+*Focus: Robustness, Speed, and False Positive Reduction*
+- [ ] **False Positive Reduction Engine:** Secondary verification logic (Context-aware validation).
+- [ ] **Performance Optimization:** Dynamic worker scaling based on system resources.
+- [ ] **Extended Unit Tests:** Increase code coverage >80%.
+- [ ] **Docker Improvement:** Slimmer image with multi-stage build.
 
-### 2. Detection Accuracy & Logic 🧠
-- **Secondary Verification:** Reduce false positives by automatically verifying findings with a second method (e.g., if behavior check works, try reflection check).
-- **Context-Aware Payloads:** Detect technology stack (Wappalyzer style) and only send relevant payloads (e.g., don't send Node.js payloads to PHP backend).
-- **Correlation Engine:** Chain multiple low-severity findings into high-severity exploitable chains.
+### **Phase 2: Expansion (3-4 Months)** 🌍
+*Focus: Broadening Attack Surface Coverage*
+- [ ] **GraphQL & WebSocket PP:** Support for modern API patterns.
+- [ ] **Mobile App Testing:** Support for React Native/Capacitor/Ionic apps.
+- [ ] **SAST Mode:** Static Code Analysis integration (scaning `.js` files without execution).
+- [ ] **Burp Suite Support:** Extension for direct integration.
 
-### 3. Integration & Ecosystem 🔗
-- **Bug Bounty Exports:** Native JSON export formats for Jira, HackerOne, and Bugcrowd.
-- **Burp Suite Extension:** Python-based Burp extension (using Jython) to bridge PPMAP with Burp Scanner.
-- **CI/CD Action:** Official GitHub Action for automated pipeline scanning.
+### **Phase 3: Intelligence (5-6 Months)** 🧠
+*Focus: AI and Advanced Automation*
+- [ ] **ML Payload Prediction:** Train model on payload effectiveness.
+- [ ] **Cross-Lingual Chains:** Java/Python deserialization gadget chains.
+- [ ] **Automated Exploit Gen:** Semi-automatic RCE chain builder (PoC generator).
+- [ ] **Team Collaboration:** Shared database for read/write results.
 
-### 4. Advanced & Experimental 🧪
-- **Machine Learning Payloads:** Train model on successful bug bounty reports to generate mutant payloads.
-- **TUI (Terminal UI):** Rich console interface with live progress bars (using `rich` library).
-- **Team Collaboration:** Shared result database for red teams.
+---
+
+## ⚡ Quick Wins (Immediate To-Do)
+- [ ] **CLI Auto-completion:** Add `argcomplete` support.
+- [ ] **Progress Visualization:** Implement `tqdm` for scan progress.
+- [ ] **Result Diffing:** Add `--diff` flag to compare two scans.
+- [ ] **Config Presets:** `quick`, `thorough`, `stealth` profiles.
 
 ---
 
