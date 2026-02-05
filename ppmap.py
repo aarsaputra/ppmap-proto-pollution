@@ -3574,15 +3574,16 @@ class CompleteSecurityScanner:
 
     def scan_target(self, target_url, request_data=None):
         """Scan single target"""
+        all_findings = []
         
         # New Feature: Strict Liveness Check
         if not self.check_target_status(target_url):
-            return
+            return []
 
         print_section(f"FULL SCAN MODE - Target: {target_url}")
         
         if not self.setup_browser(target_url):
-            return
+            return []
         
         # Reset and start metrics for this target
         self.metrics = ScanMetrics(start_time=time.time())
@@ -3700,17 +3701,18 @@ class CompleteSecurityScanner:
                 print(f"{Colors.CYAN}Tier 3 - PortSwigger Techniques: fetch()={len(fetch_findings)} | defineProperty={len(defineproperty_findings)} | child_process RCE={len(child_process_findings)}{Colors.ENDC}")
                 print(f"{Colors.CYAN}Tier 4 - Advanced Bypass (2024/2025): Constructor={len(constructor_findings)} | Sanitization Bypass={len(sanitization_findings)} | Descriptor PP={len(descriptor_pollution_findings)} | Gadget Fuzzing={len(blind_gadget_findings)}{Colors.ENDC}")
                 
-                # Generate and save reports
-                self.save_reports(target_url, all_findings, jquery_findings, xss_findings, dom_xss_pp_findings)
+                # Legacy reporting disabled - handled by main()
+                # self.save_reports(target_url, all_findings, jquery_findings, xss_findings, dom_xss_pp_findings)
             else:
                 print(f"{Colors.GREEN}[✓] No vulnerabilities detected.{Colors.ENDC}")
-                # Save report even if no vulnerabilities (as requested by user to see proof of scan)
-                self.save_reports(target_url, [], [], [], [])
+                # self.save_reports(target_url, [], [], [], [])
         except Exception as e:
             print(f"{Colors.FAIL}[!] Scan error: {str(e)}{Colors.ENDC}")
         finally:
             if self.driver:
                 self.driver.close()
+        
+        return all_findings
     
     def save_reports(self, target_url, all_findings, jquery_findings, xss_findings, dom_xss_pp_findings=None):
         """Generate and save HTML/JSON reports in target-specific folder"""
@@ -4432,6 +4434,7 @@ ADVANCED OPTIONS:
     parser.add_argument("--config", type=str, default="config.yaml", help="Config file (default: config.yaml)")
     
     # Browser options
+    parser.add_argument("--browser", type=str, default="chrome", choices=['chrome', 'firefox'], help="Browser to use (chrome|firefox)")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout per request in seconds (default: 30)")
     parser.add_argument("--workers", type=int, default=3, help="Max concurrent workers (default: 3)")
     parser.add_argument("--headless", action="store_true", default=True, help="Headless browser (default: True)")
@@ -4537,6 +4540,13 @@ ADVANCED OPTIONS:
         PPMAP_CONFIG['testing']['xss'] = False
     if args.disable_waf_bypass:
         PPMAP_CONFIG['testing']['waf_bypass'] = False
+    
+    # Reporting
+    if args.format:
+        # Split by comma if multiple formats
+        PPMAP_CONFIG['reporting']['format'] = args.format.split(',')
+    if args.output:
+        PPMAP_CONFIG['reporting']['output_dir'] = args.output
     if args.disable_discovery:
         PPMAP_CONFIG['testing']['endpoint_discovery'] = False
     
@@ -4671,6 +4681,7 @@ ADVANCED OPTIONS:
                 for fmt, filepath in generated_reports.items():
                     logger.info(f"  - {fmt}: {filepath}")
                     print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
+        else:
             # Use traditional scanner
             target_iterator = normalized_targets
             if tqdm:
@@ -4682,13 +4693,31 @@ ADVANCED OPTIONS:
                 verify_ssl=not PPMAP_CONFIG['scanning'].get('disable_ssl_verify', False),
                 oob_enabled=args.oob
             )
+            
+            all_findings = []
             for target in target_iterator:
                 try:
                     logger.info(f"Scanning target: {target}")
-                    scanner.scan_target(target)
+                    findings = scanner.scan_target(target)
+                    if findings:
+                        all_findings.extend(findings)
                 except Exception as e:
                     logger.error(f"Error scanning {target}: {e}", exc_info=True)
                     continue
+
+            # Generate reports for traditional scan
+            if all_findings:
+                report_gen = EnhancedReportGenerator(args.output)
+                generated_reports = report_gen.generate_all_formats(
+                    findings=all_findings,
+                    target=", ".join(normalized_targets),
+                    formats=PPMAP_CONFIG['reporting']['format']
+                )
+                
+                logger.info(f"Generated {len(generated_reports)} report format(s):")
+                for fmt, filepath in generated_reports.items():
+                    logger.info(f"  - {fmt}: {filepath}")
+                    print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
     else:
         parser.print_help()
     
