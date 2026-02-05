@@ -11,7 +11,7 @@ def analyze_reports():
     
     print(f"Total Reports Found: {total_scanned}")
     print("-" * 80)
-    print("""
+    print(r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |
@@ -78,7 +78,7 @@ def diff_scan_results(file1_path, file2_path):
                 # Using payload signature (or partial payload) to identifying unique vulns
                 ftype = f.get('type', 'unknown')
                 param = f.get('parameter', 'global')
-                payload = f.get('payload', '')[:20] # truncate payload for signature
+                payload = str(f.get('payload', ''))[:20] # truncate payload for signature
                 findings.add((target, ftype, param, payload))
             return findings
 

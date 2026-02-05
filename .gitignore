@@ -123,3 +123,5 @@ node_modules/
 private/
 config.yaml
 *.sh
+verification_reports/
+targets.txt
