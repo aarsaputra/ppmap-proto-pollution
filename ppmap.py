@@ -28,28 +28,20 @@ import argparse
 import urllib.parse
 import re
 import logging
-import hashlib
 import random
-import string
 import warnings
-import asyncio
-import aiohttp
-import csv
 from html import escape as html_escape
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Optional, Any
 import traceback
-from pathlib import Path
 from enum import Enum
 from dataclasses import dataclass, asdict, field
-from ppmap.utils import normalize_url, RateLimiter, StealthHeaders
+from ppmap.utils import normalize_url
 from ppmap.scanner import (
-    AsyncScanner, CVEDatabase, PrototypePollutionVerifier, 
+    AsyncScanner, PrototypePollutionVerifier, 
     WAFBypassPayloads, EndpointDiscovery, ParameterDiscovery, QuickPoC
 )
 from ppmap.browser import get_browser
-from io import BytesIO
 
 # Progress bar
 try:
@@ -659,7 +651,7 @@ class CompleteSecurityScanner:
                                  pass
                              break
             
-            except Exception as e:
+            except Exception:
                 pass
 
             if not jquery_version:
@@ -746,7 +738,7 @@ class CompleteSecurityScanner:
                         'jquery_version': jquery_version,
                         'verified': True
                     })
-            except Exception as e:
+            except Exception:
                 pass
         
         # Restore snapshot if available
@@ -963,7 +955,7 @@ class CompleteSecurityScanner:
                                     'severity': 'HIGH',
                                     'method': 'POST'
                                 })
-                        except Exception as e:
+                        except Exception:
                             pass
         
         except Exception as e:
@@ -1039,7 +1031,7 @@ class CompleteSecurityScanner:
                             'method': 'Client-side Object.prototype',
                             'verified': True
                         })
-                except Exception as e:
+                except Exception:
                     pass
             
             # Test 2: Server-side PP via query string parameters
@@ -1110,7 +1102,7 @@ class CompleteSecurityScanner:
             
             # Baseline request (original)
             try:
-                print(f"[+] Sending baseline request...")
+                print("[+] Sending baseline request...")
                 method = request_data['method']
                 url = request_data['url']
                 
@@ -1415,7 +1407,7 @@ class CompleteSecurityScanner:
                             self.driver.switch_to.alert.accept()
                             alerts_detected = True
                             print(f"{Colors.RED}[✓] ALERT DETECTED: '{alert_text}'{Colors.ENDC}")
-                        except Exception as alert_error:
+                        except Exception:
                             pass
                         
                         # Check page source for payload traces
@@ -1453,7 +1445,7 @@ class CompleteSecurityScanner:
                             })
                             print(f"{Colors.RED}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}")
                             
-                    except Exception as driver_error:
+                    except Exception:
                         # Fallback: Check HTTP response for indicators
                         # REMOVED: HTTP fallback causes false positives on reflected parameters.
                         # Only browser-verified alerts are trusted for DOM XSS.
@@ -2574,7 +2566,7 @@ class CompleteSecurityScanner:
                              })
                              break # Move to next gadget
                     
-            except Exception as e:
+            except Exception:
                 pass
                 
         if not findings:
