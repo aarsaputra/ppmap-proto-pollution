@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PYTHON_ARGCOMPLETE_OK
 r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
@@ -4460,13 +4461,50 @@ ADVANCED OPTIONS:
     # Additional options
     parser.add_argument("--verify-ssl", action="store_true", help="Verify SSL certificates")
     parser.add_argument("--insecure", action="store_true", help="Disable SSL certificate verification (insecure)")
-    parser.add_argument("--proxy", type=str, help="HTTP proxy (http://proxy:port)")
+    parser.add_argument("--proxy", type=str, metavar="PROXY", help="HTTP proxy (http://proxy:port)")
+    parser.add_argument("--diff", nargs=2, metavar=("FILE1", "FILE2"), help="Compare two scan result files")
+    parser.add_argument("--preset", choices=['quick', 'thorough', 'stealth'], help="Use configuration preset (overrides defaults)")
     parser.add_argument("--verbose", "-v", action="count", default=0, help="Verbose output (-v, -vv, -vvv)")
     parser.add_argument("--version", action="version", version="PPMAP v4.0")
     
+    # Argument completion
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
+        
     args = parser.parse_args()
     
-    # Update config from arguments
+    # Apply presets if specified
+    if args.preset:
+        if args.preset == 'quick':
+            print(f"{Colors.BLUE}[*] Applying 'QUICK' preset{Colors.ENDC}")
+            args.workers = 1
+            args.headless = True
+            args.disable_waf_bypass = True
+            args.oob = False
+        elif args.preset == 'thorough':
+            print(f"{Colors.BLUE}[*] Applying 'THOROUGH' preset{Colors.ENDC}")
+            args.workers = 10
+            args.oob = True
+            args.verify_ssl = False
+        elif args.preset == 'stealth':
+            print(f"{Colors.BLUE}[*] Applying 'STEALTH' preset{Colors.ENDC}")
+            args.workers = 2
+            args.delay = 2.0
+            args.rate_limit = 5
+            args.stealth = True
+            args.headless = True
+
+    # Handle Diff Mode
+    if args.diff:
+        from tools.analyze_scan_results import diff_scan_results
+        try:
+            diff_scan_results(args.diff[0], args.diff[1])
+        except Exception as e:
+            print(f"{Colors.FAIL}[!] Error running diff: {e}{Colors.ENDC}")
+        sys.exit(0)
     if args.config and os.path.exists(args.config):
         try:
             # use consolidated config loader
