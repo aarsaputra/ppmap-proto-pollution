@@ -208,6 +208,54 @@ open report/example_com_20260123_100000/report.html
 
 ---
 
+## 🎮 Usage & Flags Guide
+
+### **Scanning Options**
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--scan URL` | Start a full scan (all tiers 0-6) on target(s) | `--scan https://target.com` |
+| `--poc URL` | Run Quick PoC (jQuery only) | `--poc https://target.com` |
+| `-ls, --list FILE` | Scan targets from a file (one URL per line) | `-ls targets.txt` |
+| `--stdin` | Read targets from pipe (e.g., from subfinder) | `cat urls.txt \| python3 ppmap.py --scan --stdin` |
+| `-r, --request FILE` | Scan request from a file (Burp Suite format) | `-r req.txt` |
+
+### **Browser & Performance**
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--headless` | Run browser in background (no UI) | `True` |
+| `--no-headless` | Show browser window (good for debugging) | `False` |
+| `--workers N` | Number of concurrent workers (threads) | `3` |
+| `--timeout N` | Request timeout in seconds | `30` |
+| `--async-scan` | Enable experimental async engine | `False` |
+
+### **Stealth & Bypass**
+| Flag | Description | Usage |
+|------|-------------|-------|
+| `--stealth` | Enable anti-bot/WAF evasion mode | `--stealth` |
+| `--delay N` | Delay between requests (seconds) | `--delay 2` |
+| `--rate-limit N` | Max requests per minute | `--rate-limit 60` |
+| `--user-agent STR` | Custom User-Agent string | `--user-agent "MyScanner/1.0"` |
+| `--proxy URL` | Use HTTP/S proxy | `--proxy http://127.0.0.1:8080` |
+
+### **Feature Toggles**
+| Flag | Description |
+|------|-------------|
+| `--disable-jquery-pp` | Skip jQuery specific tests |
+| `--disable-xss` | Skip XSS payload injection |
+| `--disable-waf-bypass` | Skip WAF bypass payloads |
+| `--oob` | Enable Out-of-Band checks (Interact.sh) |
+| `--verify-ssl` / `--insecure` | Toggle SSL certificate verification |
+
+### **Reporting**
+| Flag | Description |
+|------|-------------|
+| `--output DIR` | Directory to save reports (default: `reports/`) |
+| `--format FMT` | Output formats: `json,html,markdown,pdf` |
+| `--template TPL` | HTML template: `modern` (default) or `minimal` |
+| `--no-poc` | Exclude Proof-of-Concept strings from report |
+
+---
+
 ## 🔧 Manual Testing
 
 For proof of concept and documentation:
