@@ -4633,15 +4633,18 @@ ADVANCED OPTIONS:
                 for fmt, filepath in generated_reports.items():
                     logger.info(f"  - {fmt}: {filepath}")
                     print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
-        else:
             # Use traditional scanner
+            target_iterator = normalized_targets
+            if tqdm:
+                target_iterator = tqdm(normalized_targets, desc="Scanning targets", unit="target")
+            
             scanner = CompleteSecurityScanner(
                 timeout=PPMAP_CONFIG['scanning']['timeout'],
                 max_workers=PPMAP_CONFIG['scanning']['max_workers'],
                 verify_ssl=not PPMAP_CONFIG['scanning'].get('disable_ssl_verify', False),
                 oob_enabled=args.oob
             )
-            for target in normalized_targets:
+            for target in target_iterator:
                 try:
                     logger.info(f"Scanning target: {target}")
                     scanner.scan_target(target)
