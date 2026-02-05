@@ -62,14 +62,15 @@ A comprehensive automated scan was conducted on `*.domainesia.com` subdomains to
     md_content += "\n## Critical Findings Overview\n\n"
     md_content += "The following targets exhibited high-severity vulnerabilities commonly associated with RCE or full system compromise:\n\n"
     
-    critical_keywords = ['CRITICAL', 'HIGH', 'rce', 'execution', 'admin']
-    
     # Helper to check criticality
     def is_critical(findings):
         for f in findings:
-            if f.get('severity') == 'CRITICAL': return True
-            if 'blitz' in f.get('type', '').lower(): return True
-            if 'constructor' in f.get('type', '').lower(): return True
+            if f.get('severity') == 'CRITICAL':
+                return True
+            if 'blitz' in f.get('type', '').lower():
+                return True
+            if 'constructor' in f.get('type', '').lower():
+                return True
         return False
 
     # List Critical Targets first

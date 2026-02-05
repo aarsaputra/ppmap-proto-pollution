@@ -1,7 +1,6 @@
 """Report generator utilities (CSV/Markdown minimal implementations)"""
 from pathlib import Path
 import csv
-from html import escape as html_escape
 from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)

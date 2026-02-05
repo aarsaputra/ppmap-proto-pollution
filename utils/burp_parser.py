@@ -16,9 +16,8 @@ Usage:
     # }
 """
 
-import re
-from urllib.parse import urljoin, urlparse
-from typing import Dict, Optional, Tuple
+from urllib.parse import urljoin
+from typing import Dict, Optional
 import json
 
 
@@ -149,7 +148,7 @@ def inject_pp_payload(request: Dict, payload: Dict, injection_point: str = 'body
     
     if injection_point in ('query', 'both'):
         # Inject PP payload as query parameters
-        from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
+        from urllib.parse import urlparse, urlunparse
         
         parsed = urlparse(new_request['url'])
         
@@ -275,7 +274,7 @@ def compare_responses(baseline: str, test: str) -> Dict:
         if len(test_lines) > len(baseline_lines):
             differences['json_spaces_changed'] = True
             differences['pollution_detected'] = True
-    except:
+    except Exception:
         pass
     
     # Check response length

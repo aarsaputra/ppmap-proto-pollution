@@ -4,9 +4,8 @@ PPMAP v3.4.0 - Manual Testing Interactive Guide
 Memandu pengguna untuk testing manual hasil scan di browser console
 """
 
-import json
 import sys
-from colorama import Fore, Back, Style, init
+from colorama import Fore, Style, init
 
 init(autoreset=True)
 
@@ -182,7 +181,7 @@ class ManualTestingGuide:
             print(f"  {i}. {vuln['name']}")
             print(f"     Severity: {Fore.RED if 'CRITICAL' in vuln['severity'] else Fore.YELLOW}{vuln['severity']}{Style.RESET_ALL}\n")
         
-        print(f"  0. Exit")
+        print("  0. Exit")
         choice = input(f"{Fore.CYAN}Pilih nomor (0-{len(items)}): {Style.RESET_ALL}").strip()
         
         try:
@@ -215,8 +214,8 @@ class ManualTestingGuide:
                 print(f"  {Fore.CYAN}Langkah:")
                 
                 if 'code' in payload:
-                    print(f"    1. Buka browser console (F12 → Console tab)")
-                    print(f"    2. Copy & paste code ini:")
+                    print("    1. Buka browser console (F12 → Console tab)")
+                    print("    2. Copy & paste code ini:")
                     print(f"\n{Fore.MAGENTA}       {payload['code']}")
                     print(f"\n{Fore.CYAN}    3. Jalankan, lalu jalankan verification code:")
                     print(f"\n{Fore.MAGENTA}       {payload['verify']}")
@@ -224,7 +223,7 @@ class ManualTestingGuide:
                     print(f"{Fore.GREEN}       {payload['expected']}\n")
                 
                 elif 'url' in payload:
-                    print(f"    1. Tambahkan payload ini ke URL:")
+                    print("    1. Tambahkan payload ini ke URL:")
                     print(f"\n{Fore.MAGENTA}       {payload['url']}")
                     if 'alternative' in payload:
                         print(f"\n{Fore.CYAN}    Alternative:")
@@ -232,15 +231,15 @@ class ManualTestingGuide:
                     if 'note' in payload:
                         print(f"\n{Fore.YELLOW}    Note: {payload['note']}")
                     print(f"\n{Fore.CYAN}    2. Tekan Enter untuk load URL")
-                    print(f"    3. Buka console dan jalankan:")
+                    print("    3. Buka console dan jalankan:")
                     print(f"\n{Fore.MAGENTA}       {payload['verify']}")
                     print(f"\n{Fore.CYAN}    4. Expected:")
                     print(f"{Fore.GREEN}       {payload['expected']}\n")
             
             print(f"{Fore.YELLOW}\nOpsi:")
-            print(f"  1. Copy contoh payload")
-            print(f"  2. Kembali ke menu utama")
-            print(f"  0. Exit")
+            print("  1. Copy contoh payload")
+            print("  2. Kembali ke menu utama")
+            print("  0. Exit")
             
             choice = input(f"{Fore.CYAN}Pilih (0-2): {Style.RESET_ALL}").strip()
             
