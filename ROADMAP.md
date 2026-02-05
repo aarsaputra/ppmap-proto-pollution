@@ -16,6 +16,7 @@
 - ✅ HTML/JSON reporting
 - ✅ Async concurrent scanning
 - ✅ Error handling & logging
+- ✅ **MIT License** & Open Source Compliance
 
 ### **Detection Tiers**
 
@@ -60,277 +61,54 @@
 - ✅ Blitz.js RCE Chain (CVE-2022-23631 - superjson)
 - ✅ Elastic XSS (HackerOne #998398)
 
-### **Documentation (5 Files)**
-- ✅ README.md - Main documentation
-- ✅ QUICKSTART.md - 30-second setup
-- ✅ START_HERE_MANUAL_TESTING.txt - Quick intro
-- ✅ MANUAL_TESTING_CHEATSHEET.md - Copy-paste payloads ⭐
-- ✅ MANUAL_TESTING_GUIDE.md - Detailed methodology
-- ✅ MANUAL_TESTING_VIDEO_GUIDE.md - Visual tutorial
-
 ---
 
-## 🚀 PPMAP v4.5 - Future Roadmap
+## 🚀 PPMAP v5.0 - Strategic Roadmap (AI & Community Driven)
 
-Based on community feedback, the next focus will be **Static Analysis** and **Deeper Hybrid Engine Integration**.
+Based on recent comprehensive reviews and AI analysis, the roadmap focuses on **Enterprise Grade Features** and **Ecosystem Integration**.
 
-### 1. Hybrid Scanning Engine (Speed + Accuracy) 🏎️
-- **Concept:** Default to high-speed HTTP requests (ala Go-based tools) for initial reconnaissance.
-- **Mechanism:** Only spawn the heavy Browser Engine (Playwright) when a potential vector is identified or for deep verification.
-- **Benefit:** Drastic reduction in RAM/CPU usage and significantly faster mass-scanning.
+### 1. Performance & Scalability ⚡
+- **Adaptive Rate Limiting:** Implement smart throttling based on server response times to avoid blocking (429/403).
+- **Scanning State/Resume:** Ability to pause/resume long scans (SQLite backend).
+- **Result Caching:** Avoid re-scanning identical endpoints/hashes.
+- **Hybrid Engine v2:** Complete separation of lightweight HTTP fuzzing vs heavy browser verification.
 
-### 2. OOB & Blind Detection (Interact.sh) 👁️
-- **Concept:** Native integration with ProjectDiscovery's interact.sh.
-- **Mechanism:** Add `--oob` flag to inject unique callbacks.
-- **Benefit:** Detect **Blind Server-Side Prototype Pollution** where no visible reflection occurs (the "missing link" in current tools).
+### 2. Detection Accuracy & Logic 🧠
+- **Secondary Verification:** Reduce false positives by automatically verifying findings with a second method (e.g., if behavior check works, try reflection check).
+- **Context-Aware Payloads:** Detect technology stack (Wappalyzer style) and only send relevant payloads (e.g., don't send Node.js payloads to PHP backend).
+- **Correlation Engine:** Chain multiple low-severity findings into high-severity exploitable chains.
 
-### 3. Static Analysis Module (AST/Regex) 📜
-- **Concept:** Analyze JavaScript files (`.js`) statically before dynamic fuzzing.
-- **Mechanism:** Use AST parsing to find known dangerous patterns and gadget chains in source code.
-- **Benefit:** Identify complex attack vectors that require specific user interactions (which dynamic scanners often miss).
+### 3. Integration & Ecosystem 🔗
+- **Bug Bounty Exports:** Native JSON export formats for Jira, HackerOne, and Bugcrowd.
+- **Burp Suite Extension:** Python-based Burp extension (using Jython) to bridge PPMAP with Burp Scanner.
+- **CI/CD Action:** Official GitHub Action for automated pipeline scanning.
 
----
-
-## 🔮 Future Enhancements (Tier 3+)
-
-### **Tier 3 - Advanced Detection** (Not Implemented)
-
-**Dynamic Gadget Discovery**
-- [ ] GALA-style gadget chain analysis
-- [ ] Automatic gadget mapping from JS files
-- [ ] Runtime gadget chain testing
-- [ ] Multi-stage exploitation chains
-
-**Machine Learning Features**
-- [ ] ML-based payload generation
-- [ ] Pattern recognition for new PP vectors
-- [ ] Anomaly detection in responses
-- [ ] Smart payload selection
-
-**Automated Exploitation**
-- [ ] Automatic RCE chain building
-- [ ] Server-side gadget chain execution
-- [ ] Data extraction automation
-- [ ] Privilege escalation chains
-
-### **Tier 4 - Integration & Tools**
-
-**Integration Support**
-- [ ] Burp Suite plugin/extension
-- [ ] OWASP ZAP integration
-- [ ] API endpoint for CI/CD
-- [ ] Docker containerization
-
-**Advanced Reporting**
-- [ ] Real-time dashboard
-- [ ] Slack/Teams notifications
-- [ ] CVE scoring automation
-- [ ] Remediation recommendations
-
-**Additional Frameworks**
-- [ ] Angular/TypeScript PP
-- [ ] Vue.js specific vectors
-- [ ] Webpack/bundler-specific
-- [ ] WebAssembly gadget chains
+### 4. Advanced & Experimental 🧪
+- **Machine Learning Payloads:** Train model on successful bug bounty reports to generate mutant payloads.
+- **TUI (Terminal UI):** Rich console interface with live progress bars (using `rich` library).
+- **Team Collaboration:** Shared result database for red teams.
 
 ---
 
 ## 📈 Version History
 
-**v4.0** (Current - Feb 04, 2026)
-- ✅ **Major Release: Blind Detection**
-- ✅ Native Interact.sh Integration (`--oob`)
-- ✅ Blind Server-Side Prototype Pollution Payload Database
-- ✅ Hybrid Scanner Robustness (Elastic XSS/Selenium Fixes)
-- ✅ Fallback Error Handling for Network Issues
+**v4.0.0** (Feb 05, 2026)
+- ✅ Final Polish: Comprehensive Code Cleanup
+- ✅ Open Source Release (MIT License)
+- ✅ Complete PortSwigger Workflow Integration
+- ✅ Full CLI Documentation
 
 **v3.7** (Jan 30, 2026)
 - ✅ Tier 1-4 complete
-- ✅ 21 detection methods
-- ✅ 100% PortSwigger coverage + External Research
+- ✅ 100% PortSwigger coverage
 - ✅ 2024/2025 bug bounty research
-- ✅ Blind Gadget Fuzzer integration
-- ✅ Production ready
-- ✅ Comprehensive documentation
 
-**v3.3** (Jan 29, 2026)
-- ✅ Tier 3 PortSwigger techniques
-- ✅ fetch(), defineProperty, child_process
-
-**v3.2** (Jan 23, 2026)
-- ✅ Tier 1 & Tier 2 complete
-- ✅ 13 detection methods
-
-**v3.1** (Jan 22, 2026)
-- ✅ Tier 1 implementation
-- ✅ Blind detection methods
-- ✅ Function.prototype chains
-
-**v3.0** (Jan 21, 2026)
-- ✅ Advanced features merged
-- ✅ WAF bypass expansion
-
-**v2.0** (Jan 20, 2026)
-- ✅ Initial release
-- ✅ Basic PP detection
-- ✅ jQuery testing
+... (Previous versions archived)
 
 ---
 
-## 🎯 Performance Metrics
-
-- **Scan Time:** ~20 seconds per target
-- **Payload Testing:** 218+ payloads
-- **Detection Methods:** 21 active
-- **Success Rate:** 95%+ detection on vulnerable targets
-- **False Positives:** <5%
-- **Memory Usage:** ~200-300MB per scan
-
----
-
-## 📋 Known Limitations
-
-1. **Browser Automation:** Requires Chrome/Chromium
-2. **Obfuscated Code:** Limited support for heavily minified JS
-3. **Single-Page Apps:** May miss some client-side PP vectors
-4. **Authentication:** Basic auth support only
-5. **Rate Limiting:** No built-in rate limiting (server-dependent)
-
----
-
-## 🔧 Configuration
-
-### **Customizable via config.yaml**
-
-```yaml
-scanner:
-  max_workers: 10
-  timeout: 30
-  headless: true
-  
-targets:
-  - urls: []
-  - custom_headers: {}
-  
-payloads:
-  - enable_tier0: true
-  - enable_tier1: true
-  - enable_tier2: true
-  
-reports:
-  - format: html,json
-  - output_dir: ./report
-```
-
----
-
-## 💡 Recommended Next Steps
-
-### For Users (Now)
-1. ✅ Read README.md
-2. ✅ Use MANUAL_TESTING_CHEATSHEET.md for quick testing
-3. ✅ Run: `python3 ppmap.py --scan "https://target.com"`
-4. ✅ Review HTML report
-
-### For Contributors (Future)
-1. Implement Tier 3 advanced detection
-2. Add ML-based payload generation
-3. Create Burp Suite integration
-4. Build REST API for CI/CD
-5. Expand framework coverage
-
-### For Maintainers (Long-term)
-1. Monitor new PP CVEs
-2. Update payload database
-3. Optimize detection algorithms
-4. Improve performance
-5. Expand framework support
-
----
-
-## 🎓 Research & References
-
-**Implemented Research:**
-- [hasil_deepsearch.md](hasil_deepsearch.md) - Comprehensive PP research
-
-**External Resources:**
-- OWASP Prototype Pollution
-- PortSwigger Security Research
-- PayloadsAllTheThings
-- GitHub Security Research
-
----
-
-## 🚀 Deployment
-
-### **Quick Deployment**
-```bash
-cd /home/lota1337/python/pentest_proto
-pip install -r requirements.txt
-python3 ppmap.py --scan "https://target.com"
-```
-
-### **Docker (Future)**
-```bash
-docker build -t ppmap:3.2 .
-docker run --rm ppmap:3.2 --scan "https://target.com"
-```
-
-### **CI/CD Integration (Future)**
-```yaml
-# GitHub Actions example
-- name: PP Vulnerability Scan
-  run: python3 ppmap.py --scan ${{ secrets.TARGET_URL }}
-```
-
----
-
-## 📞 Support & Contact
-
-### Issues?
-1. Check documentation files
-2. Review inline code comments
-3. Check ppmap.py for implementation details
-
-### Contributions?
-1. Feature requests welcome
-2. Please document changes
-3. Test before submitting
-
----
-
-## 📜 License & Disclaimer
-
-**For Authorized Testing Only**
-
-This tool is designed for:
-- ✅ Authorized security assessments
-- ✅ Vulnerability research
-- ✅ Educational purposes
-
-This tool is NOT designed for:
-- ❌ Unauthorized testing
-- ❌ Production exploitation
-- ❌ Illegal activities
-
----
-
-## 🎉 Project Summary
-
-**PPMAP v3.5** is a **production-ready** Prototype Pollution scanner offering:
-
-- 21 detection methods covering 100% of PortSwigger techniques + External Research
-- 218+ comprehensive payloads
-- 2024/2025 bug bounty research integration
-- Blind Gadget Fuzzer (pp-finder/BlackFan/Yuske)
-- Modern framework support (React, Next.js, SvelteKit)
-- Professional HTML/JSON reporting
-- Complete user documentation
-- Clean, maintainable codebase
-
-**Status:** ✅ READY FOR PRODUCTION USE
-
----
-
-Last Updated: January 30, 2026
-Next Review: Q2 2026
+## 🎯 Community & Contribution
+We welcome contributions! See `CONTRIBUTING.md` for details.
+- **Bug Reports:** GitHub Issues
+- **Feature Requests:** Discussions
+- **Security Research:** Submit new vectors
