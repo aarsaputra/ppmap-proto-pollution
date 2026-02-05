@@ -1,4 +1,3 @@
-import re
 from typing import Optional, Dict
 import requests
 from bs4 import BeautifulSoup
@@ -59,7 +58,6 @@ def transfer_cookies_to_driver(session: requests.Session, driver, domain: str):
     Domain should be like 'https://example.com'. The driver must have visited the domain first.
     """
     try:
-        parsed = domain
         # Selenium requires domain without path when adding cookies; ensure driver at domain
         for c in session.cookies:
             cookie = {

@@ -10,15 +10,12 @@ import requests
 import re
 import json
 import time
-import random
-from typing import List, Dict, Any, Set, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, urljoin
 from bs4 import BeautifulSoup
 from requests import RequestException
-from dataclasses import dataclass, field
 
 from .models import Finding, VulnerabilityType, Severity
-from .utils import normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -458,10 +455,12 @@ class CompleteSecurityScanner:
                 def _search(obj):
                     if isinstance(obj, dict):
                         for v in obj.values():
-                            if _search(v): return True
+                            if _search(v):
+                                return True
                     elif isinstance(obj, list):
                         for v in obj:
-                            if _search(v): return True
+                            if _search(v):
+                                return True
                     else:
                         return str(obj) == marker or (isinstance(obj, str) and marker in obj)
                     return False
@@ -566,7 +565,7 @@ class CompleteSecurityScanner:
                            verified=True,
                            note="Confirmed blind RCE/SSRF via Prototype Pollution"
                        ))
-                       logging.critical(f"[!] CRITICAL: OOB Interaction received! Blind PP Confirmed.")
+                       logging.critical("[!] CRITICAL: OOB Interaction received! Blind PP Confirmed.")
             except Exception as e:
                 logger.debug(f"OOB test error: {e}")
 
