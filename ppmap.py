@@ -2418,10 +2418,24 @@ class CompleteSecurityScanner:
                                 if hasattr(self, 'driver') and self.driver:
                                     try:
                                         print(f"{Colors.BOLD}[*] Verifying Constructor PP with Browser...{Colors.ENDC}")
-                                        self.driver.get(test_url)
-                                        # Check pollution
-                                        check_script = "return Object.prototype.polluted || Object.prototype.constructor_test || Object.prototype.isAdmin || Object.prototype.role;"
-                                        is_polluted = self.driver.execute_script(check_script)
+                                        
+                                        # Retry logic for browser navigation
+                                        max_retries = 2
+                                        is_polluted = False
+                                        
+                                        for attempt in range(max_retries):
+                                            try:
+                                                self.driver.get(test_url)
+                                                time.sleep(2) # Stability wait
+                                                
+                                                # Check pollution
+                                                check_script = "return Object.prototype.polluted || Object.prototype.constructor_test || Object.prototype.isAdmin || Object.prototype.role;"
+                                                is_polluted = self.driver.execute_script(check_script)
+                                                break # Success
+                                            except Exception as nav_err:
+                                                if attempt == max_retries - 1:
+                                                    raise nav_err
+                                                time.sleep(1)
                                         
                                         if not is_polluted:
                                              print(f"{Colors.YELLOW}[!] Browser Verification Failed: Object.prototype not polluted.{Colors.ENDC}")
@@ -2433,7 +2447,7 @@ class CompleteSecurityScanner:
                                              findings[-1]['verified'] = True
                                              return findings
                                     except Exception as ex:
-                                        print(f"Browser verify error: {ex}")
+                                        print(f"{Colors.YELLOW}[⚠] Browser verify skipped: {str(ex)[:100]}{Colors.ENDC}")
                                 
                                 print(f"{Colors.FAIL}[!] CRITICAL: Constructor-based pollution detected (Response Check)!{Colors.ENDC}")
                                 return findings  # Return early on first finding
