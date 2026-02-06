@@ -120,7 +120,7 @@ A comprehensive automated scan was conducted on `*.domainesia.com` subdomains to
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     print(f"Report successfully generated at: {os.path.abspath(output_file)}")
 
