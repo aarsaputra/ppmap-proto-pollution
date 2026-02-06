@@ -3,6 +3,8 @@ from pathlib import Path
 import csv
 from datetime import datetime
 import logging
+from urllib.parse import urlparse
+import re
 logger = logging.getLogger(__name__)
 
 
@@ -10,6 +12,19 @@ class EnhancedReportGenerator:
     def __init__(self, output_dir: str = './reports'):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+    
+    def _sanitize_domain(self, target_url: str) -> str:
+        """Extract and sanitize domain from target URL for directory naming."""
+        try:
+            parsed = urlparse(target_url)
+            domain = parsed.netloc or parsed.path.split('/')[0]
+            # Remove www., port, and invalid chars
+            domain = domain.replace('www.', '').split(':')[0]
+            domain = re.sub(r'[^a-zA-Z0-9.-]', '_', domain)
+            domain = domain.replace('.', '_')
+            return domain or 'unknown_target'
+        except Exception:
+            return 'unknown_target'
 
     def generate_csv_report(self, findings: list, filename: str = None) -> str:
         if not findings:
@@ -115,13 +130,25 @@ class EnhancedReportGenerator:
             return ''
 
     def generate_all_formats(self, findings: list, target: str = '', formats: list = None) -> dict:
-        """Generate multiple report formats and return dict of created file paths."""
+        """Generate multiple report formats and return dict of created file paths.
+        Creates target-specific subdirectory: reports/DOMAIN_TIMESTAMP/
+        """
         if formats is None:
             # Default to JSON and HTML as per enterprise standard
             formats = ['json', 'html']
             
         generated = {}
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Create target-specific subdirectory
+        domain = self._sanitize_domain(target)
+        date_str = datetime.now().strftime('%Y%m%d')
+        target_dir = self.output_dir / f"{domain}_{date_str}"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Update output_dir for this generation cycle
+        original_output_dir = self.output_dir
+        self.output_dir = target_dir
 
         if 'json' in formats:
             try:
@@ -147,5 +174,8 @@ class EnhancedReportGenerator:
             html = self.generate_html_report(findings, target, f"report_{timestamp}.html")
             if html:
                 generated['html'] = html
-
+        
+        # Restore original output_dir
+        self.output_dir = original_output_dir
+        
         return generated
