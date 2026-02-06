@@ -15,7 +15,7 @@ print("""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
 print(f"Scanning {SOURCE_DIR}...")
 
