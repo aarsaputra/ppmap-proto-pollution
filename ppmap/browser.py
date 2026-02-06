@@ -147,6 +147,12 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
         opts.add_argument("--disable-gpu")
+        # Stealth and Stability
+        opts.add_argument("--disable-blink-features=AutomationControlled")
+        opts.add_argument("--disable-extensions")
+        opts.add_argument("--ignore-certificate-errors")
+        # Modern User-Agent to avoid simple bot detection
+        opts.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
         try:
             logger.info("Attempting to use CHROMIUM driver")
