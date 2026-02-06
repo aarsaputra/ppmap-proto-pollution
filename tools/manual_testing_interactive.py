@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PPMAP v3.4.0 - Manual Testing Interactive Guide
+PPMAP v4.0.0 - Manual Testing Interactive Guide
 Memandu pengguna untuk testing manual hasil scan di browser console
 """
 
@@ -158,7 +158,7 @@ class ManualTestingGuide:
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
         print(f"{Fore.CYAN}              INTERACTIVE MANUAL TESTING GUIDE")
         print(f"{Fore.CYAN}{'='*70}\n")

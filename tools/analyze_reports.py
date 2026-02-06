@@ -53,7 +53,7 @@ def analyze_reports():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v3.7.0 Enterprise (Scanner | Browser | 0-Day)
+   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     print(f"{'Target':<40} | {'Type':<30} | {'Severity':<10}")
     print("-" * 125)
