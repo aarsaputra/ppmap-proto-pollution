@@ -121,6 +121,12 @@ open report/target_domain_timestamp/report.html
 ✅ **PortSwigger Techniques** - fetch(), defineProperty, child_process RCE  
 ✅ **Async Scanning** - Fast concurrent testing  
 
+### 🚀 New in v4.0.0 (Enterprise)
+- ✅ **Stealth Browser Engine**: Automatic anti-bot evasion (User-Agent rotation, hidden webdriver flags).
+- ✅ **Reliable Reporting**: Fixed HTML/JSON generation defaults and custom output directory support.
+- ✅ **Stability**: Resolved "aborted by navigation" errors for real-world targets.
+- ✅ **Open Source**: Full MIT License and CLI Documentation.
+
 ---
 
 ## 🎯 CVEs Covered (15)
@@ -231,26 +237,17 @@ open report/example_com_20260123_100000/report.html
 ### **Stealth & Bypass**
 | Flag | Description | Usage |
 |------|-------------|-------|
-| `--stealth` | Enable anti-bot/WAF evasion mode | `--stealth` |
+| `--stealth` | Enable anti-bot/WAF evasion mode (Automatic UA rotation, Anti-Automation flags) | `--stealth` |
 | `--delay N` | Delay between requests (seconds) | `--delay 2` |
 | `--rate-limit N` | Max requests per minute | `--rate-limit 60` |
-| `--user-agent STR` | Custom User-Agent string | `--user-agent "MyScanner/1.0"` |
+| `--user-agent STR` | Custom User-Agent string (Default: Modern Chrome 120.0) | `--user-agent "MyScanner/1.0"` |
 | `--proxy URL` | Use HTTP/S proxy | `--proxy http://127.0.0.1:8080` |
-
-### **Feature Toggles**
-| Flag | Description |
-|------|-------------|
-| `--disable-jquery-pp` | Skip jQuery specific tests |
-| `--disable-xss` | Skip XSS payload injection |
-| `--disable-waf-bypass` | Skip WAF bypass payloads |
-| `--oob` | Enable Out-of-Band checks (Interact.sh) |
-| `--verify-ssl` / `--insecure` | Toggle SSL certificate verification |
 
 ### **Reporting**
 | Flag | Description |
 |------|-------------|
 | `--output DIR` | Directory to save reports (default: `reports/`) |
-| `--format FMT` | Output formats: `json,html,markdown,pdf` |
+| `--format FMT` | Output formats: `json,html` (default), `csv,markdown` |
 | `--template TPL` | HTML template: `modern` (default) or `minimal` |
 | `--no-poc` | Exclude Proof-of-Concept strings from report |
 
