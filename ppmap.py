@@ -3608,6 +3608,31 @@ class CompleteSecurityScanner:
                 self.metrics.frameworks_detected = [d['framework'] for d in detected]
             except Exception as e:
                 print(f"{Colors.WARNING}[!] Fingerprinting failed: {e}{Colors.ENDC}")
+
+        # -------------------------------------------------------------------------
+        # ADVANCED VERSION DETECTION (JS-Based)
+        # -------------------------------------------------------------------------
+        # Detect exact jQuery version via browser execution (more reliable than static analysis)
+        try:
+            js_version = self.driver.execute_script("return (window.jQuery && window.jQuery.fn && window.jQuery.fn.jquery) || (window.$ && window.$.fn && window.$.fn.jquery);")
+            if js_version:
+                print(f"{Colors.CYAN}[*] JS Execution confirmed: jQuery v{js_version}{Colors.ENDC}")
+                # Update/Override framework list with exact version
+                found = False
+                for d in detected:
+                    if d['framework'] == 'jquery':
+                        d['confidence'] = 100
+                        d['version'] = js_version
+                        found = True
+                        break
+                if not found:
+                    detected.append({'framework': 'jquery', 'confidence': 100, 'version': js_version})
+                    # Re-prioritize since we found new framework
+                    priority = get_priority_payloads(detected)
+                    if priority:
+                        print(f"{Colors.GREEN}[+] Re-prioritize payloads: jQuery v{js_version} detected!{Colors.ENDC}")
+        except Exception:
+            pass
         
         all_findings = []
         try:
@@ -4550,10 +4575,10 @@ ADVANCED OPTIONS:
     if args.disable_discovery:
         PPMAP_CONFIG['testing']['endpoint_discovery'] = False
     
-    # Reporting config
-    PPMAP_CONFIG['reporting']['output_dir'] = args.output
-    PPMAP_CONFIG['reporting']['format'] = [f.strip() for f in args.format.split(',')]
-    PPMAP_CONFIG['reporting']['template'] = args.template
+    # Reporting config handled above
+    # PPMAP_CONFIG['reporting']['template'] = args.template
+    if args.template:
+        PPMAP_CONFIG['reporting']['template'] = args.template
     PPMAP_CONFIG['reporting']['include_poc'] = not args.no_poc
     
     # Async config
