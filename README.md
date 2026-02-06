@@ -208,8 +208,8 @@ python3 ppmap.py --scan "https://example.com" --oob --headless
 
 ### View HTML Report
 ```bash
-# Reports saved in report/domain_timestamp/
-open report/example_com_20260123_100000/report.html
+# Reports automatically organized: reports/DOMAIN_DATE/
+open reports/example_com_20260206/report_20260206_120000.html
 ```
 
 ---
@@ -246,10 +246,13 @@ open report/example_com_20260123_100000/report.html
 ### **Reporting**
 | Flag | Description |
 |------|-------------|
-| `--output DIR` | Directory to save reports (default: `reports/`) |
+| `--output DIR` | Base directory for reports (default: `reports/`). Reports auto-organized into subdirectories: `DOMAIN_DATE/` |
 | `--format FMT` | Output formats: `json,html` (default), `csv,markdown` |
 | `--template TPL` | HTML template: `modern` (default) or `minimal` |
 | `--no-poc` | Exclude Proof-of-Concept strings from report |
+
+**Report Organization:** Reports are automatically saved to target-specific subdirectories:  
+`reports/example_com_20260206/report_20260206_120000.json`
 
 ---
 
