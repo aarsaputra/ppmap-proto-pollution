@@ -1,20 +1,81 @@
-# Dockerfile for running QuickPoC with Playwright (includes browsers)
-# Base image with Python and Playwright browsers preinstalled
-FROM mcr.microsoft.com/playwright/python:latest
+# PPMAP v5.0 Multi-stage Dockerfile
+# Optimized for smaller production image size
 
-LABEL version="4.0.0" \
+# ==============================================================================
+# Stage 1: Builder - Install dependencies and create wheel cache
+# ==============================================================================
+FROM python:3.11-slim AS builder
+
+LABEL stage="builder"
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Create wheels for all dependencies
+RUN pip wheel --no-cache-dir --wheel-dir=/wheels -r requirements.txt
+
+
+# ==============================================================================
+# Stage 2: Production - Slim runtime with pre-built wheels
+# ==============================================================================
+FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy AS production
+
+LABEL version="5.0.0" \
     description="PPMAP Prototype Pollution Scanner - QuickPoC Runner" \
-    maintainer="aarsaputra"
+    maintainer="aarsaputra" \
+    org.opencontainers.image.source="https://github.com/aarsaputra/ppmap-proto-pollution"
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY . /usr/src/app
+# Copy pre-built wheels from builder stage
+COPY --from=builder /wheels /wheels
 
-# Install Python deps
-RUN python -m pip install --upgrade pip
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+# Install dependencies from wheels (faster, no compilation)
+RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* \
+    && rm -rf /wheels
 
-# Ensure Playwright browsers are installed (image may already include them)
-RUN playwright install --with-deps || true
+# Copy application code
+COPY ppmap/ /app/ppmap/
+COPY utils/ /app/utils/
+COPY tools/ /app/tools/
+COPY ppmap.py /app/
+COPY config.yaml /app/
+COPY requirements.txt /app/
 
+# Ensure Playwright browsers are ready
+RUN playwright install chromium --with-deps || true
+
+# Create non-root user for security
+RUN useradd -m -s /bin/bash ppmap && chown -R ppmap:ppmap /app
+USER ppmap
+
+# Default entrypoint for QuickPoC
 ENTRYPOINT ["python3", "tools/quickpoc_local.py"]
+
+# Default command shows help
+CMD ["--help"]
+
+
+# ==============================================================================
+# Stage 3 (Optional): Development - Full dev environment
+# ==============================================================================
+FROM production AS development
+
+USER root
+
+# Install dev dependencies
+RUN pip install --no-cache-dir pytest pytest-cov ruff
+
+# Switch back to non-root
+USER ppmap
+
+# Override entrypoint for dev
+ENTRYPOINT ["/bin/bash"]
