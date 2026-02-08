@@ -74,11 +74,11 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 - [x] **Extended Unit Tests:** Increase code coverage >80%. ✅ (72 tests added)
 - [x] **Docker Improvement:** Multi-stage build with slimmer image. ✅
 
-### **Phase 2: Expansion (3-4 Months)** 🌍
+### **Phase 2: Expansion (3-4 Months)** 🌍 ⏳ IN PROGRESS
 *Focus: Broadening Attack Surface Coverage*
-- [ ] **GraphQL & WebSocket PP:** Support for modern API patterns.
+- [x] **GraphQL & WebSocket PP:** Support for modern API patterns. ✅
 - [ ] **Mobile App Testing:** Support for React Native/Capacitor/Ionic apps.
-- [ ] **SAST Mode:** Static Code Analysis integration (scaning `.js` files without execution).
+- [x] **SAST Mode:** Static Code Analysis integration (scaning `.js` files without execution). ✅
 - [ ] **Burp Suite Support:** Extension for direct integration.
 
 ### **Phase 3: Intelligence (5-6 Months)** 🧠
