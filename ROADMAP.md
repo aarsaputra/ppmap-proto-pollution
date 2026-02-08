@@ -69,10 +69,10 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 
 ### **Phase 1: Stabilization (1-2 Months)** 🛡️
 *Focus: Robustness, Speed, and False Positive Reduction*
-- [ ] **False Positive Reduction Engine:** Secondary verification logic (Context-aware validation).
+- [x] **False Positive Reduction Engine:** Secondary verification logic (Context-aware validation). ✅
 - [ ] **Performance Optimization:** Dynamic worker scaling based on system resources.
-- [ ] **Extended Unit Tests:** Increase code coverage >80%.
-- [ ] **Docker Improvement:** Slimmer image with multi-stage build.
+- [x] **Extended Unit Tests:** Increase code coverage >80%. ✅ (56 tests added)
+- [x] **Docker Improvement:** Multi-stage build with slimmer image. ✅
 
 ### **Phase 2: Expansion (3-4 Months)** 🌍
 *Focus: Broadening Attack Surface Coverage*
@@ -91,10 +91,10 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 ---
 
 ## ⚡ Quick Wins (Immediate To-Do)
-- [ ] **CLI Auto-completion:** Add `argcomplete` support.
-- [ ] **Progress Visualization:** Implement `tqdm` for scan progress.
-- [ ] **Result Diffing:** Add `--diff` flag to compare two scans.
-- [ ] **Config Presets:** `quick`, `thorough`, `stealth` profiles.
+- [x] **CLI Auto-completion:** Add `argcomplete` support. ✅ (Implemented)
+- [x] **Progress Visualization:** Implement `tqdm` for scan progress. ✅ (Implemented)
+- [x] **Result Diffing:** Add `--diff` flag to compare two scans. ✅ (Implemented)
+- [x] **Config Presets:** `quick`, `thorough`, `stealth` profiles. ✅ (Implemented)
 
 ---
 
