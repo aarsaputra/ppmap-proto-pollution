@@ -139,11 +139,76 @@ open report/target_domain_timestamp/report.html
 ✅ **PortSwigger Techniques** - fetch(), defineProperty, child_process RCE  
 ✅ **Async Scanning** - Fast concurrent testing  
 
-### 🚀 New in v4.0.0 (Enterprise)
-- ✅ **Stealth Browser Engine**: Automatic anti-bot evasion (User-Agent rotation, hidden webdriver flags).
-- ✅ **Reliable Reporting**: Fixed HTML/JSON generation defaults and custom output directory support.
-- ✅ **Stability**: Resolved "aborted by navigation" errors for real-world targets.
-- ✅ **Open Source**: Full MIT License and CLI Documentation.
+### 🚀 New in v5.0.0
+
+#### GraphQL Scanner
+```python
+from ppmap.graphql import GraphQLScanner, scan_graphql
+
+# Quick scan
+results = scan_graphql("https://target.com")
+
+# Advanced usage
+scanner = GraphQLScanner(timeout=10)
+endpoint = scanner.detect_graphql_endpoint("https://target.com")
+if endpoint:
+    schema = scanner.introspect_schema(endpoint)
+    findings = scanner.test_mutation_pp(endpoint)
+```
+
+#### WebSocket Scanner
+```python
+from ppmap.websocket import WebSocketScanner, scan_websocket
+
+# Quick scan
+results = scan_websocket("wss://target.com/ws")
+
+# Advanced with Socket.IO
+scanner = WebSocketScanner()
+findings = scanner.scan_socketio("https://target.com")
+```
+
+#### SAST Mode (Static Analysis)
+```python
+from ppmap.sast import SASTScanner, scan_js
+
+# Scan single file
+findings = scan_js("/path/to/app.js")
+
+# Scan directory
+scanner = SASTScanner(include_low_severity=True)
+findings = scanner.scan_directory("/path/to/project")
+report = scanner.generate_report(findings)
+```
+
+#### Mobile App Scanner
+```python
+from ppmap.mobile import MobileAppScanner, scan_mobile_app
+
+# Scan APK
+results = scan_mobile_app("/path/to/app.apk")
+
+# Scan IPA
+results = scan_mobile_app("/path/to/app.ipa")
+
+# Advanced with Frida runtime monitoring
+from ppmap.mobile import FridaIntegration
+frida = FridaIntegration("com.target.app")
+if frida.connect():
+    frida.start_monitoring()
+    # Interact with app...
+    findings = frida.get_findings()
+    frida.stop()
+```
+
+### v5.0.0 Feature Summary
+- ✅ **GraphQL PP Scanner**: Auto-detect endpoints, schema introspection, mutation/query testing
+- ✅ **WebSocket PP Scanner**: Native WS and Socket.IO support
+- ✅ **SAST Mode**: Static JS analysis, 15+ dangerous sinks, CVE mapping
+- ✅ **Mobile Scanner**: APK/IPA analysis, React Native/Capacitor/Ionic detection
+- ✅ **False Positive Engine**: Secondary verification, confidence scoring
+- ✅ **Performance Optimization**: Dynamic worker scaling, resource monitoring
+- ✅ **114 Unit Tests**: 100% pass rate
 
 ---
 
