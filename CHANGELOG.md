@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.0] - 2026-02-08 (Phase 1 & 2 Complete)
+
+### Added - Phase 1: Stabilization ✅
+- **False Positive Reduction Engine** (`ppmap/fp_engine.py`)
+  - `FalsePositiveEngine` class with secondary verification
+  - `is_reflected_param()` - Detects reflection vs pollution
+  - `calculate_confidence()` - Scoring system (0-100)
+  - `filter_findings()` - Separates confirmed from FP
+- **Performance Optimization** (`ppmap/performance.py`)
+  - `DynamicWorkerScaler` - Auto CPU/memory scaling
+  - `adaptive_parallel_map()` - Concurrent scan execution
+  - System resource monitoring
+- **Unit Test Coverage** - 97 tests (100% pass rate)
+  - `test_fp_engine.py` (25 tests)
+  - `test_performance.py` (16 tests)
+  - `test_graphql.py` (10 tests)
+  - `test_sast.py` (15 tests)
+  - `test_scanner.py` (15 tests)
+  - `test_browser.py` (16 tests)
+- **Docker Multi-stage Build** - 3-stage Dockerfile (builder/production/dev)
+
+### Added - Phase 2: Expansion ⏳
+- **GraphQL PP Scanner** (`ppmap/graphql.py`)
+  - `GraphQLScanner` class with endpoint auto-detection
+  - Schema introspection support
+  - Mutation and query PP injection testing
+  - 8 GraphQL-specific payloads
+- **WebSocket PP Scanner** (`ppmap/websocket.py`)
+  - `WebSocketScanner` with async support
+  - Socket.IO, Redux, GraphQL subscription payloads
+  - Response pollution analysis
+- **SAST Mode** (`ppmap/sast.py`)
+  - Static JS analysis without execution
+  - 15+ dangerous sink patterns
+  - jQuery, Lodash, native JS coverage
+  - CVE mapping (CVE-2019-11358, CVE-2018-16487, etc.)
+
+### Added - Lab v2.0
+- **Tier 7: GraphQL PP** - 6 vulnerable endpoints (3 mutations, 3 queries)
+- **Tier 8: WebSocket PP** - Native WS + Socket.IO endpoints
+- Lab now at: 20 endpoints, 8 tiers, 32 detection methods
+
+### Changed
+- Upgraded to v5.0.0 across codebase
+- CI pipeline tests now 100% passing
+
+---
+
 ## [4.0.0] - 2026-02-08 (Enterprise Edition)
 
 ### Added

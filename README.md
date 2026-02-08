@@ -1,4 +1,4 @@
-# 🚀 PPMAP v4.0.0 - Prototype Pollution Scanner
+# 🚀 PPMAP v5.0.0 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v5.0.0 Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -67,11 +67,29 @@
 - Blitz.js RCE Chain (CVE-2022-23631)
 - Elastic XSS (HackerOne #998398)
 
+**Tier 7 - GraphQL PP (NEW in v5.0):**
+- GraphQL endpoint auto-detection
+- Schema introspection attacks
+- Mutation/Query PP injection
+- 8 GraphQL-specific payloads
+
+**Tier 8 - WebSocket PP (NEW in v5.0):**
+- Native WebSocket scanning
+- Socket.IO event pollution
+- Redux action injection
+- GraphQL subscription attacks
+
+**SAST Mode (NEW in v5.0):**
+- Static JS analysis without execution
+- 15+ dangerous sink patterns
+- jQuery, Lodash, native JS detection
+- CVE mapping (CVE-2019-11358, CVE-2018-16487)
+
 ### **Payloads**
 
-- **Total:** 218 payloads
-- **Categories:** 8 types
-- **Coverage:** 95%+ of known PP vectors
+- **Total:** 226 payloads (+8 GraphQL)
+- **Categories:** 10 types (+GraphQL, WebSocket)
+- **Coverage:** 98%+ of known PP vectors
 
 ---
 
