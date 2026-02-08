@@ -77,7 +77,7 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 ### **Phase 2: Expansion (3-4 Months)** 🌍 ⏳ IN PROGRESS
 *Focus: Broadening Attack Surface Coverage*
 - [x] **GraphQL & WebSocket PP:** Support for modern API patterns. ✅
-- [ ] **Mobile App Testing:** Support for React Native/Capacitor/Ionic apps.
+- [x] **Mobile App Testing:** Support for React Native/Capacitor/Ionic apps. ✅
 - [x] **SAST Mode:** Static Code Analysis integration (scaning `.js` files without execution). ✅
 - [ ] **Burp Suite Support:** Extension for direct integration.
 
