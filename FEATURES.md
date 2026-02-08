@@ -1,7 +1,7 @@
-# 📚 PPMAP v3.5 - Complete Feature Guide
+# 📚 PPMAP v4.0.0 - Complete Feature Guide
 
-**Version:** 3.5.0  
-**Last Updated:** January 31, 2026  
+**Version:** 4.0.0 Enterprise  
+**Last Updated:** February 8, 2026  
 **Quick Navigation:** [Detection Methods](#detection-methods) | [Usage Examples](#usage-examples) | [Lab Testing](#lab-testing) | [Documentation](#documentation)
 
 ---
@@ -373,6 +373,6 @@ python3 ppmap.py --scan http://localhost:3000
 
 ---
 
-**Last Updated:** January 31, 2026  
-**Version:** 3.5.0  
+**Last Updated:** February 8, 2026  
+**Version:** 4.0.0 Enterprise  
 **Status:** Production Ready ✅
