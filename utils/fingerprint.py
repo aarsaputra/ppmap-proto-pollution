@@ -1,5 +1,5 @@
 """
-Framework Fingerprinting Module for PPMAP v3.4.0
+Framework Fingerprinting Module for PPMAP v4.0.0
 Auto-detect web frameworks to prioritize relevant payloads
 """
 
