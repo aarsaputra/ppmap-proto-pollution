@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 15+ dangerous sink patterns
   - jQuery, Lodash, native JS coverage
   - CVE mapping (CVE-2019-11358, CVE-2018-16487, etc.)
+- **Mobile App Scanner** (`ppmap/mobile.py`)
+  - `MobileAppScanner` class for APK/IPA analysis
+  - Framework detection (React Native, Capacitor, Ionic, Cordova)
+  - 9 mobile-specific danger patterns
+  - WebView configuration scanning
+  - `FridaIntegration` for runtime PP monitoring
 
 ### Added - Lab v2.0
 - **Tier 7: GraphQL PP** - 6 vulnerable endpoints (3 mutations, 3 queries)
