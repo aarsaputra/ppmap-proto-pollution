@@ -2,6 +2,10 @@
 # Base image with Python and Playwright browsers preinstalled
 FROM mcr.microsoft.com/playwright/python:latest
 
+LABEL version="4.0.0" \
+    description="PPMAP Prototype Pollution Scanner - QuickPoC Runner" \
+    maintainer="aarsaputra"
+
 WORKDIR /usr/src/app
 
 COPY . /usr/src/app

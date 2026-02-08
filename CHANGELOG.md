@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.0.0] - 2026-02-08 (Enterprise Edition)
+
+### Added
+- **Stealth Browser Engine** - Automatic anti-bot evasion (User-Agent rotation, hidden webdriver flags)
+- **Target-Specific Reports** - Reports now save to `reports/DOMAIN_DATE/` subdirectories
+- **Constructor PP Retry Logic** - Improved browser stability with 2-retry mechanism
+- **jQuery JS Detection** - Accurate version detection via browser execution
+- **OOB Callback Server** - Out-of-band detection capabilities
+
+### Fixed
+- Browser navigation "aborted by navigation" errors
+- Report generation HTML/JSON defaults
+- Version string synchronization across all files
+
+### Changed
+- Upgraded to v4.0.0 Enterprise across entire codebase
+- Modernized User-Agent strings (Chrome 120.0)
+- Improved error handling with graceful fallbacks
+
+---
+
 ## [3.5.0] - 2026-01-31
 
 ### Added - Phase 1 (Research Gap Features)
@@ -164,6 +185,6 @@ Author assumes NO liability for misuse or damages.
 
 ---
 
-**Current Version**: 3.5.0  
-**Last Updated**: January 31, 2026  
-**Next Release**: v3.6.0 (Planned - ML-based detection, Dynamic gadget discovery)
+**Current Version**: 4.0.0 Enterprise  
+**Last Updated**: February 8, 2026  
+**Next Release**: v4.1.0 (Planned - ML-based detection, Dynamic gadget discovery)
