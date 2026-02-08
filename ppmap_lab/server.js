@@ -5,9 +5,20 @@ const _ = require('lodash');
 const deepMerge = require('@75lb/deep-merge');
 const { exec, spawn } = require('child_process');
 const path = require('path');
+const http = require('http');
+
+// GraphQL imports
+const { ApolloServer, gql } = require('apollo-server-express');
+
+// WebSocket imports
+const WebSocket = require('ws');
+const { Server: SocketIO } = require('socket.io');
 
 const app = express();
 const PORT = 3000;
+
+// Create HTTP server for WebSocket support
+const server = http.createServer(app);
 
 // Middleware
 app.use(bodyParser.json());
@@ -324,36 +335,225 @@ app.get('/elastic', (req, res) => {
 });
 
 // ============================================
+// TIER 7 - GRAPHQL PP VULNERABILITIES
+// ============================================
+
+// GraphQL Schema with PP vulnerabilities
+const typeDefs = gql`
+    scalar JSON
+    
+    type User {
+        id: ID!
+        name: String
+        email: String
+        isAdmin: Boolean
+        role: String
+    }
+    
+    type Config {
+        success: Boolean
+        data: JSON
+        prototype: JSON
+    }
+    
+    input UserInput {
+        name: String
+        email: String
+        settings: JSON
+    }
+    
+    type Query {
+        users(filter: JSON): [User]
+        config: Config
+        search(options: JSON): JSON
+    }
+    
+    type Mutation {
+        updateUser(input: UserInput): User
+        setConfig(config: JSON): Config
+        updateSettings(input: JSON): Config
+    }
+`;
+
+// GraphQL Resolvers with PP vulnerabilities
+const resolvers = {
+    Query: {
+        users: (_, { filter }) => {
+            // Vulnerable: merges filter into query options
+            const queryOptions = {};
+            _.merge(queryOptions, filter);
+
+            return [
+                { id: 1, name: 'Admin', email: 'admin@test.com', isAdmin: queryOptions.isAdmin || false }
+            ];
+        },
+        config: () => ({
+            success: true,
+            data: {},
+            prototype: Object.prototype
+        }),
+        search: (_, { options }) => {
+            const searchConfig = {};
+            _.merge(searchConfig, options);
+            return { results: [], config: searchConfig, prototype: Object.prototype };
+        }
+    },
+    Mutation: {
+        updateUser: (_, { input }) => {
+            // Vulnerable: deep merge user input
+            const userData = {};
+            _.merge(userData, input);
+
+            return {
+                id: 1,
+                name: userData.name || 'Guest',
+                email: userData.email || '',
+                isAdmin: userData.isAdmin || Object.prototype.isAdmin || false,
+                role: userData.role || Object.prototype.role || 'user'
+            };
+        },
+        setConfig: (_, { config }) => {
+            // Vulnerable: directly merges config
+            const appConfig = {};
+            _.merge(appConfig, config);
+
+            return {
+                success: true,
+                data: appConfig,
+                prototype: Object.prototype
+            };
+        },
+        updateSettings: (_, { input }) => {
+            _.merge({}, input);
+            return { success: true, data: input, prototype: Object.prototype };
+        }
+    }
+};
+
+// ============================================
+// TIER 8 - WEBSOCKET PP VULNERABILITIES
+// ============================================
+
+// Native WebSocket Server
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+wss.on('connection', (ws) => {
+    console.log('[WS] Client connected');
+
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            console.log('[WS] Received:', data);
+
+            // VULNERABLE: Deep merge incoming data
+            const config = {};
+            _.merge(config, data);
+
+            // Send response with pollution evidence
+            ws.send(JSON.stringify({
+                type: 'response',
+                received: data,
+                config: config,
+                polluted: Object.prototype.polluted || false,
+                isAdmin: Object.prototype.isAdmin || false,
+                prototype: Object.prototype
+            }));
+        } catch (e) {
+            ws.send(JSON.stringify({ error: e.message }));
+        }
+    });
+
+    ws.send(JSON.stringify({ type: 'connected', message: 'WebSocket PP Lab Ready' }));
+});
+
+// Socket.IO Server
+const io = new SocketIO(server, {
+    cors: { origin: '*' }
+});
+
+io.on('connection', (socket) => {
+    console.log('[Socket.IO] Client connected:', socket.id);
+
+    socket.on('message', (data) => {
+        try {
+            // VULNERABLE: Merges client data
+            const config = {};
+            _.merge(config, data);
+
+            socket.emit('response', {
+                received: data,
+                config: config,
+                polluted: Object.prototype.polluted || false,
+                isAdmin: Object.prototype.isAdmin || false
+            });
+        } catch (e) {
+            socket.emit('error', { message: e.message });
+        }
+    });
+
+    socket.on('update', (data) => {
+        _.merge({}, data);
+        socket.emit('updated', { success: true, prototype: Object.prototype });
+    });
+
+    socket.on('SET_USER', (payload) => {
+        // Redux-style action - VULNERABLE
+        _.merge({}, payload);
+        socket.emit('USER_SET', { ...payload, prototype: Object.prototype });
+    });
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '1.0.0',
-        endpoints: 15,
-        tiers: 6,
-        detectionMethods: 28
+        version: '2.0.0',
+        endpoints: 20,
+        tiers: 8,
+        detectionMethods: 32,
+        features: {
+            graphql: '/graphql',
+            websocket: '/ws',
+            socketio: 'port 3000'
+        }
     });
 });
 
 // ============================================
-// START SERVER
+// START SERVER WITH GRAPHQL
 // ============================================
 
-app.listen(PORT, () => {
-    console.log(`
+async function startServer() {
+    // Initialize Apollo Server
+    const apolloServer = new ApolloServer({
+        typeDefs,
+        resolvers,
+        introspection: true,
+        playground: true
+    });
+
+    await apolloServer.start();
+    apolloServer.applyMiddleware({ app, path: '/graphql' });
+
+    server.listen(PORT, () => {
+        console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║           PPMAP VULNERABLE LAB - v1.0.0                   ║
+║           PPMAP VULNERABLE LAB - v2.0.0                   ║
 ║                                                           ║
 ║  ⚠️  INTENTIONALLY VULNERABLE APPLICATION ⚠️               ║
 ║                                                           ║
 ║  Server running on: http://localhost:${PORT}              ║
 ║                                                           ║
-║  Endpoints: 15                                            ║
-║  Tiers: 6                                                 ║
-║  Detection Methods: 28                                    ║
+║  NEW FEATURES:                                            ║
+║  ├── GraphQL: http://localhost:${PORT}/graphql            ║
+║  ├── WebSocket: ws://localhost:${PORT}/ws                 ║
+║  └── Socket.IO: http://localhost:${PORT}                  ║
+║                                                           ║
+║  Endpoints: 20  |  Tiers: 8  |  Methods: 32               ║
 ║                                                           ║
 ║  Test with PPMAP:                                         ║
 ║  python3 ppmap.py --scan http://localhost:${PORT}         ║
@@ -361,5 +561,8 @@ app.listen(PORT, () => {
 ║  ⚠️  DO NOT DEPLOY TO PRODUCTION ⚠️                        ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
-    `);
-});
+        `);
+    });
+}
+
+startServer().catch(console.error);
