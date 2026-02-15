@@ -147,12 +147,16 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
         opts.add_argument("--disable-gpu")
-        # Stealth and Stability
+        # Anti-detection: prevent navigator.webdriver leak
         opts.add_argument("--disable-blink-features=AutomationControlled")
         opts.add_argument("--disable-extensions")
+        opts.add_argument("--disable-infobars")
         opts.add_argument("--ignore-certificate-errors")
-        # Modern User-Agent to avoid simple bot detection
-        opts.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        opts.add_argument("--window-size=1920,1080")
+        # Modern User-Agent (Chrome 131 — matches STEALTH_HEADERS in ppmap.py)
+        opts.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+        opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+        opts.add_experimental_option("useAutomationExtension", False)
         
         try:
             logger.info("Attempting to use CHROMIUM driver")
@@ -162,6 +166,13 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
             service = Service(WDM(chrome_type=ChromeType.GOOGLE).install())
 
         driver = webdriver.Chrome(service=service, options=opts)
+        # Remove navigator.webdriver flag via CDP
+        try:
+            driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+            })
+        except Exception:
+            pass  # CDP not available in all drivers
         driver.set_page_load_timeout(timeout)
         driver.set_script_timeout(timeout)
         logger.info("Selenium backend initialized successfully")
@@ -178,7 +189,12 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         pw_manager = sync_playwright()
         pw = pw_manager.start()
         browser = pw.chromium.launch(headless=headless)
-        context = browser.new_context()
+        context = browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            viewport={'width': 1920, 'height': 1080},
+            locale='en-US',
+            timezone_id='Asia/Jakarta',
+        )
         page = context.new_page()
         logger.info("Playwright backend initialized successfully")
         # expose evaluate/content/goto compatible API on page
