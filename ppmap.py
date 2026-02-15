@@ -746,7 +746,7 @@ class CompleteSecurityScanner:
         except Exception:
             self.prototype_snapshot = None
         
-        # Step 4: jQuery $.extend() vulnerability test (EXACT FROM scanner_v2.py)
+        # Step 4: jQuery $.extend() vulnerability test (CVE-2019-11358)
         if cve_vulnerabilities:  # Only if version vulnerable
             rand_id = f"pp_{int(time.time())}"
             
@@ -772,6 +772,59 @@ class CompleteSecurityScanner:
                     })
             except Exception:
                 pass
+        
+        # Step 5: CVE-2020-11022 HTML Prefilter XSS exploitation test
+        # jQuery < 3.5.0 doesn't properly sanitize HTML passed to .html()/.append()
+        # Vulnerable pattern: $('<option><style></option><img src=x onerror=...>')
+        if any(c['cve'] == 'CVE-2020-11022' for c in cve_vulnerabilities):
+            xss_marker = f"cve2020_{int(time.time())}"
+            js_xss_check = f"""
+            try {{
+                window.{xss_marker} = false;
+                var testEl = $('<div>').css('display','none').appendTo('body');
+                testEl.html('<option><style></option><img src=x onerror="window.{xss_marker}=true">');
+                // Give the onerror a moment to fire
+                await new Promise(r => setTimeout(r, 300));
+                var result = window.{xss_marker} === true;
+                testEl.remove();
+                delete window.{xss_marker};
+                return result;
+            }} catch(e) {{ return false; }}
+            """
+            # Fallback sync version (await not supported in all Selenium contexts)
+            js_xss_check_sync = f"""
+            try {{
+                window.{xss_marker} = false;
+                var testEl = $('<div>').css('display','none').appendTo('body');
+                testEl.html('<option><style></option><img src=x onerror="window.{xss_marker}=true">');
+                var result = window.{xss_marker} === true;
+                testEl.remove();
+                delete window.{xss_marker};
+                return result;
+            }} catch(e) {{ return false; }}
+            """
+            try:
+                xss_result = False
+                try:
+                    xss_result = self.driver.execute_script(js_xss_check)
+                except Exception:
+                    xss_result = self.driver.execute_script(js_xss_check_sync)
+                
+                if xss_result:
+                    print(f"{Colors.FAIL}[!] CVE-2020-11022 VERIFIED: HTML Prefilter XSS executed in browser!{Colors.ENDC}")
+                    findings.append({
+                        'type': 'jquery_xss_verified',
+                        'name': 'jQuery HTML Prefilter XSS VERIFIED',
+                        'severity': 'HIGH',
+                        'cve': 'CVE-2020-11022',
+                        'jquery_version': jquery_version,
+                        'verified': True,
+                        'description': 'jQuery .html() does not sanitize <style> + <img onerror> combination'
+                    })
+                else:
+                    print(f"{Colors.YELLOW}[*] CVE-2020-11022: Version vulnerable but XSS payload did not execute in this context{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"CVE-2020-11022 test error: {e}")
         
         # Restore snapshot if available
         try:
@@ -1534,36 +1587,24 @@ class CompleteSecurityScanner:
                             time.sleep(1)
                     time.sleep(3)  # Wait for page and scripts to load
                     
-                    # Check 1: Look for frozen/loading state (DoS indicator)
+                    # Check 1: Verify Object.prototype is actually polluted
                     try:
-                        page_source = self.driver.page_source
-                        loading_indicators = ['loading', 'spinner', 'memuat']
-                        is_frozen = any(ind in page_source.lower() for ind in loading_indicators)
+                        check_script = f"return Object.prototype['{marker}'] === 'POLLUTED';"
+                        is_polluted = self.driver.execute_script(check_script)
                         
-                        # Try to click an element
-                        try:
-                            from selenium.webdriver.common.by import By
-                            links = self.driver.find_elements(By.TAG_NAME, 'a')
-                            if links:
-                                self.driver.implicitly_wait(2)
-                                links[0].click()
-                                time.sleep(1)
-                                if self.driver.current_url == test_url:
-                                    is_frozen = True
-                        except Exception:
-                            is_frozen = True
-                        
-                        if is_frozen:
+                        if is_polluted:
+                            # Cleanup after verification
+                            self.driver.execute_script(f"delete Object.prototype['{marker}'];")
                             findings.append({
                                 'type': 'hash_based_pp',
                                 'method': 'HASH_WAF_BYPASS',
                                 'payload': payload,
                                 'severity': 'HIGH',
-                                'description': 'Hash-based PP causes DoS/freeze (WAF bypassed)',
+                                'description': 'Hash-based PP confirmed via Object.prototype check (WAF bypassed)',
                                 'verified': True,
                                 'test_url': test_url
                             })
-                            print(f"{Colors.FAIL}[!] Hash-based PP DETECTED: DoS via {payload_type}{Colors.ENDC}")
+                            print(f"{Colors.FAIL}[!] Hash-based PP DETECTED (Verified): {payload_type}{Colors.ENDC}")
                     except Exception:
                         pass
                     
@@ -3486,24 +3527,20 @@ class CompleteSecurityScanner:
         discovery = EndpointDiscovery(self.session)
         endpoints = discovery.discover_endpoints(base_url, depth=2, max_endpoints=20)
         
-        findings = []
+        tested = 0
         for endpoint in endpoints[:10]:  # Test first 10 endpoints
             try:
                 print(f"{Colors.CYAN}  [*] Testing endpoint: {endpoint[:60]}...{Colors.ENDC}")
                 resp = self.session.get(endpoint, timeout=5, verify=False)
                 
                 if resp.status_code < 400 and len(resp.text) > 100:
-                    findings.append({
-                        'type': 'discovered_endpoint',
-                        'url': endpoint,
-                        'status': resp.status_code,
-                        'size': len(resp.text)
-                    })
+                    tested += 1
             except:
                 pass
         
-        print(f"{Colors.GREEN}[✓] Tested {len(findings)} endpoints{Colors.ENDC}")
-        return findings
+        print(f"{Colors.GREEN}[✓] Tested {tested} endpoints{Colors.ENDC}")
+        # Endpoints are informational only — not vulnerabilities
+        return []
     
     def setup_browser(self, target_url):
         """Setup browser for scanning"""
