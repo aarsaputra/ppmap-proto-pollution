@@ -265,6 +265,24 @@ CONFIG = {
     ]
 }
 
+# Realistic browser headers to avoid WAF fingerprinting
+STEALTH_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'max-age=0',
+    'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+    'Connection': 'keep-alive',
+}
+
 if PAYLOADS_AVAILABLE:
     # CLIENT_SIDE_PP_PAYLOADS is a dict of lists, flatten it
     try:
@@ -492,20 +510,33 @@ def run_quick_poc(target_url, headless=True):
 class CompleteSecurityScanner:
     """Complete jQuery Prototype Pollution & XSS Scanner"""
     
-    def __init__(self, timeout=15, max_workers=3, verify_ssl=True, oob_enabled=False):
+    def __init__(self, timeout=15, max_workers=3, verify_ssl=True, oob_enabled=False, stealth=False):
         self.timeout = timeout
         self.max_workers = max_workers
-        self.session = requests.Session()
-        self.session.verify = verify_ssl
+        self.stealth = stealth
         self.oob_enabled = oob_enabled
         self.oob_detector = None
         
         if self.oob_enabled:
             pass # We will lazy init in test_blind_oob or main scan to avoid startup delay
-        self.timeout = timeout
-        self.max_workers = max_workers
+        
+        # Initialize session with proper headers to avoid WAF fingerprinting
         self.session = requests.Session()
         self.session.verify = verify_ssl
+        
+        if self.stealth:
+            # Apply realistic browser headers so WAF sees a real browser
+            self.session.headers.update(STEALTH_HEADERS)
+            logger.info("Stealth mode: applied realistic browser headers to HTTP session")
+        else:
+            # Even without stealth, set a basic User-Agent to avoid python-requests fingerprint
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Connection': 'keep-alive',
+            })
+        
         self.driver = None
         self.findings = []
         self.prototype_snapshot = None
@@ -4629,7 +4660,8 @@ ADVANCED OPTIONS:
                 timeout=args.timeout,
                 max_workers=args.workers,
                 verify_ssl=True,
-                oob_enabled=args.oob
+                oob_enabled=args.oob,
+                stealth=PPMAP_CONFIG['scanning'].get('stealth_mode', False)
             )
             
             # Setup authenticated session
@@ -4730,7 +4762,8 @@ ADVANCED OPTIONS:
                 timeout=PPMAP_CONFIG['scanning']['timeout'],
                 max_workers=PPMAP_CONFIG['scanning']['max_workers'],
                 verify_ssl=not PPMAP_CONFIG['scanning'].get('disable_ssl_verify', False),
-                oob_enabled=args.oob
+                oob_enabled=args.oob,
+                stealth=PPMAP_CONFIG['scanning'].get('stealth_mode', False)
             )
             
             all_findings = []
