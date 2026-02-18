@@ -2520,8 +2520,15 @@ class CompleteSecurityScanner:
                                              return findings
                                     except Exception as ex:
                                         print(f"{Colors.YELLOW}[⚠] Browser verify skipped: {str(ex)[:100]}{Colors.ENDC}")
+                                        # Browser skipped — downgrade since we can't verify
+                                        findings[-1]['severity'] = 'LOW (Reflected Only)'
+                                        findings[-1]['verified'] = False
                                 
-                                print(f"{Colors.FAIL}[!] CRITICAL: Constructor-based pollution detected (Response Check)!{Colors.ENDC}")
+                                actual_severity = findings[-1].get('severity', 'CRITICAL')
+                                if 'LOW' in actual_severity:
+                                    print(f"{Colors.YELLOW}[!] Constructor-based pollution detected (Response Only, NOT browser-verified){Colors.ENDC}")
+                                else:
+                                    print(f"{Colors.FAIL}[!] CRITICAL: Constructor-based pollution detected (Browser-Verified)!{Colors.ENDC}")
                                 return findings  # Return early on first finding
                 except:
                     pass
