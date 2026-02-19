@@ -4782,20 +4782,19 @@ ADVANCED OPTIONS:
             
             logger.info(f"Async scan completed: {len(results)} results")
             
-            # Generate enhanced reports
-            if results:
-                findings = [r for r in results if r.get('success')]
-                report_gen = EnhancedReportGenerator(args.output)
-                generated_reports = report_gen.generate_all_formats(
-                    findings=findings,
-                    target=", ".join(normalized_targets),
-                    formats=PPMAP_CONFIG['reporting']['format']
-                )
-                
-                logger.info(f"Generated {len(generated_reports)} report format(s):")
-                for fmt, filepath in generated_reports.items():
-                    logger.info(f"  - {fmt}: {filepath}")
-                    print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
+            # Generate enhanced reports (always save, even with 0 findings)
+            findings = [r for r in results if r.get('success')] if results else []
+            report_gen = EnhancedReportGenerator(args.output)
+            generated_reports = report_gen.generate_all_formats(
+                findings=findings,
+                target=", ".join(normalized_targets),
+                formats=PPMAP_CONFIG['reporting']['format']
+            )
+            
+            logger.info(f"Generated {len(generated_reports)} report format(s):")
+            for fmt, filepath in generated_reports.items():
+                logger.info(f"  - {fmt}: {filepath}")
+                print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
         else:
             # Use traditional scanner
             target_iterator = normalized_targets
@@ -4821,19 +4820,18 @@ ADVANCED OPTIONS:
                     logger.error(f"Error scanning {target}: {e}", exc_info=True)
                     continue
 
-            # Generate reports for traditional scan
-            if all_findings:
-                report_gen = EnhancedReportGenerator(args.output)
-                generated_reports = report_gen.generate_all_formats(
-                    findings=all_findings,
-                    target=", ".join(normalized_targets),
-                    formats=PPMAP_CONFIG['reporting']['format']
-                )
-                
-                logger.info(f"Generated {len(generated_reports)} report format(s):")
-                for fmt, filepath in generated_reports.items():
-                    logger.info(f"  - {fmt}: {filepath}")
-                    print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
+            # Generate reports for traditional scan (always save, even with 0 findings)
+            report_gen = EnhancedReportGenerator(args.output)
+            generated_reports = report_gen.generate_all_formats(
+                findings=all_findings,
+                target=", ".join(normalized_targets),
+                formats=PPMAP_CONFIG['reporting']['format']
+            )
+            
+            logger.info(f"Generated {len(generated_reports)} report format(s):")
+            for fmt, filepath in generated_reports.items():
+                logger.info(f"  - {fmt}: {filepath}")
+                print(f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}")
     else:
         parser.print_help()
     
