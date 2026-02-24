@@ -139,15 +139,25 @@ class FalsePositiveEngine:
         """Internal verification logic."""
         finding_type = finding.get('type', finding.get('name', 'unknown')).lower()
         
-        # CVE findings are pre-validated
+        # BUG-10 FIX: CVE findings based only on version string (not browser-verified)
+        # should NOT be auto-confirmed at 0.95. Split into two cases:
+        # 1. CVE + browser-verified => CONFIRMED 0.95
+        # 2. CVE + version-only => LIKELY 0.80 (still high, but not overclaiming)
         if 'cve' in finding:
-            return VerificationResult(
-                status=VerificationStatus.CONFIRMED,
-                confidence=0.95,
-                reason="CVE-based detection with known vulnerable version",
-                evidence={'cve': finding.get('cve')}
-            )
-        
+            if finding.get('verified', False):
+                return VerificationResult(
+                    status=VerificationStatus.CONFIRMED,
+                    confidence=0.95,
+                    reason="CVE-based detection with browser-verified exploitation",
+                    evidence={'cve': finding.get('cve'), 'browser_verified': True}
+                )
+            else:
+                return VerificationResult(
+                    status=VerificationStatus.LIKELY,
+                    confidence=0.80,
+                    reason="CVE-based detection from version string (not browser-verified)",
+                    evidence={'cve': finding.get('cve'), 'version_only': True}
+                )
         # Browser-verified findings
         if finding.get('verified', False):
             return VerificationResult(

@@ -504,16 +504,75 @@ io.on('connection', (socket) => {
 });
 
 // ============================================
+// JQUERY CVE TESTING ENDPOINTS (Lab Coverage)
+// ============================================
+
+// jQuery 1.11.1 page — covers CVE-2012-6708 ($.parseJSON XSS) and CVE-2015-9251 (XSS via CSS)
+app.get('/jquery-old', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>jQuery Old (1.11.1) CVE Lab</title>
+  <!-- CVE-2012-6708: $.parseJSON XSS - jQuery < 1.9.0 (affected: <=1.8.x) -->
+  <!-- CVE-2015-9251: XSS via @import CSS - jQuery < 2.2.0 -->
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+</head>
+<body>
+  <h2>jQuery 1.11.1 CVE Test Page</h2>
+  <p>Covers: CVE-2015-9251 (XSS via CSS import, jQuery &lt;2.2.0)</p>
+  <p>jQuery version: <span id="ver"></span></p>
+  <script>
+    $('#ver').text($.fn.jquery);
+    // Vulnerable: jQuery 1.11.1 does not sanitize @import in style attributes
+    var query = ${JSON.stringify(req.query)};
+    try { $.extend(true, {}, query); } catch(e) {}
+  </script>
+</body>
+</html>`);
+});
+
+// jQuery 3.5.0 page — covers CVE-2020-11023 (.html() code exec, jQuery == 3.5.0)
+app.get('/jquery-350', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>jQuery 3.5.0 CVE Lab</title>
+  <!-- CVE-2020-11023: jQuery.html() Code Execution - jQuery == 3.5.0 -->
+  <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
+</head>
+<body>
+  <h2>jQuery 3.5.0 CVE Test Page</h2>
+  <p>Covers: CVE-2020-11023 (jQuery.html() improper handling, jQuery 3.5.0)</p>
+  <p>jQuery version: <span id="ver"></span></p>
+  <script>
+    $('#ver').text($.fn.jquery);
+    var query = ${JSON.stringify(req.query)};
+    try { $.extend(true, {}, query); } catch(e) {}
+  </script>
+</body>
+</html>`);
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '2.0.0',
-        endpoints: 20,
+        version: '2.1.0',
+        endpoints: 22,
         tiers: 8,
         detectionMethods: 32,
+        cvePages: {
+            'CVE-2012-6708': '/jquery-old (jQuery 1.11.1)',
+            'CVE-2015-9251': '/jquery-old (jQuery 1.11.1)',
+            'CVE-2019-11358': '/ (jQuery 3.4.1)',
+            'CVE-2020-11022': '/ (jQuery 3.4.1)',
+            'CVE-2020-11023': '/jquery-350 (jQuery 3.5.0)',
+        },
         features: {
             graphql: '/graphql',
             websocket: '/ws',
@@ -521,6 +580,7 @@ app.get('/health', (req, res) => {
         }
     });
 });
+
 
 // ============================================
 // START SERVER WITH GRAPHQL
