@@ -164,40 +164,55 @@ class CVEDatabase:
     
     @staticmethod
     def _is_version_affected(version_tuple: Tuple[int, ...], affected_spec: str) -> bool:
-        """Check if version matches affected version spec"""
+        """Check if version matches affected version spec.
+        
+        BUG-4 FIX: Multi-range specs like '<2.2.0, >=3.0.0 <3.0.1' are OR conditions
+        (e.g., 'affected if in range A OR in range B'), not AND. Each comma-separated
+        group is evaluated independently; if ANY group matches, version is affected.
+        """
         try:
-            # Handle spec like "<3.5.0" or ">=3.0.0, <4.0.0"
-            specs = [s.strip() for s in affected_spec.split(',')]
+            # Split on comma to get OR groups
+            or_groups = [s.strip() for s in affected_spec.split(',')]
             
-            all_conditions_met = True
-            for spec in specs:
-                spec = spec.strip()
-                condition_met = False
+            for group in or_groups:
+                # Each group may have space-separated AND conditions (e.g., '>=3.0.0 <3.0.1')
+                and_specs = group.split()
+                group_met = True
                 
-                if spec.startswith('>='):
-                    min_v = tuple(int(x) for x in spec[2:].split('.'))
-                    if version_tuple >= min_v:
-                        condition_met = True
-                elif spec.startswith('>'):
-                    min_v = tuple(int(x) for x in spec[1:].split('.'))
-                    if version_tuple > min_v:
-                        condition_met = True
-                elif spec.startswith('<='):
-                    max_v = tuple(int(x) for x in spec[2:].split('.'))
-                    if version_tuple <= max_v:
-                        condition_met = True
-                elif spec.startswith('<'):
-                    max_v = tuple(int(x) for x in spec[1:].split('.'))
-                    if version_tuple < max_v:
-                        condition_met = True
-                elif spec.startswith('='):
-                    eq_v = tuple(int(x) for x in spec[1:].split('.'))
-                    if version_tuple == eq_v:
-                        condition_met = True
+                for spec in and_specs:
+                    spec = spec.strip()
+                    if not spec:
+                        continue
+                    condition_met = False
+                    
+                    if spec.startswith('>='):
+                        min_v = tuple(int(x) for x in spec[2:].split('.'))
+                        if version_tuple >= min_v:
+                            condition_met = True
+                    elif spec.startswith('>'):
+                        min_v = tuple(int(x) for x in spec[1:].split('.'))
+                        if version_tuple > min_v:
+                            condition_met = True
+                    elif spec.startswith('<='):
+                        max_v = tuple(int(x) for x in spec[2:].split('.'))
+                        if version_tuple <= max_v:
+                            condition_met = True
+                    elif spec.startswith('<'):
+                        max_v = tuple(int(x) for x in spec[1:].split('.'))
+                        if version_tuple < max_v:
+                            condition_met = True
+                    elif spec.startswith('='):
+                        eq_v = tuple(int(x) for x in spec[1:].split('.'))
+                        if version_tuple == eq_v:
+                            condition_met = True
+                    
+                    group_met = group_met and condition_met
                 
-                all_conditions_met = all_conditions_met and condition_met
+                # If this OR group is satisfied, version is affected
+                if group_met:
+                    return True
             
-            return all_conditions_met
+            return False
         except Exception as e:
             logger.debug(f"Version matching error: {e}")
             return False
@@ -416,12 +431,12 @@ class ParameterDiscovery:
                 if parsed.query:
                     qs = parse_qs(parsed.query)
                     params.update(qs.keys())
-            if not params:
-                params.update(['q', 'search', 'query', 'id', 'name', 'keyword', 's', 'p'])
+            # BUG-9 FIX: Don't inject noisy generic fallback params — return empty list
+            # if nothing discovered. Callers should handle empty list gracefully.
             return sorted(list(params))
         except RequestException as e:
             logger.debug(f"ParameterDiscovery error for {url}: {e}")
-            return ['q', 'search', 'query', 'id', 'name']
+            return []
 
 
 # ============================================================================
@@ -430,12 +445,31 @@ class ParameterDiscovery:
 class CompleteSecurityScanner:
     """High-level scanner wrapper with simple discovery and server-side PP tests."""
 
-    def __init__(self, timeout: int = 15, max_workers: int = 3, verify_ssl: bool = True, oob_enabled: bool = False):
+    def __init__(self, timeout: int = 15, max_workers: int = 3, verify_ssl: bool = True,
+                 oob_enabled: bool = False, stealth: bool = False):
         self.timeout = timeout
         self.max_workers = max_workers
         self.verify_ssl = verify_ssl
         self.oob_enabled = oob_enabled
+        self.stealth = stealth
         self.oob_detector = None
+        
+        # BUG-3 FIX: CompleteSecurityScanner needs self.session for OOB and request reuse
+        self.session = requests.Session()
+        
+        # BUG-7 FIX: Apply stealth headers when stealth mode is enabled
+        if stealth:
+            self.session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+            })
         
         if self.oob_enabled:
             # Lazy import to avoid circular dependencies if any
