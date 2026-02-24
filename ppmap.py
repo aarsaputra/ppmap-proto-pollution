@@ -665,22 +665,22 @@ class CompleteSecurityScanner:
                          if r_match:
                              r_ver = r_match.group(1)
                              print(f"{Colors.BLUE}[*] RequireJS {r_ver} detected!{Colors.ENDC}")
-                             
                              # Check for CVE-2024-38999 (RequireJS <= 2.3.6)
                              try:
+                                 # BUG-5 FIX: pad to 3 elements and use tuple compare
                                  r_parts = [int(x) for x in r_ver.split('.')[:3]]
-                                 # 2.3.6 is vulnerable
-                                 if r_parts <= [2, 3, 6]:
+                                 r_tuple = tuple(r_parts + [0] * (3 - len(r_parts)))
+                                 if r_tuple <= (2, 3, 6):
                                       print(f"{Colors.FAIL}[!] VULNERABLE: RequireJS {r_ver} (CVE-2024-38999 - Prototype Pollution){Colors.ENDC}")
                                       findings.append({
                                           'type': 'requirejs_pp',
                                           'cve': 'CVE-2024-38999',
                                           'name': 'RequireJS Prototype Pollution',
-                                          'severity': 'CRITICAL', # PP is usually Critical
+                                          'severity': 'CRITICAL',
                                           'version': r_ver
                                       })
-                             except:
-                                 pass
+                             except Exception as e:
+                                 logger.debug(f"RequireJS version check error: {e}")
                              break
             
             except Exception:
@@ -695,16 +695,20 @@ class CompleteSecurityScanner:
                  print(f"{Colors.BLUE}[*] jQuery {jquery_version} detected (Static Fallback){Colors.ENDC}")
 
         
-        # Step 2: CVE IDENTIFICATION (From scanner_v2.py line 576-620)
+        # Step 2: CVE IDENTIFICATION
+        # BUG-1 FIX: parse full (major, minor, patch) tuple for accurate version compare
         cve_vulnerabilities = []
         
         try:
             ver_parts = jquery_version.split('.')
-            major = int(ver_parts[0])
-            minor = int(ver_parts[1]) if len(ver_parts) > 1 else 0
+            ver_tuple = tuple(int(x) for x in ver_parts[:3])
+            # Pad to 3 elements
+            while len(ver_tuple) < 3:
+                ver_tuple = ver_tuple + (0,)
+            major, minor, patch = ver_tuple
             
             # CVE-2019-11358: Prototype Pollution (jQuery < 3.5.0)
-            if major < 3 or (major == 3 and minor < 5):
+            if ver_tuple < (3, 5, 0):
                 print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2019-11358 (Prototype Pollution){Colors.ENDC}")
                 print(f"    jQuery {jquery_version} < 3.5.0 is vulnerable!")
                 cve_vulnerabilities.append({
@@ -715,7 +719,7 @@ class CompleteSecurityScanner:
                 })
             
             # CVE-2020-11022: HTML Prefilter XSS (jQuery < 3.5.0)
-            if major < 3 or (major == 3 and minor < 5):
+            if ver_tuple < (3, 5, 0):
                 print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11022 (HTML Prefilter XSS){Colors.ENDC}")
                 cve_vulnerabilities.append({
                     'cve': 'CVE-2020-11022',
@@ -724,8 +728,18 @@ class CompleteSecurityScanner:
                     'jquery_version': jquery_version
                 })
             
-            # CVE-2015-9251: XSS via CSS import (jQuery < 2.2.0)
-            if major < 2 or (major == 2 and minor < 2):
+            # BUG-6 FIX: CVE-2020-11023 was in DB but never tested (jQuery == 3.5.0 exactly)
+            if ver_tuple == (3, 5, 0):
+                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11023 (jQuery.html() Code Exec){Colors.ENDC}")
+                cve_vulnerabilities.append({
+                    'cve': 'CVE-2020-11023',
+                    'name': 'jQuery.html() Code Execution',
+                    'severity': 'HIGH',
+                    'jquery_version': jquery_version
+                })
+            
+            # CVE-2015-9251: XSS via CSS import (jQuery < 2.2.0 OR == 3.0.0)
+            if ver_tuple < (2, 2, 0) or ver_tuple == (3, 0, 0):
                 print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2015-9251 (XSS via CSS import){Colors.ENDC}")
                 cve_vulnerabilities.append({
                     'cve': 'CVE-2015-9251',
@@ -733,12 +747,24 @@ class CompleteSecurityScanner:
                     'severity': 'HIGH',
                     'jquery_version': jquery_version
                 })
+            
+            # CVE-2012-6708: $.parseJSON XSS (jQuery < 1.9.0)
+            if ver_tuple < (1, 9, 0):
+                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2012-6708 ($.parseJSON XSS){Colors.ENDC}")
+                cve_vulnerabilities.append({
+                    'cve': 'CVE-2012-6708',
+                    'name': 'jQuery $.parseJSON XSS',
+                    'severity': 'MEDIUM',
+                    'jquery_version': jquery_version
+                })
         
         except Exception as e:
             print(f"{Colors.WARNING}[⚠] CVE version check error: {e}{Colors.ENDC}")
+            logger.debug(f"CVE version check error detail: {e}")
         
-        # Add CVE findings to results
-        findings.extend(cve_vulnerabilities)
+        # BUG-8 FIX: Don't extend findings here — browser-verified step below will add
+        # them with 'verified' flag to avoid duplicates. Only add if no browser available.
+        # findings.extend(cve_vulnerabilities)  <- REMOVED: caused triple duplicates
         
         # Step 3: Snapshot Object.prototype before testing
         try:
@@ -774,25 +800,12 @@ class CompleteSecurityScanner:
                 pass
         
         # Step 5: CVE-2020-11022 HTML Prefilter XSS exploitation test
-        # jQuery < 3.5.0 doesn't properly sanitize HTML passed to .html()/.append()
-        # Vulnerable pattern: $('<option><style></option><img src=x onerror=...>')
+        # BUG-2 FIX: Removed `await` from execute_script — Selenium runs JS synchronously.
+        # Selenium doesn't support top-level await. Using sync version only.
         if any(c['cve'] == 'CVE-2020-11022' for c in cve_vulnerabilities):
             xss_marker = f"cve2020_{int(time.time())}"
+            # Sync-only check (BUG-2 FIX: removed the async version with `await`)
             js_xss_check = f"""
-            try {{
-                window.{xss_marker} = false;
-                var testEl = $('<div>').css('display','none').appendTo('body');
-                testEl.html('<option><style></option><img src=x onerror="window.{xss_marker}=true">');
-                // Give the onerror a moment to fire
-                await new Promise(r => setTimeout(r, 300));
-                var result = window.{xss_marker} === true;
-                testEl.remove();
-                delete window.{xss_marker};
-                return result;
-            }} catch(e) {{ return false; }}
-            """
-            # Fallback sync version (await not supported in all Selenium contexts)
-            js_xss_check_sync = f"""
             try {{
                 window.{xss_marker} = false;
                 var testEl = $('<div>').css('display','none').appendTo('body');
@@ -804,11 +817,7 @@ class CompleteSecurityScanner:
             }} catch(e) {{ return false; }}
             """
             try:
-                xss_result = False
-                try:
-                    xss_result = self.driver.execute_script(js_xss_check)
-                except Exception:
-                    xss_result = self.driver.execute_script(js_xss_check_sync)
+                xss_result = self.driver.execute_script(js_xss_check)
                 
                 if xss_result:
                     print(f"{Colors.FAIL}[!] CVE-2020-11022 VERIFIED: HTML Prefilter XSS executed in browser!{Colors.ENDC}")
@@ -832,6 +841,11 @@ class CompleteSecurityScanner:
                 self.restore_object_prototype(self.prototype_snapshot)
         except Exception:
             pass
+        
+        # BUG-8 FIX: If no browser-verified findings but CVEs detected by version, report them
+        if not findings and cve_vulnerabilities:
+            # Add version-based CVE findings (not browser-verified)
+            findings.extend(cve_vulnerabilities)
         
         if not findings:
             print(f"{Colors.GREEN}[✓] No jQuery vulnerabilities detected{Colors.ENDC}")

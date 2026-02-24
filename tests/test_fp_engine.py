@@ -108,10 +108,21 @@ class TestIsReflectedParam:
 class TestSecondaryVerify:
     """Tests for secondary_verify method."""
     
-    def test_cve_finding_confirmed(self):
-        """CVE findings should be automatically confirmed."""
+    def test_cve_finding_unverified_is_likely(self):
+        """Unverified CVE findings (version-only) should be LIKELY, not CONFIRMED."""
         engine = FalsePositiveEngine()
+        # No 'verified' flag => version-only detection (BUG-10 fix)
         finding = {'cve': 'CVE-2019-11358', 'type': 'jquery_pp'}
+        
+        result = engine.secondary_verify(finding)
+        
+        assert result.status == VerificationStatus.LIKELY
+        assert result.confidence >= 0.75
+    
+    def test_cve_finding_browser_verified_is_confirmed(self):
+        """Browser-verified CVE findings should be CONFIRMED at 0.95."""
+        engine = FalsePositiveEngine()
+        finding = {'cve': 'CVE-2019-11358', 'type': 'jquery_pp', 'verified': True}
         
         result = engine.secondary_verify(finding)
         
