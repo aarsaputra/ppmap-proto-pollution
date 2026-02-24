@@ -122,7 +122,7 @@ class ScanMetrics:
 # Use modular report generator and centralized logging
 try:
     from ppmap.reports import EnhancedReportGenerator
-    from ppmap.logging import setup_logging
+    from ppmap.log_setup import setup_logging
     from ppmap.browser import get_browser
 except Exception:
     EnhancedReportGenerator = None
