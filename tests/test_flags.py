@@ -572,15 +572,40 @@ class TestCVEVersionTuple:
         from ppmap.scanner import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 5, 0), "<2.2.0, >=3.0.0 <3.0.1") is False
 
-    def test_cve_2019_11358_jquery_341(self):
-        """jQuery 3.4.1 must be flagged for CVE-2019-11358."""
+    def test_cve_2019_11358_jquery_331_affected(self):
+        """jQuery 3.3.1 must be flagged for CVE-2019-11358.
+        
+        CVE-2019-11358 affects jQuery < 3.4.0. The last vulnerable version
+        before the patch is 3.3.1. Fixed in 3.4.0.
+        """
+        from ppmap.scanner import CVEDatabase
+        vulns = CVEDatabase.check_version("jquery", "3.3.1")
+        cve_ids = [v["cve"] for v in vulns]
+        assert "CVE-2019-11358" in cve_ids, (
+            f"CVE-2019-11358 affects jQuery < 3.4.0. 3.3.1 should be vulnerable. "
+            f"Found CVEs: {cve_ids}"
+        )
+
+    def test_cve_2019_11358_jquery_341_not_affected(self):
+        """jQuery 3.4.1 must NOT be flagged for CVE-2019-11358 (patched in 3.4.0).
+        
+        IMPORTANT: This was a BUG in the original test! The old test expected 3.4.1
+        to be vulnerable, but CVE-2019-11358 was actually FIXED in jQuery 3.4.0.
+        NVD range: >= 1.0.3, < 3.4.0  (NOT < 3.5.0 as was incorrectly set before)
+        """
         from ppmap.scanner import CVEDatabase
         vulns = CVEDatabase.check_version("jquery", "3.4.1")
         cve_ids = [v["cve"] for v in vulns]
-        assert "CVE-2019-11358" in cve_ids
+        assert "CVE-2019-11358" not in cve_ids, (
+            f"CVE-2019-11358 was patched in jQuery 3.4.0. 3.4.1 must NOT be vulnerable. "
+            f"Found CVEs: {cve_ids}"
+        )
+        # But 3.4.1 is still vulnerable to XSS CVEs (fixed in 3.5.0)
+        assert "CVE-2020-11022" in cve_ids
 
     def test_cve_2019_11358_jquery_350_not_affected(self):
         """jQuery 3.5.0 must NOT be flagged for CVE-2019-11358."""
+
         from ppmap.scanner import CVEDatabase
         vulns = CVEDatabase.check_version("jquery", "3.5.0")
         cve_ids = [v["cve"] for v in vulns]

@@ -83,52 +83,157 @@ class CVEDatabase:
     
     CVE_MAP = {
         'jquery': {
+            # CVE-2019-11358: Prototype Pollution via $.extend()
+            # Affected: >= 1.0.3, < 3.4.0 (patched in 3.4.0)
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2019-11358
+            # BUG FIX: was '<3.5.0' — actual patch landed in 3.4.0
             'CVE-2019-11358': {
                 'title': 'jQuery Prototype Pollution via $.extend()',
-                'affected_versions': '<3.5.0',
-                'fixed_version': '3.5.0',
-                'severity': 'HIGH',
-                'description': 'Passing an object to jQuery.extend() does not recursively sanitize properties, leading to prototype pollution'
+                'affected_versions': '>=1.0.3 <3.4.0',
+                'fixed_version': '3.4.0',
+                'severity': 'CRITICAL',
+                'description': (
+                    'jQuery.extend(true, {}, ...) does not filter __proto__ properties, '
+                    'allowing attacker-controlled input to modify Object.prototype globally. '
+                    'This can lead to privilege escalation, auth bypass, or XSS via gadget chains.'
+                )
             },
+            # CVE-2020-11022: HTML Prefilter XSS
+            # Affected: >= 1.2, < 3.5.0 (patched in 3.5.0)
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2020-11022
             'CVE-2020-11022': {
-                'title': 'jQuery HTML Prefilter XSS',
-                'affected_versions': '<3.5.0',
+                'title': 'jQuery HTML Prefilter XSS via .html()/.append()',
+                'affected_versions': '>=1.2 <3.5.0',
                 'fixed_version': '3.5.0',
                 'severity': 'HIGH',
-                'description': 'HTML prefilter does not strip leading newlines/whitespace from tag names, allowing XSS'
+                'description': (
+                    'htmlPrefilter() uses a regex-only approach to neutralize self-closing tags. '
+                    'Payloads like <style></style><img onerror=...> bypass the regex and execute '
+                    'when passed to .html(), .append(), .after(), .before() etc.'
+                )
             },
+            # CVE-2020-11023: <option> element XSS
+            # Affected: >= 1.0.3, < 3.5.0 (patched in 3.5.0 — same release as 11022)
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2020-11023
+            # BUG FIX: was '<3.5.1' with fixed_version='3.5.1' — both wrong, fix is in 3.5.0
             'CVE-2020-11023': {
-                'title': 'jQuery Untrusted Code Execution',
-                'affected_versions': '<3.5.1',
-                'fixed_version': '3.5.1',
+                'title': 'jQuery XSS via <option> element in .html()/.append()',
+                'affected_versions': '>=1.0.3 <3.5.0',
+                'fixed_version': '3.5.0',
                 'severity': 'HIGH',
-                'description': 'Improper handling in the jQuery.html() method can lead to code execution'
+                'description': (
+                    'Passing HTML containing <option> elements with untrusted content to jQuery '
+                    'DOM manipulation methods (.html(), .append(), etc.) can execute arbitrary code. '
+                    'Added to CISA KEV (Known Exploited Vulnerabilities) catalog.'
+                )
             },
+            # CVE-2020-23064: DOM Manipulation XSS
+            # Affected: >= 1.0.3, < 3.5.0
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2020-23064
+            # MISSING: This CVE was not in the original CVEDatabase at all
+            'CVE-2020-23064': {
+                'title': 'jQuery DOM Manipulation XSS (.before/.after/.replaceWith)',
+                'affected_versions': '>=1.0.3 <3.5.0',
+                'fixed_version': '3.5.0',
+                'severity': 'HIGH',
+                'description': (
+                    'Subset of CVE-2020-11023. jQuery DOM manipulation methods .before(), .after(), '
+                    '.replaceWith(), and similar do not sanitize HTML input, allowing XSS when '
+                    'user-controlled data is passed to these methods without prior sanitization.'
+                )
+            },
+            # CVE-2015-9251: Cross-domain AJAX auto-eval XSS
+            # Affected: >= 1.0, < 3.0.0 (patched in 3.0.0 which removed the auto-eval converter)
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2015-9251
+            # BUG FIX: was '<2.2.0, >=3.0.0 <3.0.1' (wrong range) + desc was 'CSS import' (wrong)
             'CVE-2015-9251': {
-                'title': 'jQuery XSS via CSS import',
-                'affected_versions': '<2.2.0, >=3.0.0 <3.0.1',
-                'fixed_version': '2.2.0',
+                'title': 'jQuery Cross-domain AJAX auto-eval XSS',
+                'affected_versions': '>=1.0 <3.0.0',
+                'fixed_version': '3.0.0',
                 'severity': 'MEDIUM',
-                'description': 'XSS vulnerability in jQuery CSS import handling'
+                'description': (
+                    'When jQuery makes cross-domain AJAX requests without specifying dataType, '
+                    'responses with Content-Type: text/javascript are automatically eval()\'d via '
+                    'globalEval(). An attacker who can influence the AJAX response URL can achieve XSS.'
+                )
             },
+            # CVE-2012-6708: XSS via $.parseJSON
+            # Affected: < 1.9.0
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2012-6708
             'CVE-2012-6708': {
-                'title': 'jQuery $.parseJSON XSS',
+                'title': 'jQuery XSS via $.parseJSON and location.hash',
                 'affected_versions': '<1.9.0',
                 'fixed_version': '1.9.0',
                 'severity': 'MEDIUM',
-                'description': 'Improper filtering in $.parseJSON can lead to XSS'
-            }
+                'description': (
+                    'jQuery may execute arbitrary JavaScript when the document is navigated to '
+                    'a specially crafted URL. jQuery used location.hash to select DOM elements '
+                    'when the hash started with #, allowing XSS via hash-based selectors.'
+                )
+            },
+            # CVE-2011-4969: XSS via XHR response
+            # Affected: < 1.6.3
+            # NVD: https://nvd.nist.gov/vuln/detail/CVE-2011-4969
+            'CVE-2011-4969': {
+                'title': 'jQuery XSS via XHR response in .text()',
+                'affected_versions': '<1.6.3',
+                'fixed_version': '1.6.3',
+                'severity': 'MEDIUM',
+                'description': (
+                    'The .text() method improperly handles XHR responses, allowing XSS when '
+                    'the response contains malicious script content in older jQuery versions.'
+                )
+            },
         },
         'lodash': {
             'CVE-2021-23337': {
-                'title': 'Lodash Prototype Pollution',
+                'title': 'Lodash Prototype Pollution via template()',
                 'affected_versions': '<4.17.21',
                 'fixed_version': '4.17.21',
                 'severity': 'CRITICAL',
-                'description': 'Prototype pollution in lodash utility via template function'
+                'description': 'Prototype pollution in lodash utility via template function, allowing arbitrary code execution'
+            },
+            'CVE-2020-8203': {
+                'title': 'Lodash Prototype Pollution via zipObjectDeep()',
+                'affected_versions': '<4.17.16',
+                'fixed_version': '4.17.16',
+                'severity': 'HIGH',
+                'description': 'Prototype pollution in lodash via zipObjectDeep and merge functions'
+            },
+            'CVE-2019-10744': {
+                'title': 'Lodash Prototype Pollution via defaultsDeep()',
+                'affected_versions': '<4.17.12',
+                'fixed_version': '4.17.12',
+                'severity': 'CRITICAL',
+                'description': 'Prototype pollution via _.defaultsDeep() allows manipulation of Object.prototype'
+            }
+        },
+        'jquery-ui': {
+            # CVE-2021-41182, 41183, 41184 — jQuery UI < 1.13.0
+            'CVE-2021-41182': {
+                'title': 'jQuery UI XSS via Datepicker altField option',
+                'affected_versions': '<1.13.0',
+                'fixed_version': '1.13.0',
+                'severity': 'MEDIUM',
+                'description': 'XSS via Datepicker widget altField option accepting untrusted input'
+            },
+            'CVE-2021-41184': {
+                'title': 'jQuery UI XSS via .position() utility',
+                'affected_versions': '<1.13.0',
+                'fixed_version': '1.13.0',
+                'severity': 'MEDIUM',
+                'description': 'XSS via the "of" option of the .position() utility from untrusted sources'
+            },
+            'CVE-2016-7103': {
+                'title': 'jQuery UI XSS via dialog closeText option',
+                'affected_versions': '>=1.0.0 <1.12.0',
+                'fixed_version': '1.12.0',
+                'severity': 'MEDIUM',
+                'description': 'XSS through the closeText option of the dialog widget when user input is passed'
             }
         }
     }
+
     
     @staticmethod
     def check_version(library: str, version: str) -> List[Dict[str, Any]]:
