@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [5.0.0] - 2026-02-08 (Phase 1 & 2 Complete)
+## [4.1.0] - 2026-02-08 (Phase 1 & 2 Complete)
 
 ### Added - Phase 1: Stabilization ✅
 - **False Positive Reduction Engine** (`ppmap/fp_engine.py`)
@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lab now at: 20 endpoints, 8 tiers, 32 detection methods
 
 ### Changed
-- Upgraded to v5.0.0 across codebase
+- Upgraded to v4.1.0 across codebase
 - CI pipeline tests now 100% passing
 
 ---
@@ -239,6 +239,6 @@ Author assumes NO liability for misuse or damages.
 
 ---
 
-**Current Version**: 4.0.0 Enterprise  
-**Last Updated**: February 8, 2026  
-**Next Release**: v4.1.0 (Planned - ML-based detection, Dynamic gadget discovery)
+**Current Version**: 4.1.0  
+**Last Updated**: February 25, 2026  
+**Next Release**: v5.0.0 (Planned - AI-powered detection, ML gadget discovery)
