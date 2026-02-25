@@ -22,7 +22,7 @@
 
 ## ✨ Features
 
-### **Detection Methods (28 Total)**
+### **Detection Methods (32 Total)**
 
 **Tier 0 - Standard Detection:**
 - jQuery Prototype Pollution (CVE-2019-11358)
@@ -87,7 +87,7 @@
 
 ### **Payloads**
 
-- **Total:** 226 payloads (+8 GraphQL)
+- **Total:** 266+ payloads (+8 GraphQL)
 - **Categories:** 10 types (+GraphQL, WebSocket)
 - **Coverage:** 98%+ of known PP vectors
 
@@ -130,8 +130,8 @@ open report/target_domain_timestamp/report.html
 
 ✅ **Modular Architecture** - Easy to maintain and extend  
 ✅ **Selenium WebDriver** - Real browser console automation  
-✅ **28 Detection Methods** - Comprehensive vulnerability detection  
-✅ **218+ Payloads** - 95%+ vector coverage  
+✅ **32 Detection Methods** - Comprehensive vulnerability detection  
+✅ **266+ Payloads** - 98%+ vector coverage  
 ✅ **HTML/JSON Reports** - Professional reporting  
 ✅ **Blind Detection** - Works with opaque backends  
 ✅ **Modern Frameworks** - React 19, Next.js 15, SvelteKit  
@@ -235,9 +235,9 @@ if frida.connect():
 
 ## 📊 Project Statistics
 
-- **Version:** 4.1.0 (Blind Detection & OOB Update)
+- **Version:** 4.1.0 (Enterprise - Full CVE Detection & jQuery Audit)
 - **Code Lines:** 4,140+
-- **Detection Methods:** 28
+- **Detection Methods:** 32
 - **Gadget Properties:** 40
 - **CVE Coverage:** 15
 - **Bug Bounty Cases:** 3 (Kibana $10k, Elastic, Blitz.js)
