@@ -1,4 +1,4 @@
-# 🚀 PPMAP v5.0.0 - Prototype Pollution Scanner
+# 🚀 PPMAP v4.1.0 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v5.0.0 Enterprise (Scanner | SAST | GraphQL | WebSocket)
+   v4.1.0 Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -67,19 +67,19 @@
 - Blitz.js RCE Chain (CVE-2022-23631)
 - Elastic XSS (HackerOne #998398)
 
-**Tier 7 - GraphQL PP (NEW in v5.0):**
+**Tier 7 - GraphQL PP (Added in v4.x):**
 - GraphQL endpoint auto-detection
 - Schema introspection attacks
 - Mutation/Query PP injection
 - 8 GraphQL-specific payloads
 
-**Tier 8 - WebSocket PP (NEW in v5.0):**
+**Tier 8 - WebSocket PP (Added in v4.x):**
 - Native WebSocket scanning
 - Socket.IO event pollution
 - Redux action injection
 - GraphQL subscription attacks
 
-**SAST Mode (NEW in v5.0):**
+**SAST Mode (Added in v4.x):**
 - Static JS analysis without execution
 - 15+ dangerous sink patterns
 - jQuery, Lodash, native JS detection
@@ -139,7 +139,7 @@ open report/target_domain_timestamp/report.html
 ✅ **PortSwigger Techniques** - fetch(), defineProperty, child_process RCE  
 ✅ **Async Scanning** - Fast concurrent testing  
 
-### 🚀 New in v5.0.0
+### 🚀 New in v4.x
 
 #### GraphQL Scanner
 ```python
@@ -201,7 +201,7 @@ if frida.connect():
     frida.stop()
 ```
 
-### v5.0.0 Feature Summary
+### v4.x Feature Summary
 - ✅ **GraphQL PP Scanner**: Auto-detect endpoints, schema introspection, mutation/query testing
 - ✅ **WebSocket PP Scanner**: Native WS and Socket.IO support
 - ✅ **SAST Mode**: Static JS analysis, 15+ dangerous sinks, CVE mapping
@@ -235,7 +235,7 @@ if frida.connect():
 
 ## 📊 Project Statistics
 
-- **Version:** 4.0.0 (Blind Detection & OOB Update)
+- **Version:** 4.1.0 (Blind Detection & OOB Update)
 - **Code Lines:** 4,140+
 - **Detection Methods:** 28
 - **Gadget Properties:** 40
