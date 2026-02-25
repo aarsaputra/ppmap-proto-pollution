@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.1.0] - 2026-02-08 (Phase 1 & 2 Complete)
+## [4.1.0] - 2026-02-25 (Phase 1 & 2 Complete)
 
 ### Added - Phase 1: Stabilization ✅
 - **False Positive Reduction Engine** (`ppmap/fp_engine.py`)
@@ -200,6 +200,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | Version | Release Date | Detection Methods | Code Lines | CVE Coverage | Notable Features |
 |---------|--------------|-------------------|------------|--------------|------------------|
 | 3.5.0 | 2026-01-31 | 28 | 4,158 | 15 | Phase 1-3 complete, Lab, 100% research coverage |
+| 4.0.0 | 2026-02-08 | 28 | 4,970 | 19 | Enterprise, OOB, Stealth, Multi-format reports |
+| 4.1.0 | 2026-02-25 | 32 | 4,973 | 19+ | CVE accuracy fix, all 203 tests pass |
 | 3.4.0 | 2026-01-30 | 21 | 3,480 | 9 | Tier 4, Advanced bypasses |
 | 3.3.0 | 2025-12-15 | 15 | 2,800 | 5 | Tier 1, Blind detection |
 | 3.2.0 | 2025-11-20 | 10 | 2,200 | 3 | Server-side PP, DOM XSS |
