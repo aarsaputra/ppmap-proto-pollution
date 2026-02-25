@@ -1,4 +1,4 @@
-# PPMAP v5.0 Multi-stage Dockerfile
+# PPMAP v4.1.0 Multi-stage Dockerfile
 # Optimized for smaller production image size
 
 # ==============================================================================
@@ -28,7 +28,7 @@ RUN pip wheel --no-cache-dir --wheel-dir=/wheels -r requirements.txt
 # ==============================================================================
 FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy AS production
 
-LABEL version="5.0.0" \
+LABEL version="4.1.0" \
     description="PPMAP Prototype Pollution Scanner - QuickPoC Runner" \
     maintainer="aarsaputra" \
     org.opencontainers.image.source="https://github.com/aarsaputra/ppmap-proto-pollution"
