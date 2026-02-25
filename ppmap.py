@@ -728,24 +728,45 @@ class CompleteSecurityScanner:
                     'jquery_version': jquery_version
                 })
             
-            # BUG-6 FIX: CVE-2020-11023 was in DB but never tested (jQuery == 3.5.0 exactly)
-            if ver_tuple == (3, 5, 0):
-                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11023 (jQuery.html() Code Exec){Colors.ENDC}")
+            # BUG-6 FIX CORRECTED: CVE-2020-11023 affects jQuery < 3.5.0 (NOT only == 3.5.0)
+            # Original bug: `ver_tuple == (3, 5, 0)` missed all versions < 3.5.0 (including 1.12.4!)
+            # See: https://nvd.nist.gov/vuln/detail/CVE-2020-11023 — affected: < 3.5.0
+            if ver_tuple < (3, 5, 0):
+                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11023 (<option> XSS in jQuery.html()){Colors.ENDC}")
                 cve_vulnerabilities.append({
                     'cve': 'CVE-2020-11023',
-                    'name': 'jQuery.html() Code Execution',
+                    'name': 'jQuery.html() <option> element XSS',
                     'severity': 'HIGH',
-                    'jquery_version': jquery_version
+                    'jquery_version': jquery_version,
+                    'description': 'Unescaped HTML in <option> elements via .html()/.append() methods'
                 })
-            
-            # CVE-2015-9251: XSS via CSS import (jQuery < 2.2.0 OR == 3.0.0)
-            if ver_tuple < (2, 2, 0) or ver_tuple == (3, 0, 0):
-                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2015-9251 (XSS via CSS import){Colors.ENDC}")
+
+            # CVE-2020-23064: XSS via DOM manipulation methods (jQuery < 3.5.0)
+            # This CVE was completely missing from ppmap. Related to CVE-2020-11023:
+            # .before(), .after(), .replaceWith(), etc. do not sanitize HTML input.
+            # See: https://nvd.nist.gov/vuln/detail/CVE-2020-23064
+            if ver_tuple < (3, 5, 0):
+                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-23064 (DOM Manipulation XSS){Colors.ENDC}")
+                cve_vulnerabilities.append({
+                    'cve': 'CVE-2020-23064',
+                    'name': 'jQuery DOM Manipulation XSS (.before/.after/.replaceWith)',
+                    'severity': 'HIGH',
+                    'jquery_version': jquery_version,
+                    'description': 'Unsafe HTML passed to DOM manipulation methods executes scripts'
+                })
+
+            # CVE-2015-9251: Cross-domain AJAX auto-eval (jQuery < 3.0.0)
+            # BUG FIX: Original range was `< (2, 2, 0)` — too narrow. Actual affected range: < 3.0.0
+            # This CVE is about auto-eval of text/javascript AJAX responses, NOT CSS import.
+            # See: https://nvd.nist.gov/vuln/detail/CVE-2015-9251
+            if ver_tuple < (3, 0, 0):
+                print(f"{Colors.FAIL}[!] VULNERABLE to CVE-2015-9251 (Cross-domain AJAX auto-eval XSS){Colors.ENDC}")
                 cve_vulnerabilities.append({
                     'cve': 'CVE-2015-9251',
-                    'name': 'XSS via CSS import in jQuery',
+                    'name': 'jQuery Cross-domain AJAX auto-eval XSS',
                     'severity': 'HIGH',
-                    'jquery_version': jquery_version
+                    'jquery_version': jquery_version,
+                    'description': 'AJAX responses with Content-Type: text/javascript auto-eval via globalEval()'
                 })
             
             # CVE-2012-6708: $.parseJSON XSS (jQuery < 1.9.0)
@@ -799,41 +820,137 @@ class CompleteSecurityScanner:
             except Exception:
                 pass
         
-        # Step 5: CVE-2020-11022 HTML Prefilter XSS exploitation test
-        # BUG-2 FIX: Removed `await` from execute_script — Selenium runs JS synchronously.
-        # Selenium doesn't support top-level await. Using sync version only.
+        # Step 5: Browser-based XSS verification tests per CVE
+        # Run each CVE's specific payload independently for accurate reporting
+        # ------------------------------------------------------------------
+
+        # CVE-2020-11022: HTML Prefilter bypass via <style> + <img onerror>
+        # BUG FIX: Old payload `<option><style></option><img onerror>` is actually CVE-2020-11023.
+        # CVE-2020-11022 specific: bypass htmlPrefilter regex using self-closing style tag.
         if any(c['cve'] == 'CVE-2020-11022' for c in cve_vulnerabilities):
-            xss_marker = f"cve2020_{int(time.time())}"
-            # Sync-only check (BUG-2 FIX: removed the async version with `await`)
-            js_xss_check = f"""
+            m = f"cve11022_{int(time.time())}"
+            js_11022 = f"""
             try {{
-                window.{xss_marker} = false;
-                var testEl = $('<div>').css('display','none').appendTo('body');
-                testEl.html('<option><style></option><img src=x onerror="window.{xss_marker}=true">');
-                var result = window.{xss_marker} === true;
-                testEl.remove();
-                delete window.{xss_marker};
-                return result;
+                window.{m} = false;
+                var el = $('<div>').css('display','none').appendTo('body');
+                el.html('<style></style><img src=x onerror="window.{m}=true">');
+                var r = window.{m} === true;
+                el.remove(); delete window.{m};
+                return r;
             }} catch(e) {{ return false; }}
             """
             try:
-                xss_result = self.driver.execute_script(js_xss_check)
-                
-                if xss_result:
-                    print(f"{Colors.FAIL}[!] CVE-2020-11022 VERIFIED: HTML Prefilter XSS executed in browser!{Colors.ENDC}")
+                if self.driver.execute_script(js_11022):
+                    print(f"{Colors.FAIL}[!] CVE-2020-11022 VERIFIED: htmlPrefilter bypass XSS executed!{Colors.ENDC}")
                     findings.append({
                         'type': 'jquery_xss_verified',
-                        'name': 'jQuery HTML Prefilter XSS VERIFIED',
+                        'name': 'jQuery htmlPrefilter XSS (VERIFIED)',
                         'severity': 'HIGH',
                         'cve': 'CVE-2020-11022',
                         'jquery_version': jquery_version,
                         'verified': True,
-                        'description': 'jQuery .html() does not sanitize <style> + <img onerror> combination'
+                        'description': 'jQuery .html() htmlPrefilter regex bypassed via <style></style><img onerror>',
+                        'poc': f"$('<div>').appendTo('body').html('<style></style><img src=x onerror=alert(1)>')"
                     })
                 else:
-                    print(f"{Colors.YELLOW}[*] CVE-2020-11022: Version vulnerable but XSS payload did not execute in this context{Colors.ENDC}")
+                    print(f"{Colors.YELLOW}[*] CVE-2020-11022: Version vulnerable, XSS payload did not execute (CSP or sandbox may block){Colors.ENDC}")
             except Exception as e:
-                logger.debug(f"CVE-2020-11022 test error: {e}")
+                logger.debug(f"CVE-2020-11022 browser test error: {e}")
+
+        # CVE-2020-11023: <option> element XSS
+        # The <option><style></option><img onerror> pattern is specific to this CVE.
+        if any(c['cve'] == 'CVE-2020-11023' for c in cve_vulnerabilities):
+            m = f"cve11023_{int(time.time())}"
+            js_11023 = f"""
+            try {{
+                window.{m} = false;
+                var el = $('<select>').css('display','none').appendTo('body');
+                el.html('<option><img src=x onerror="window.{m}=true"></option>');
+                var r = window.{m} === true;
+                el.remove(); delete window.{m};
+                return r;
+            }} catch(e) {{ return false; }}
+            """
+            try:
+                if self.driver.execute_script(js_11023):
+                    print(f"{Colors.FAIL}[!] CVE-2020-11023 VERIFIED: <option> element XSS executed!{Colors.ENDC}")
+                    findings.append({
+                        'type': 'jquery_xss_verified',
+                        'name': 'jQuery <option> element XSS (VERIFIED)',
+                        'severity': 'HIGH',
+                        'cve': 'CVE-2020-11023',
+                        'jquery_version': jquery_version,
+                        'verified': True,
+                        'description': 'jQuery .html() does not sanitize <option><img onerror> combination',
+                        'poc': "$('<select>').appendTo('body').html('<option><img src=x onerror=alert(1)></option>')"
+                    })
+                else:
+                    print(f"{Colors.YELLOW}[*] CVE-2020-11023: Version vulnerable, <option> XSS payload did not execute{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"CVE-2020-11023 browser test error: {e}")
+
+        # CVE-2020-23064: DOM manipulation XSS via .append() with raw img
+        # Tests .append() without prior sanitization — sibling of CVE-2020-11023
+        if any(c['cve'] == 'CVE-2020-23064' for c in cve_vulnerabilities):
+            m = f"cve23064_{int(time.time())}"
+            js_23064 = f"""
+            try {{
+                window.{m} = false;
+                var el = $('<div>').css('display','none').appendTo('body');
+                el.append('<img/><img src=x onerror="window.{m}=true">');
+                var r = window.{m} === true;
+                el.remove(); delete window.{m};
+                return r;
+            }} catch(e) {{ return false; }}
+            """
+            try:
+                if self.driver.execute_script(js_23064):
+                    print(f"{Colors.FAIL}[!] CVE-2020-23064 VERIFIED: DOM manipulation XSS executed via .append()!{Colors.ENDC}")
+                    findings.append({
+                        'type': 'jquery_xss_verified',
+                        'name': 'jQuery DOM Manipulation XSS (VERIFIED)',
+                        'severity': 'HIGH',
+                        'cve': 'CVE-2020-23064',
+                        'jquery_version': jquery_version,
+                        'verified': True,
+                        'description': 'jQuery .append() does not sanitize <img/><img onerror> combination',
+                        'poc': "$('<div>').appendTo('body').append('<img/><img src=x onerror=alert(1)>')"
+                    })
+                else:
+                    print(f"{Colors.YELLOW}[*] CVE-2020-23064: Version vulnerable, DOM XSS payload did not execute{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"CVE-2020-23064 browser test error: {e}")
+
+        # CVE-2015-9251: Check if AJAX text/javascript auto-eval converter is active
+        # This checks for the presence of the vulnerable converter in jQuery's settings.
+        # Full exploitation requires cross-domain AJAX, but we can verify the converter exists.
+        if any(c['cve'] == 'CVE-2015-9251' for c in cve_vulnerabilities):
+            js_9251 = """
+            try {
+                var conv = jQuery && jQuery.ajaxSettings && jQuery.ajaxSettings.converters;
+                return conv && typeof conv["text script"] === 'function';
+            } catch(e) { return false; }
+            """
+            try:
+                if self.driver.execute_script(js_9251):
+                    print(f"{Colors.FAIL}[!] CVE-2015-9251 VERIFIED: text/javascript auto-eval converter ACTIVE in jQuery!{Colors.ENDC}")
+                    findings.append({
+                        'type': 'jquery_xss_verified',
+                        'name': 'jQuery AJAX auto-eval converter Active (CVE-2015-9251)',
+                        'severity': 'MEDIUM',
+                        'cve': 'CVE-2015-9251',
+                        'jquery_version': jquery_version,
+                        'verified': True,
+                        'description': 'jQuery.ajaxSettings.converters["text script"] = globalEval is active. '
+                                       'Cross-domain AJAX responses with Content-Type: text/javascript will be auto-eval\'d.',
+                        'poc': 'typeof jQuery.ajaxSettings.converters["text script"] === "function"  // returns true'
+                    })
+                else:
+                    print(f"{Colors.YELLOW}[*] CVE-2015-9251: Converter not active or jQuery not accessible{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"CVE-2015-9251 browser test error: {e}")
+
+
         
         # Restore snapshot if available
         try:

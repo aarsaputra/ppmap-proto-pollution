@@ -20,19 +20,35 @@ class TestCVEDatabase:
     """Tests for CVEDatabase class."""
     
     def test_check_jquery_vulnerable_version(self):
-        """Should detect vulnerable jQuery versions."""
-        cves = CVEDatabase.check_version('jquery', '3.4.1')
+        """Should detect vulnerable jQuery versions.
+        
+        CVE-2019-11358 is fixed in jQuery 3.4.0, so 3.3.1 is vulnerable.
+        CVE-2019-11358 range: >= 1.0.3, < 3.4.0
+        """
+        # Use 3.3.1 — the last version before the CVE-2019-11358 patch (fixed in 3.4.0)
+        cves = CVEDatabase.check_version('jquery', '3.3.1')
         
         assert len(cves) > 0
         cve_ids = [c['cve'] for c in cves]
         assert 'CVE-2019-11358' in cve_ids
+
+    def test_check_jquery_341_not_affected_by_pp(self):
+        """jQuery 3.4.1 must NOT be flagged for CVE-2019-11358 (patched in 3.4.0)."""
+        cves = CVEDatabase.check_version('jquery', '3.4.1')
+        cve_ids = [c['cve'] for c in cves]
+        assert 'CVE-2019-11358' not in cve_ids, (
+            f'CVE-2019-11358 was patched in jQuery 3.4.0, so 3.4.1 should not be affected. '
+            f'Found CVEs: {cve_ids}'
+        )
+        # But 3.4.1 is still vulnerable to the XSS CVEs
+        assert 'CVE-2020-11022' in cve_ids
     
     def test_check_jquery_safe_version(self):
-        """Should not flag safe jQuery versions."""
+        """Should not flag safe jQuery versions (3.6.0 has no known CVEs)."""
         cves = CVEDatabase.check_version('jquery', '3.6.0')
         
-        # 3.6.0+ should have fewer CVEs
-        assert len(cves) < 2
+        # 3.6.0 is fully patched — should have 0 CVEs
+        assert len(cves) == 0, f'Expected 0 CVEs for jQuery 3.6.0, got: {[c["cve"] for c in cves]}'
     
     def test_check_unknown_library(self):
         """Unknown library should return empty list."""

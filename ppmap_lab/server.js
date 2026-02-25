@@ -507,24 +507,24 @@ io.on('connection', (socket) => {
 // JQUERY CVE TESTING ENDPOINTS (Lab Coverage)
 // ============================================
 
-// jQuery 1.11.1 page — covers CVE-2012-6708 ($.parseJSON XSS) and CVE-2015-9251 (XSS via CSS)
+// jQuery 1.11.1 page — covers CVE-2012-6708 (< 1.9.0) and CVE-2015-9251 (< 3.0.0)
+// BUG FIX: CVE-2015-9251 range is < 3.0.0 (NOT < 2.2.0 as previously commented)
 app.get('/jquery-old', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>jQuery Old (1.11.1) CVE Lab</title>
-  <!-- CVE-2012-6708: $.parseJSON XSS - jQuery < 1.9.0 (affected: <=1.8.x) -->
-  <!-- CVE-2015-9251: XSS via @import CSS - jQuery < 2.2.0 -->
+  <!-- CVE-2015-9251: XSS via cross-domain AJAX auto-eval - jQuery < 3.0.0 (fixed in 3.0.0) -->
   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 </head>
 <body>
   <h2>jQuery 1.11.1 CVE Test Page</h2>
-  <p>Covers: CVE-2015-9251 (XSS via CSS import, jQuery &lt;2.2.0)</p>
+  <p>Covers: CVE-2015-9251 (cross-domain AJAX auto-eval XSS, jQuery &lt;3.0.0)</p>
   <p>jQuery version: <span id="ver"></span></p>
   <script>
     $('#ver').text($.fn.jquery);
-    // Vulnerable: jQuery 1.11.1 does not sanitize @import in style attributes
+    // Vulnerable: jQuery 1.11.1 converters["text script"] = globalEval — auto-eval AJAX responses
     var query = ${JSON.stringify(req.query)};
     try { $.extend(true, {}, query); } catch(e) {}
   </script>
@@ -532,19 +532,62 @@ app.get('/jquery-old', (req, res) => {
 </html>`);
 });
 
-// jQuery 3.5.0 page — covers CVE-2020-11023 (.html() code exec, jQuery == 3.5.0)
+// jQuery 1.12.4 page — PRIMARY TARGET for pentest
+// Covers: CVE-2019-11358(PP), CVE-2020-11022, CVE-2020-11023, CVE-2020-23064, CVE-2015-9251
+app.get('/jquery-1124', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>jQuery 1.12.4 CVE Lab — Primary Pentest Target</title>
+  <!-- ALL 5 CVEs apply to jQuery 1.12.4: -->
+  <!-- CVE-2019-11358: Prototype Pollution via $.extend() - jQuery < 3.4.0 -->
+  <!-- CVE-2020-11022: HTML Prefilter XSS - jQuery < 3.5.0 -->
+  <!-- CVE-2020-11023: <option> element XSS - jQuery < 3.5.0 -->
+  <!-- CVE-2020-23064: DOM Manipulation XSS - jQuery < 3.5.0 -->
+  <!-- CVE-2015-9251: Cross-domain AJAX auto-eval - jQuery < 3.0.0 -->
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+<body>
+  <h2>jQuery 1.12.4 — All 5 CVEs Active</h2>
+  <p>jQuery version: <span id="ver"></span></p>
+  <p>CVEs: CVE-2019-11358, CVE-2020-11022, CVE-2020-11023, CVE-2020-23064, CVE-2015-9251</p>
+  <div id="pp-result"></div>
+  <div id="xss-result"></div>
+  <script>
+    $('#ver').text($.fn.jquery);
+    var query = ${JSON.stringify(req.query)};
+    // CVE-2019-11358: $.extend Prototype Pollution test
+    try { $.extend(true, {}, query); } catch(e) {}
+    // CVE-2020-11022: htmlPrefilter bypass
+    var ppResult = document.getElementById('pp-result');
+    // CVE-2015-9251: converter still active in 1.12.4
+    document.getElementById('xss-result').textContent =
+      'text/script converter: ' + typeof $.ajaxSettings.converters['text script'];
+  </script>
+</body>
+</html>`);
+});
+
+// jQuery 3.5.0 page — covers CVE-2020-11023 (ALREADY PATCHED in 3.5.0, use for VERIFY fix)
+// BUG FIX: CVE-2020-11023 affects jQuery < 3.5.0, so jQuery 3.5.0 itself is PATCHED
+// This page is useful to test that 3.5.0 is NOT vulnerable (negative test)
 app.get('/jquery-350', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>jQuery 3.5.0 CVE Lab</title>
-  <!-- CVE-2020-11023: jQuery.html() Code Execution - jQuery == 3.5.0 -->
+  <title>jQuery 3.5.0 CVE Verification Lab (PATCHED)</title>
+  <!-- jQuery 3.5.0 = PATCHED for CVE-2020-11022 and CVE-2020-11023 -->
+  <!-- Still vulnerable to NO known jQuery CVEs at this version -->
+  <!-- Use this page to VERIFY that patches work correctly (negative test) -->
+  <!-- CVE-2019-11358 already patched in 3.4.0, so 3.5.0 is safe for PP too -->
   <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
 </head>
 <body>
-  <h2>jQuery 3.5.0 CVE Test Page</h2>
-  <p>Covers: CVE-2020-11023 (jQuery.html() improper handling, jQuery 3.5.0)</p>
+  <h2>jQuery 3.5.0 — Patched Verification Page</h2>
+  <p>CVE-2020-11022, CVE-2020-11023, CVE-2020-23064: PATCHED in this version</p>
+  <p>CVE-2019-11358 (PP): PATCHED since 3.4.0</p>
   <p>jQuery version: <span id="ver"></span></p>
   <script>
     $('#ver').text($.fn.jquery);
@@ -562,17 +605,26 @@ app.get('/jquery-350', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '2.1.0',
-        endpoints: 22,
+        version: '2.2.0',
+        endpoints: 24,
         tiers: 8,
         detectionMethods: 32,
         cvePages: {
-            'CVE-2012-6708': '/jquery-old (jQuery 1.11.1)',
-            'CVE-2015-9251': '/jquery-old (jQuery 1.11.1)',
-            'CVE-2019-11358': '/ (jQuery 3.4.1)',
-            'CVE-2020-11022': '/ (jQuery 3.4.1)',
-            'CVE-2020-11023': '/jquery-350 (jQuery 3.5.0)',
+            'CVE-2012-6708': '/jquery-old (jQuery 1.11.1) — affected: < 1.9.0',
+            'CVE-2015-9251': '/jquery-old (jQuery 1.11.1) — affected: < 3.0.0 [BUG FIXED: was < 2.2.0]',
+            'CVE-2019-11358': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.4.0 [BUG FIXED: was < 3.5.0]',
+            'CVE-2020-11022': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0',
+            'CVE-2020-11023': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0 [BUG FIXED: was == 3.5.0]',
+            'CVE-2020-23064': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0 [NEW: was missing]',
+            'CVE-2020-11022+11023+23064 PATCHED': '/jquery-350 (jQuery 3.5.0) — negative test'
         },
+        bugFixes: [
+            'CVE-2020-11023: range was == 3.5.0, now correctly < 3.5.0',
+            'CVE-2015-9251: range was < 2.2.0, now correctly < 3.0.0',
+            'CVE-2019-11358: range was < 3.5.0, now correctly < 3.4.0',
+            'CVE-2020-23064: was completely missing, now added',
+            'Added /jquery-1124 page for primary pentest target (jQuery 1.12.4)'
+        ],
         features: {
             graphql: '/graphql',
             websocket: '/ws',
@@ -618,7 +670,7 @@ async function startServer() {
 ║  Test with PPMAP:                                         ║
 ║  python3 ppmap.py --scan http://localhost:${PORT}         ║
 ║                                                           ║
-║  ⚠️  DO NOT DEPLOY TO PRODUCTION ⚠️                        ║
+║  ⚠️  DO NOT DEPLOY TO PRODUCTION ⚠️                       ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
         `);
