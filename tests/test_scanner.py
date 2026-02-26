@@ -8,7 +8,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ppmap.scanner import (
+from ppmap.engine import (
     CVEDatabase,
     WAFDetector,
     WAFBypassPayloads,
