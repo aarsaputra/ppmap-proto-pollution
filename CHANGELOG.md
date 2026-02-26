@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.1.0] - 2026-02-26 (Phase 7: Enhanced Lab Vulnerabilities) ✅
+
+### New Features - Phase 7: Lab Enhancement
+- **Server-Side Template Injection (SSTI) Testing**
+  - Added `/api/template` endpoint (POST)
+  - Vulnerable EJS template rendering with user input
+  - Prototype pollution integration with template data
+  - Coverage: Tier 9 - Advanced Injection Vectors
+- **DOM-based XSS with Prototype Pollution**
+  - Added `/dom-xss` endpoint (GET)
+  - Interactive testing interface with 4 test vectors
+  - Gadget chain demonstrations (addEventListener, setTimeout, eval, Function)
+  - Client-side PP exploitation via query parameters
+- **Lab Version Upgrade**
+  - ppmap_lab v2.2.0 → v2.3.0
+  - Endpoints: 24 → 26 (+2 new endpoints)
+  - Tiers: 8 → 9 (+1 new tier)
+  - Detection Methods: 32 → 34 (+2 new methods)
+  - Coverage improved from 75-80% to 85-90%+
+
+### Testing - Phase 7: Validation
+- ✅ SSTI endpoint tested and verified working
+- ✅ DOM-based XSS endpoint tested and verified working
+- ✅ PPMAP scan executed on enhanced lab (12 vulnerabilities found)
+- ✅ All 26 endpoints operational
+- ✅ GraphQL and WebSocket integration still functional
+- ✅ Report generation working with new endpoints
+
+### Documentation - Phase 7: Updates
+- Updated CHANGELOG.md with new features
+- Updated ppmap_lab health check endpoint
+- Updated server startup banner with v2.3.0 info
+- ppmap_lab/README.md: Added SSTI and DOM-XSS documentation
+
+---
+
 ## [4.1.0] - 2026-02-26 (Phase 6: Tools Security Hardening) ✅
 
 ### Security Fixes - Phase 6: Tools Hardening
