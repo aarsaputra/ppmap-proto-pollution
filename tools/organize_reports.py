@@ -1,13 +1,17 @@
 import os
 import shutil
+import argparse
 
-SOURCE_DIR = "report"
-DEST_BASE = "bug_bunty/reports"
 
-if not os.path.exists(DEST_BASE):
-    os.makedirs(DEST_BASE)
+def organize_reports(source_dir: str, dest_base: str, match_string: str = None):
+    if not os.path.exists(dest_base):
+        try:
+            os.makedirs(dest_base)
+        except OSError as e:
+            print(f"Error creating destination directory '{dest_base}': {e}")
+            return
 
-print("""
+    print("""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |
@@ -17,48 +21,70 @@ print("""
    Prototype Pollution Multi-Purpose Assessment Platform
    v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
-print(f"Scanning {SOURCE_DIR}...")
+    print(f"Scanning {source_dir}...")
 
-count = 0
-for item in os.listdir(SOURCE_DIR):
-    src_path = os.path.join(SOURCE_DIR, item)
-    if not os.path.isdir(src_path):
-        continue
-    
-    # Pattern: {subdomain}_domainesia_com_{timestamp}
-    if "domainesia_com" in item:
+    count = 0
+    try:
+        items = os.listdir(source_dir)
+    except OSError as e:
+        print(f"Error reading source directory '{source_dir}': {e}")
+        return
+
+    for item in items:
+        src_path = os.path.join(source_dir, item)
+        if not os.path.isdir(src_path):
+            continue
+
+        if match_string and match_string not in item:
+            continue
+
         try:
-            parts = item.split("_domainesia_com_")
-            if len(parts) != 2:
-                continue
-                
-            subdomain_part = parts[0]
-            timestamp = parts[1]
-            
-            # Fix subdomain: alessandria_id -> alessandria.id (heuristic)
-            # What if it was sub-sub? sub_sub -> sub.sub
-            # This is best effort.
-            subdomain = subdomain_part.replace("_", ".")
+            # Fallback logic if the pattern isn't timestamped exactly like before
+            if "_" in item:
+                parts = item.split("_", 1)  # split at first underscore
+                subdomain = parts[0].replace("_", ".")
+                timestamp = parts[1]
+            else:
+                subdomain = "unknown"
+                timestamp = item
+
             if subdomain == "":
                 subdomain = "root"
-                
-            main_domain = "domainesia.com"
-            
-            # Create dest: bug_bunty/reports/domainesia.com/subdomain/timestamp/
-            # Actually, let's make the folder name just the timestamp inside subdomain
-            dest_dir = os.path.join(DEST_BASE, main_domain, subdomain, timestamp)
-            
+
+            dest_dir = os.path.join(dest_base, subdomain, timestamp)
+
             if os.path.exists(dest_dir):
                 print(f"Skipping {item}, dest exists")
                 continue
-                
+
             os.makedirs(os.path.dirname(dest_dir), exist_ok=True)
-            
+
             print(f"Moving {item} -> {dest_dir}")
             shutil.move(src_path, dest_dir)
             count += 1
-            
-        except Exception as e:
-            print(f"Error {item}: {e}")
 
-print(f"Organized {count} reports.")
+        except (OSError, shutil.Error) as e:
+            print(f"Error processing {item}: {e}")
+
+    print(f"Organized {count} reports.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="PPMAP Report Organizer")
+    parser.add_argument(
+        "--src", default="report", help="Source directory containing raw reports"
+    )
+    parser.add_argument(
+        "--dest", default="bug_bounty_reports", help="Destination base directory"
+    )
+    parser.add_argument(
+        "--match",
+        help="Optional string that directory names must contain to be processed",
+    )
+    args = parser.parse_args()
+
+    organize_reports(args.src, args.dest, args.match)
+
+
+if __name__ == "__main__":
+    main()

