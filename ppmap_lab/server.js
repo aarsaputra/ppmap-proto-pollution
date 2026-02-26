@@ -504,6 +504,45 @@ io.on('connection', (socket) => {
 });
 
 // ============================================
+// TIER 9+ - ADVANCED INJECTION VECTORS
+// ============================================
+
+// Server-Side Template Injection (SSTI) - EJS vulnerability
+app.post('/api/template', (req, res) => {
+    try {
+        // VULNERABLE: User input directly in template
+        const templateContent = req.body.template || 'Welcome <%= userName %>';
+        const userData = req.body.data || {};
+        
+        // Merge prototype pollution with template data
+        _.merge(userData, req.body.inject || {});
+        
+        // VULNERABLE: Rendering template with user-controlled data
+        const rendered = require('ejs').render(templateContent, userData, {
+            filename: 'template'
+        });
+        
+        res.json({
+            success: true,
+            rendered: rendered,
+            data: userData,
+            prototype: Object.prototype
+        });
+    } catch (e) {
+        res.status(500).json({ 
+            error: e.message,
+            vulnerable: true,
+            hints: 'Can be exploited with EJS template injection + PP'
+        });
+    }
+});
+
+// DOM-based XSS with Prototype Pollution - Client-side exploitation
+app.get('/dom-xss', (req, res) => {
+    res.render('dom-xss', { query: req.query });
+});
+
+// ============================================
 // JQUERY CVE TESTING ENDPOINTS (Lab Coverage)
 // ============================================
 
@@ -605,10 +644,15 @@ app.get('/jquery-350', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '2.2.0',
-        endpoints: 24,
-        tiers: 8,
-        detectionMethods: 32,
+        version: '2.3.0',
+        endpoints: 26,
+        tiers: 9,
+        detectionMethods: 34,
+        newFeatures: {
+            ssti: '/api/template - Server-Side Template Injection',
+            domXss: '/dom-xss - DOM-based XSS + Prototype Pollution',
+            coverage: '26 endpoints covering 34 detection methods (up from 32)'
+        },
         cvePages: {
             'CVE-2012-6708': '/jquery-old (jQuery 1.11.1) — affected: < 1.9.0',
             'CVE-2015-9251': '/jquery-old (jQuery 1.11.1) — affected: < 3.0.0 [BUG FIXED: was < 2.2.0]',
@@ -623,12 +667,19 @@ app.get('/health', (req, res) => {
             'CVE-2015-9251: range was < 2.2.0, now correctly < 3.0.0',
             'CVE-2019-11358: range was < 3.5.0, now correctly < 3.4.0',
             'CVE-2020-23064: was completely missing, now added',
-            'Added /jquery-1124 page for primary pentest target (jQuery 1.12.4)'
+            'Added /jquery-1124 page for primary pentest target (jQuery 1.12.4)',
+            'v2.3.0: Added SSTI + DOM-XSS endpoints for enhanced coverage'
         ],
         features: {
             graphql: '/graphql',
             websocket: '/ws',
-            socketio: 'port 3000'
+            socketio: 'port 3000',
+            ssti: '/api/template (POST)',
+            domXss: '/dom-xss (GET)',
+            socketEvents: [
+                'PROTOTYPE_MERGE - test PP over websocket',
+                'USER_SET - Redux-style action'
+            ]
         }
     });
 });
@@ -654,18 +705,25 @@ async function startServer() {
         console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║           PPMAP VULNERABLE LAB - v2.0.0                   ║
+║           PPMAP VULNERABLE LAB - v2.3.0                   ║
 ║                                                           ║
 ║  ⚠️  INTENTIONALLY VULNERABLE APPLICATION ⚠️               ║
 ║                                                           ║
 ║  Server running on: http://localhost:${PORT}              ║
 ║                                                           ║
-║  NEW FEATURES:                                            ║
+║  ENDPOINTS:                                               ║
 ║  ├── GraphQL: http://localhost:${PORT}/graphql            ║
 ║  ├── WebSocket: ws://localhost:${PORT}/ws                 ║
-║  └── Socket.IO: http://localhost:${PORT}                  ║
+║  ├── Socket.IO: http://localhost:${PORT}                  ║
+║  ├── SSTI: POST http://localhost:${PORT}/api/template     ║
+║  └── DOM-XSS: http://localhost:${PORT}/dom-xss            ║
 ║                                                           ║
-║  Endpoints: 20  |  Tiers: 8  |  Methods: 32               ║
+║  Endpoints: 26  |  Tiers: 9  |  Methods: 34               ║
+║                                                           ║
+║  NEW IN v2.3.0:                                           ║
+║  ✅ Server-Side Template Injection (SSTI) testing         ║
+║  ✅ DOM-based XSS with PP chains                          ║
+║  ✅ Coverage improved from 32 to 34 detection methods     ║
 ║                                                           ║
 ║  Test with PPMAP:                                         ║
 ║  python3 ppmap.py --scan http://localhost:${PORT}         ║
