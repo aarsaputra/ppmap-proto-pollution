@@ -2,8 +2,69 @@ import json
 import glob
 import argparse
 import hashlib
+import logging
 from pathlib import Path
 from collections import defaultdict
+
+# ============================================================================
+# LOGGING SETUP
+# ============================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# SECURITY FUNCTIONS
+# ============================================================================
+
+def validate_file_path(filepath: str, allowed_dir: str = None) -> Path:
+    """
+    Validate file path to prevent directory traversal attacks.
+    
+    Args:
+        filepath: Path to validate
+        allowed_dir: Parent directory to restrict access (default: report/)
+        
+    Returns:
+        Validated absolute path or None if invalid
+    """
+    if allowed_dir is None:
+        allowed_dir = "./report"
+    
+    try:
+        # Resolve to absolute paths to prevent traversal bypass using ../ 
+        file_path = Path(filepath).resolve()
+        allowed_path = Path(allowed_dir).resolve()
+        
+        # SECURITY CHECK: Ensure file is within allowed directory
+        # This prevents: ../../etc/passwd, /etc/passwd, etc.
+        try:
+            file_path.relative_to(allowed_path)
+        except ValueError:
+            logger.error(f"🔴 SECURITY: Path traversal attack detected!")
+            logger.error(f"   Attempted to access: {file_path}")
+            logger.error(f"   Allowed directory: {allowed_path}")
+            logger.error(f"   Access DENIED")
+            return None
+        
+        # Check if file exists
+        if not file_path.exists():
+            logger.error(f"File not found: {filepath}")
+            return None
+        
+        # Check if it's a file (not directory or device)
+        if not file_path.is_file():
+            logger.error(f"Not a file: {filepath}")
+            return None
+        
+        logger.info(f"✅ Validated file: {file_path}")
+        return file_path
+    
+    except Exception as e:
+        logger.error(f"Error validating path '{filepath}': {e}")
+        return None
 
 
 def summarize_vulnerabilities(report_dir: str):
@@ -73,15 +134,19 @@ def summarize_vulnerabilities(report_dir: str):
         print(f"  - {v_type}: {count}")
 
 
-def diff_scan_results(file1_path: str, file2_path: str):
+def diff_scan_results(file1_path: str, file2_path: str, allowed_dir: str = "report"):
     """Compare two JSON scan result files and report differences."""
-    print(f"Comparing {file1_path} vs {file2_path}")
-    print("-" * 80)
-
-    path1, path2 = Path(file1_path), Path(file2_path)
-    if not path1.exists() or not path2.exists():
-        print("Error: One or both input files do not exist.")
+    
+    # SECURITY: Validate paths to prevent directory traversal
+    path1 = validate_file_path(file1_path, allowed_dir)
+    path2 = validate_file_path(file2_path, allowed_dir)
+    
+    if not path1 or not path2:
+        logger.error("Cannot compare: One or both files failed validation")
         return
+
+    print(f"Comparing {path1.name} vs {path2.name}")
+    print("-" * 80)
 
     try:
         with open(path1, "r", encoding="utf-8") as f1, open(
@@ -135,9 +200,9 @@ def diff_scan_results(file1_path: str, file2_path: str):
             print("\n[-] No regressions or fixes detected.")
 
     except json.JSONDecodeError as e:
-        print(f"Error parsing JSON files: {e}")
+        logger.error(f"Invalid JSON in files: {e}")
     except Exception as e:
-        print(f"Unexpected error comparing files: {e}")
+        logger.error(f"Unexpected error comparing files: {e}", exc_info=True)
 
 
 def main():
@@ -151,11 +216,18 @@ def main():
         metavar=("FILE1", "FILE2"),
         help="Compare two exact report files",
     )
+    parser.add_argument(
+        "--allowed-dir",
+        default="report",
+        help="Restrict file access to this directory (security) - default: ./report"
+    )
     args = parser.parse_args()
 
     if args.diff:
-        diff_scan_results(args.diff[0], args.diff[1])
+        logger.info(f"Diff mode: comparing {args.diff[0]} vs {args.diff[1]}")
+        diff_scan_results(args.diff[0], args.diff[1], args.allowed_dir)
     else:
+        logger.info(f"Summary mode: analyzing reports in {args.dir}")
         summarize_vulnerabilities(args.dir)
 
 
