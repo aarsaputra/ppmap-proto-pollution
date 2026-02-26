@@ -292,8 +292,8 @@ if PAYLOADS_AVAILABLE:
                 all_pp.extend(payloads)
         if all_pp:
             CONFIG['jquery_payloads'] = all_pp[:20]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Ignored error: {type(e).__name__} - {e}")
     
     # PAYLOAD_XSS_LIST should be a list
     if PAYLOAD_XSS_LIST and isinstance(PAYLOAD_XSS_LIST, list):
@@ -553,7 +553,8 @@ class CompleteSecurityScanner:
             }, {});
             """
             return self.driver.execute_script(snapshot_script)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Returning None due to error: {type(e).__name__} - {e}")
             return None
     
     def restore_object_prototype(self, snapshot):
@@ -563,8 +564,8 @@ class CompleteSecurityScanner:
         try:
             restore_script = "Object.getOwnPropertyNames(Object.prototype).forEach(prop => { if (!window.__ppmap_protected) { delete Object.prototype[prop]; } });"
             self.driver.execute_script(restore_script)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
     
     def verify_cleanup(self, props_to_check=None):
         """Verify prototype cleanup"""
@@ -575,14 +576,15 @@ class CompleteSecurityScanner:
             return { 'prototype_ok': polluted.length === 0, 'details': { 'prototype': polluted } };
             """
             return self.driver.execute_script(verify_script, props_to_check or [])
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Returning {'prototype_ok': True} due to error: {type(e).__name__} - {e}")
             return {'prototype_ok': True}
     
-    def test_jquery_prototype_pollution(self):
+    def test_jquery_prototype_pollution(self) -> List[Dict[str, Any]]:
         """Test jQuery Prototype Pollution (CVE-2019-11358) with proper CVE detection"""
         print(f"{Colors.CYAN}[→] Testing jQuery Prototype Pollution...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Step 1: Detect jQuery version (EXACT METHOD FROM scanner_v2.py)
         try:
@@ -683,8 +685,8 @@ class CompleteSecurityScanner:
                                  logger.debug(f"RequireJS version check error: {e}")
                              break
             
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ignored error: {type(e).__name__} - {e}")
 
             if not jquery_version:
                 print(f"{Colors.GREEN}[✓] jQuery not detected{Colors.ENDC}")
@@ -817,8 +819,8 @@ class CompleteSecurityScanner:
                         'jquery_version': jquery_version,
                         'verified': True
                     })
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ignored error: {type(e).__name__} - {e}")
         
         # Step 5: Browser-based XSS verification tests per CVE
         # Run each CVE's specific payload independently for accurate reporting
@@ -956,8 +958,8 @@ class CompleteSecurityScanner:
         try:
             if self.prototype_snapshot:
                 self.restore_object_prototype(self.prototype_snapshot)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
         
         # BUG-8 FIX: If no browser-verified findings but CVEs detected by version, report them
         if not findings and cve_vulnerabilities:
@@ -971,11 +973,11 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_xss_with_details(self, base_url):
+    def test_xss_with_details(self, base_url) -> List[Dict[str, Any]]:
         """Test XSS vulnerabilities with execution-based verification (NOT text search)"""
         print(f"{Colors.CYAN}[→] Testing XSS payloads...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Discover parameters dynamically from HTML forms
         print(f"{Colors.BLUE}[*] Discovering parameters from forms...{Colors.ENDC}")
@@ -1087,11 +1089,11 @@ class CompleteSecurityScanner:
             print(f"{Colors.GREEN}[✓] No confirmed XSS detected{Colors.ENDC}")
         return findings
     
-    def test_post_parameters(self, base_url):
+    def test_post_parameters(self, base_url) -> List[Dict[str, Any]]:
         """Test POST parameters for XSS and PP vulnerabilities"""
         print(f"{Colors.CYAN}[→] Testing POST parameters...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Discover which forms use POST
@@ -1171,8 +1173,8 @@ class CompleteSecurityScanner:
                                     'severity': 'HIGH',
                                     'method': 'POST'
                                 })
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
         
         except Exception as e:
             print(f"{Colors.WARNING}[⚠] Error testing POST parameters: {str(e)[:50]}{Colors.ENDC}")
@@ -1181,11 +1183,11 @@ class CompleteSecurityScanner:
             print(f"{Colors.GREEN}[✓] No POST vulnerabilities detected{Colors.ENDC}")
         return findings
     
-    def test_server_side_prototype_pollution(self, base_url, request_data=None):
+    def test_server_side_prototype_pollution(self, base_url, request_data=None) -> List[Dict[str, Any]]:
         """Test for server-side Prototype Pollution via direct JavaScript execution on Object.prototype"""
         print(f"{Colors.CYAN}[→] Testing Server-Side Prototype Pollution...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Generate unique marker untuk mencegah collision
@@ -1247,8 +1249,8 @@ class CompleteSecurityScanner:
                             'method': 'Client-side Object.prototype',
                             'verified': True
                         })
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Ignored error: {type(e).__name__} - {e}")
             
             # Test 2: Server-side PP via query string parameters
             test_params = ['data', 'json', 'payload', 'input', 'params', 'query']
@@ -1308,8 +1310,8 @@ class CompleteSecurityScanner:
             except:
                 pass
         
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
 
         # Test 4: Burp Request Injection (if provided)
         if request_data:
@@ -1529,11 +1531,11 @@ class CompleteSecurityScanner:
         
         return gadget_info
     
-    def test_dom_xss_with_pp(self, target_url):
+    def test_dom_xss_with_pp(self, target_url) -> List[Dict[str, Any]]:
         """Test DOM-based XSS with Prototype Pollution with smart gadget detection."""
         print(f"{Colors.CYAN}[→] Testing DOM-based XSS with Prototype Pollution...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Step 1: Fetch page and analyze JavaScript for gadget type
         gadget_info = {'type': 'UNKNOWN', 'priority_payloads': [], 'descriptor_detected': False}
@@ -1622,9 +1624,9 @@ class CompleteSecurityScanner:
                             alert_text = self.driver.switch_to.alert.text
                             self.driver.switch_to.alert.accept()
                             alerts_detected = True
-                            print(f"{Colors.RED}[✓] ALERT DETECTED: '{alert_text}'{Colors.ENDC}")
-                        except Exception:
-                            pass
+                            print(f"{Colors.FAIL}[✓] ALERT DETECTED: '{alert_text}'{Colors.ENDC}")
+                        except Exception as e:
+                            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
                         
                         # Check page source for payload traces
                         page_source = self.driver.page_source
@@ -1659,7 +1661,7 @@ class CompleteSecurityScanner:
                                 'curl_command': f'curl "{test_url}" -v',
                                 'manual_test': f'Visit {test_url} in browser and check for alert box'
                             })
-                            print(f"{Colors.RED}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}")
+                            print(f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}")
                             
                     except Exception:
                         # Fallback: Check HTTP response for indicators
@@ -1681,7 +1683,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_hash_based_pp(self, target_url):
+    def test_hash_based_pp(self, target_url) -> List[Dict[str, Any]]:
         """
         Test Hash-based Prototype Pollution (WAF Bypass).
         
@@ -1692,7 +1694,7 @@ class CompleteSecurityScanner:
         """
         print(f"{Colors.CYAN}[→] Testing Hash-based Prototype Pollution (WAF Bypass)...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         marker = f"hashpp_{int(time.time())}"
         
         # Hash-based PP payloads (bypass WAF that only checks query params)
@@ -1736,8 +1738,8 @@ class CompleteSecurityScanner:
                                 'test_url': test_url
                             })
                             print(f"{Colors.FAIL}[!] Hash-based PP DETECTED (Verified): {payload_type}{Colors.ENDC}")
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Ignored error: {type(e).__name__} - {e}")
                     
                     # Check 2: Monitor console for TypeError
                     try:
@@ -1755,8 +1757,8 @@ class CompleteSecurityScanner:
                                 })
                                 print(f"{Colors.WARNING}[!] Hash PP Error: {log_entry.get('message', '')[:50]}{Colors.ENDC}")
                                 break
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Ignored error: {type(e).__name__} - {e}")
                     
                     # Reset for next test
                     try:
@@ -1778,11 +1780,11 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_with_waf_bypass(self, target_url):
+    def test_with_waf_bypass(self, target_url) -> List[Dict[str, Any]]:
         """Test with WAF bypass techniques (v6 feature)"""
         print(f"{Colors.CYAN}[→] Testing with WAF bypass techniques...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Reflection Sanity Check
         rand_ref = f"ref_{int(time.time())}"
@@ -1871,14 +1873,14 @@ class CompleteSecurityScanner:
             print(f"{Colors.GREEN}[✓] No WAF bypass detected{Colors.ENDC}")
         return findings
     
-    def test_json_spaces_overflow(self, target_url):
+    def test_json_spaces_overflow(self, target_url) -> List[Dict[str, Any]]:
         """
         Blind server-side PP detection via JSON indentation override.
         Sends {"__proto__": {"json spaces": 10}} to check if response formatting changes.
         Works specifically with Express.js servers.
         """
         print(f"{Colors.CYAN}[→] Testing blind JSON spaces overflow detection...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # First request: get baseline response format
@@ -1932,13 +1934,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_status_code_override(self, target_url):
+    def test_status_code_override(self, target_url) -> List[Dict[str, Any]]:
         """
         Blind server-side PP detection via HTTP status code override.
         Sends {"__proto__": {"status": 418}} and triggers an error to check if status changes.
         """
         print(f"{Colors.CYAN}[→] Testing status code override detection...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Payload to override status code to 418 (I'm a teapot - unusual status)
@@ -1987,13 +1989,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_function_prototype_chain(self, target_url):
+    def test_function_prototype_chain(self, target_url) -> List[Dict[str, Any]]:
         """
         Test Function.prototype pollution (advanced bypass).
         Targets constructor.constructor.prototype chains (e.g., minimist CVE-2021-44906).
         """
         print(f"{Colors.CYAN}[→] Testing Function.prototype chain pollution...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Function.prototype pollution payloads
         function_proto_payloads = [
@@ -2081,13 +2083,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_persistence_verification(self, target_url):
+    def test_persistence_verification(self, target_url) -> List[Dict[str, Any]]:
         """
         Verify if prototype pollution is PERSISTENT across multiple requests.
         Critical for server-side exploitation assessment.
         """
         print(f"{Colors.CYAN}[→] Testing PP persistence across requests...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # First request: inject marker into prototype
@@ -2133,7 +2135,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_react_flight_protocol(self, target_url):
+    def test_react_flight_protocol(self, target_url) -> List[Dict[str, Any]]:
         """
         Test React 19/Next.js Flight Protocol for PP vulnerability.
         RESEARCH-2024-REACT-FLIGHT (React), RESEARCH-2024-NEXTJS-FLIGHT (Next.js)
@@ -2142,7 +2144,7 @@ class CompleteSecurityScanner:
         via constructor.constructor chains without strict PP checks.
         """
         print(f"{Colors.CYAN}[→] Testing React 19/Next.js Flight Protocol...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             from utils.payloads import get_react_flight_payloads
@@ -2209,14 +2211,14 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_sveltekit_superforms(self, target_url):
+    def test_sveltekit_superforms(self, target_url) -> List[Dict[str, Any]]:
         """
         Test SvelteKit/Superforms for prototype pollution.
         RESEARCH-2024-SVELTEKIT-RCE - __superform_file___proto__ pattern pollution
         RESEARCH-2024-DEVALUE - Devalue deserialization PP
         """
         print(f"{Colors.CYAN}[→] Testing SvelteKit/Superforms for PP...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             from utils.payloads import get_sveltekit_payloads
@@ -2278,13 +2280,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_charset_override(self, target_url):
+    def test_charset_override(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for charset override attacks (UTF-7, ISO-2022, double encoding).
         Can bypass WAF filters and enable PP exploitation.
         """
         print(f"{Colors.CYAN}[→] Testing charset override attacks...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             from utils.payloads import get_charset_payloads
@@ -2364,13 +2366,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_fetch_api_pollution(self, target_url):
+    def test_fetch_api_pollution(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for fetch() API header pollution (PortSwigger technique).
         Pollutes Object.prototype.headers to inject malicious headers.
         """
         print(f"{Colors.CYAN}[→] Testing fetch() API header pollution...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Test if we can pollute headers via __proto__
@@ -2410,13 +2412,13 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_object_defineproperty_bypass(self, target_url):
+    def test_object_defineproperty_bypass(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for Object.defineProperty() bypass (PortSwigger technique).
         Pollutes Object.prototype.value to bypass property protection.
         """
         print(f"{Colors.CYAN}[→] Testing Object.defineProperty() bypass...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Test if we can bypass defineProperty protection via value pollution
@@ -2456,14 +2458,14 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_child_process_rce(self, target_url):
+    def test_child_process_rce(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for child_process RCE vulnerability (PortSwigger technique).
         SAFE MODE: Only detects vulnerability, does NOT execute commands.
         Tests for execArgv, shell, and input pollution.
         """
         print(f"{Colors.CYAN}[→] Testing child_process RCE (Safe Detection)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Safe payloads that only verify vulnerability without executing code
@@ -2548,14 +2550,14 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_constructor_pollution(self, target_url):
+    def test_constructor_pollution(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for constructor-based prototype pollution (PortSwigger + 2024/2025 research).
         Bypasses filters that only block __proto__ by using constructor.prototype path.
         This is the PRIMARY modern bypass technique as of 2024/2025.
         """
         print(f"{Colors.CYAN}[→] Testing constructor-based pollution (Modern Bypass)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Reflection Sanity Check
         rand_ref = f"ref_{int(time.time())}"
@@ -2672,14 +2674,14 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_sanitization_bypass(self, target_url):
+    def test_sanitization_bypass(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for sanitization bypass techniques (PortSwigger research).
         Exploits flawed recursive sanitization that only strips once.
         Example: __pro__proto__to__ becomes __proto__ after single strip.
         """
         print(f"{Colors.CYAN}[→] Testing sanitization bypass (Recursive Filter Evasion)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         try:
             # Recursive bypass payloads
@@ -2735,14 +2737,14 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_blind_gadgets(self, target_url, request_data=None):
+    def test_blind_gadgets(self, target_url, request_data=None) -> List[Dict[str, Any]]:
         """
         [Tier 4] Blind Gadget Fuzzing
         Iterates through common dangerous properties (gadgets) discovered by static analysis tools (pp-finder)
         and tries to pollute them. Since this is blind, we look for 500 errors or anomalies.
         """
         print(f"{Colors.BOLD}[→] Testing Blind Gadget Properties (pp-finder list)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # If we have request_data (POST), use it. Otherwise, use URL.
         # Construct base payload structure
@@ -2791,15 +2793,15 @@ class CompleteSecurityScanner:
                              })
                              break # Move to next gadget
                     
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ignored error: {type(e).__name__} - {e}")
                 
         if not findings:
              print(f"{Colors.GREEN}[✓] Blind gadget fuzzing completed (No obvious crashes){Colors.ENDC}")
              
         return findings
 
-    def test_descriptor_pollution(self, target_url):
+    def test_descriptor_pollution(self, target_url) -> List[Dict[str, Any]]:
         """
         Test for Object.defineProperty descriptor pollution (PortSwigger 2024 research).
         
@@ -2813,7 +2815,7 @@ class CompleteSecurityScanner:
         effectively setting config.transport_url = "evil.js" despite the security intent.
         """
         print(f"{Colors.CYAN}[→] Testing Object.defineProperty descriptor pollution...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Descriptor pollution payloads - these exploit properties of descriptors
         descriptor_payloads = [
@@ -2910,7 +2912,7 @@ class CompleteSecurityScanner:
         
         return findings
 
-    def test_cors_header_pollution(self, target_url):
+    def test_cors_header_pollution(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 1] CORS Header Pollution Detection
         
@@ -2921,7 +2923,7 @@ class CompleteSecurityScanner:
         Research: PortSwigger - Server-side PP Black-box detection
         """
         print(f"{Colors.BOLD}[→] Testing CORS Header Pollution...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         payloads = [
             # Expose-Headers manipulation
@@ -2970,7 +2972,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_third_party_gadgets(self, target_url):
+    def test_third_party_gadgets(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 1] Third-Party Library Gadget Testing
         
@@ -2984,7 +2986,7 @@ class CompleteSecurityScanner:
         Reference: refrensi.md lines 69-96
         """
         print(f"{Colors.BOLD}[→] Testing Third-Party Library Gadgets...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Library-specific gadget payloads
         gadget_tests = [
@@ -3085,7 +3087,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_storage_api_pollution(self, target_url):
+    def test_storage_api_pollution(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 1] localStorage/sessionStorage API Pollution
         
@@ -3096,13 +3098,13 @@ class CompleteSecurityScanner:
         Research: Gareth Heyes - Browser API Gadgets
         """
         print(f"{Colors.BOLD}[→] Testing Storage API Pollution...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         if not (hasattr(self, 'driver') and self.driver):
             print(f"{Colors.WARNING}[⚠] Browser required for Storage API tests (skipped){Colors.ENDC}")
             return findings
 
-    def test_cve_specific_payloads(self, target_url):
+    def test_cve_specific_payloads(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 2] CVE-Specific Payload Testing
         
@@ -3117,7 +3119,7 @@ class CompleteSecurityScanner:
         Reference: refrensi.md lines 203-211
         """
         print(f"{Colors.BOLD}[→] Testing CVE-Specific Payloads...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         cve_tests = [
             # CVE-2025-13465 - Lodash _.unset / _.omit
@@ -3244,7 +3246,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_kibana_telemetry_rce(self, target_url):
+    def test_kibana_telemetry_rce(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 3] Kibana Telemetry RCE (HackerOne #852613)
         
@@ -3257,7 +3259,7 @@ class CompleteSecurityScanner:
         Reference: refrensi.md line 134, HackerOne #852613
         """
         print(f"{Colors.BOLD}[→] Testing Kibana Telemetry RCE (HackerOne #852613)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Kibana-specific payloads
         kibana_payloads = [
@@ -3323,7 +3325,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_blitzjs_rce_chain(self, target_url):
+    def test_blitzjs_rce_chain(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 3] Blitz.js RCE Chain (CVE-2022-23631)
         
@@ -3338,7 +3340,7 @@ class CompleteSecurityScanner:
         Reference: refrensi.md lines 132-133, CVE-2022-23631
         """
         print(f"{Colors.BOLD}[→] Testing Blitz.js RCE Chain (CVE-2022-23631)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Blitz.js / superjson payloads
         blitzjs_payloads = [
@@ -3404,7 +3406,7 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_elastic_xss(self, target_url):
+    def test_elastic_xss(self, target_url) -> List[Dict[str, Any]]:
         """
         [Phase 3] Elastic XSS (HackerOne #998398)
         
@@ -3418,7 +3420,7 @@ class CompleteSecurityScanner:
         Reference: refrensi.md lines 176-201, HackerOne #998398
         """
         print(f"{Colors.BOLD}[→] Testing Elastic XSS (HackerOne #998398)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         # Elastic-specific XSS payloads
         elastic_payloads = [
@@ -3616,11 +3618,11 @@ class CompleteSecurityScanner:
         
         return findings
     
-    def test_with_confidence_scoring(self):
+    def test_with_confidence_scoring(self) -> List[Dict[str, Any]]:
         """Test and score PP with confidence metrics (v6 feature)"""
         print(f"{Colors.CYAN}[→] Testing with confidence scoring...{Colors.ENDC}")
         
-        findings = []
+        findings: List[Dict[str, Any]] = []
         marker = f"conf_{int(time.time())}"
         
         try:
@@ -3732,10 +3734,10 @@ class CompleteSecurityScanner:
             print(f"{Colors.FAIL}[!] Target unreachable: {str(e)[:100]}{Colors.ENDC}")
             return False
 
-    def test_blind_oob(self, target_url):
+    def test_blind_oob(self, target_url) -> List[Dict[str, Any]]:
         """Test for Blind OOB RCE via Prototype Pollution (v4.0)"""
         print(f"{Colors.CYAN}[→] Testing Blind OOB RCE (Interact.sh)...{Colors.ENDC}")
-        findings = []
+        findings: List[Dict[str, Any]] = []
         
         if not self.oob_detector:
             try:
@@ -3809,7 +3811,7 @@ class CompleteSecurityScanner:
         self.metrics = ScanMetrics(start_time=time.time())
         
         # Fingerprint Frameworks
-        if detect_frameworks:
+        if detect_frameworks is not None:
             print(f"{Colors.BLUE}[*] Detecting frameworks and technologies...{Colors.ENDC}")
             try:
                 # Get initial response (using session to share cookies)
@@ -3851,8 +3853,8 @@ class CompleteSecurityScanner:
                     priority = get_priority_payloads(detected)
                     if priority:
                         print(f"{Colors.GREEN}[+] Re-prioritize payloads: jQuery v{js_version} detected!{Colors.ENDC}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
         
         all_findings = []
         try:
@@ -4929,7 +4931,7 @@ ADVANCED OPTIONS:
         else:
             # Use traditional scanner
             target_iterator = normalized_targets
-            if tqdm:
+            if tqdm is not None:
                 target_iterator = tqdm(normalized_targets, desc="Scanning targets", unit="target")
             
             scanner = CompleteSecurityScanner(
