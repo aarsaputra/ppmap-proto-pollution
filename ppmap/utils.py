@@ -66,3 +66,20 @@ def normalize_url(url: str) -> str:
     if not url.startswith(('http://', 'https://')):
         return f'https://{url}'
     return url
+
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+
+def print_section(title):
+    print(f"\n{Colors.CYAN}{'='*80}")
+    print(f"  {title}")
+    print(f"{'='*80}{Colors.ENDC}")
