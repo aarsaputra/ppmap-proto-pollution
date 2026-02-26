@@ -445,14 +445,29 @@ python3 ppmap.py --scan http://localhost:3000
 
 Locate these in the `tools/` directory:
 
-| Tool | Purpose | Usage |
-|------|---------|-------|
-| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py` |
-| **generate_full_report.py** | Merge JSON reports into one Markdown summary | `python3 tools/generate_full_report.py` |
-| **find_library_issues.py** | Scan reports for specific library vulnerabilities | `python3 tools/find_library_issues.py` |
-| **find_library_issues.py** | Scan reports for specific library vulnerabilities | `python3 tools/find_library_issues.py` |
-| **organize_reports.py** | Clean and organize the report directory | `python3 tools/organize_reports.py` |
-| **manual_testing_interactive.py** | Interactive CLI for manual cleanup/testing | `python3 tools/manual_testing_interactive.py` |
-| **quickpoc_local.py** | Local Quick PoC runner using Playwright | `python3 tools/quickpoc_local.py` |
-| **analyze_scan_results.py** | Deep analysis of scan findings | `python3 tools/analyze_scan_results.py` |
+| Tool | Purpose | Usage | Version |
+|------|---------|-------|---------|
+| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py --dir report` | ✅ v4.1.0 |
+| **analyze_scan_results.py** | Deep analysis & diff of scan findings | `python3 tools/analyze_scan_results.py --diff file1.json file2.json` | ✅ v4.1.0 |
+| **generate_full_report.py** | Merge JSON reports into Markdown summary | `python3 tools/generate_full_report.py --dir report --title "Title"` | ✅ v4.1.0 |
+| **find_library_issues.py** | Scan reports for library vulnerabilities | `python3 tools/find_library_issues.py --report-dir report` | ✅ v4.1.0 |
+| **quickpoc_local.py** | Local Quick PoC runner (Playwright/Selenium) | `python3 tools/quickpoc_local.py --target https://example.com` | ✅ v4.1.0 |
+| **manual_testing_interactive.py** | Interactive CLI for manual testing | `python3 tools/manual_testing_interactive.py` | ✅ v4.1.0 |
+| **organize_reports.py** | Clean and organize the report directory | `python3 tools/organize_reports.py` | - |
+| **tool_template.py** | Reusable template for building new tools | Reference implementation | ✅ NEW |
 
+### 🔐 Security & Quality Updates (v4.1.0 Phase 6)
+
+**All tools hardened with:**
+- ✅ **Path Traversal Protection** - `analyze_scan_results.py` validates all file paths
+- ✅ **Markdown Injection Prevention** - Payloads safely escaped in reports
+- ✅ **Comprehensive Logging** - All tools now log to `ppmap_tools.log`
+- ✅ **Proper Error Handling** - Specific exceptions instead of bare except
+- ✅ **URL Validation** - `quickpoc_local.py` validates target URLs
+- ✅ **Lab Tested** - Verified against ppmap_lab (188 reports, 1000+ vulnerabilities)
+
+**Documentation:**
+- 📋 [TOOLS_AUDIT_REPORT.md](TOOLS_AUDIT_REPORT.md) - Detailed security audit (434 lines)
+- 📊 [TOOLS_TESTING_REPORT.md](TOOLS_TESTING_REPORT.md) - Complete testing validation
+
+----

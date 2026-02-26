@@ -1,24 +1,38 @@
 import json
 import glob
 import argparse
+import logging
 import sys
 from pathlib import Path
 from collections import defaultdict
+
+# ============================================================================
+# LOGGING SETUP
+# ============================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 def analyze_reports(report_dir: str):
     # Validate the report directory
     base_path = Path(report_dir).resolve()
     if not base_path.exists() or not base_path.is_dir():
-        print(
-            f"Error: Report directory '{report_dir}' does not exist or is not a directory."
-        )
+        logger.error(f"Report directory '{report_dir}' does not exist or is not a directory")
         return
 
     # Find all report.json files
     search_pattern = str(base_path / "*/report.json")
     report_files = glob.glob(search_pattern)
+    
+    if not report_files:
+        logger.warning(f"No report files found in {report_dir}")
+        return
 
+    logger.info(f"Found {len(report_files)} report files")
+    
     summary = []
 
     for file_path in report_files:
@@ -30,6 +44,7 @@ def analyze_reports(report_dir: str):
             findings = data.get("findings", [])
 
             if not findings:
+                logger.debug(f"No findings in {target}")
                 continue
 
             # Group findings by type
@@ -50,21 +65,22 @@ def analyze_reports(report_dir: str):
                     "file": file_path,
                 }
             )
+            logger.info(f"Processed {target}: {sum(vuln_counts.values())} findings")
         except FileNotFoundError:
-            print(f"Warning: File not found {file_path}")
+            logger.warning(f"File not found {file_path}")
         except json.JSONDecodeError as e:
-            print(f"Warning: Invalid JSON in {file_path}: {e}")
+            logger.warning(f"Invalid JSON in {file_path}: {e}")
         except PermissionError:
-            print(f"Warning: Permission denied reading {file_path}")
+            logger.warning(f"Permission denied reading {file_path}")
         except IOError as e:
-            print(f"Warning: IO Error reading {file_path}: {e}")
+            logger.warning(f"IO Error reading {file_path}: {e}")
 
     # Sort by 'critical' or 'high' presence first
     # We'll just print them out nicely
     total_scanned = len(report_files)
     print(f"Total Reports Found: {total_scanned}")
     print("-" * 80)
-    print("""
+    print(r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |
@@ -72,7 +88,7 @@ def analyze_reports(report_dir: str):
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.0.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.1.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     print(f"{'Target':<40} | {'Type':<30} | {'Severity':<10}")
     print("-" * 125)
@@ -95,7 +111,8 @@ def main():
         help="Base directory containing scan reports (default: 'report')",
     )
     args = parser.parse_args()
-
+    
+    logger.info(f"Analyzing reports in {args.dir}")
     analyze_reports(args.dir)
 
 
