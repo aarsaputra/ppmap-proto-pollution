@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.1.0] - 2026-02-26 (Phase 6: Tools Security Hardening) ✅
+
+### Security Fixes - Phase 6: Tools Hardening
+- **Path Traversal Protection** - `analyze_scan_results.py`
+  - Added `validate_file_path()` function with directory restriction
+  - `--allowed-dir` parameter to restrict file access
+  - Security logging for traversal attempts
+- **Markdown Injection Prevention** - `generate_full_report.py`
+  - Added `escape_markdown()` function for safe payload escaping
+  - Escapes backticks, asterisks, underscores, brackets, hashes
+  - Auto-detection of report title and output filename
+- **JavaScript Error Handling** - `quickpoc_local.py`
+  - Complete JavaScript code with proper try/catch blocks
+  - Added `validate_url()` function for URL validation
+  - Better error messages and logging
+
+### Improvements - Phase 6: Tools Hardening
+- **Logging Framework** - All tools
+  - `analyze_reports.py` - Added comprehensive logging
+  - `analyze_scan_results.py` - Added security event logging
+  - `find_library_issues.py` - Added pattern and result logging
+  - `generate_full_report.py` - Added report generation logging
+  - `quickpoc_local.py` - Added execution and error logging
+- **Exception Handling** - Replaced bare exceptions
+  - Specific exceptions (FileNotFoundError, JSONDecodeError, etc.)
+  - Context-aware error messages
+  - Proper logging with exc_info=True for debugging
+- **Module Structure** - Unified utilities
+  - Merged `ppmap/utils.py` and `ppmap/utils/` submodules
+  - Created unified `ppmap/utils/__init__.py`
+  - Exports: normalize_url, rate_limited, retry_request
+- **Documentation** - Added comprehensive guides
+  - `TOOLS_AUDIT_REPORT.md` - 434-line detailed security audit
+  - `TOOLS_TESTING_REPORT.md` - Complete testing validation
+  - `tools/tool_template.py` - Reusable template with best practices
+
+### Testing - Phase 6: Validation
+- ✅ All 5 major tools tested against ppmap_lab
+- ✅ 188 real scan reports processed without errors
+- ✅ Path traversal protection verified (blocked /etc/passwd)
+- ✅ Diff functionality validated with real reports
+- ✅ Markdown report generation: 117KB comprehensive report
+- ✅ Security logging: All events properly recorded
+- ✅ Lab integration: Detected 10 vulnerabilities in localhost:3000
+
+### Migration Notes
+- **Backward Compatible** - All existing command-line flags work
+- **Module Change** - `ppmap/utils.py` → `ppmap/utils/__init__.py`
+  - Old file renamed to `ppmap/utils_old.py` (backup)
+  - All imports automatically resolve to new location
+- **Logging** - Tools now create `ppmap_tools.log`
+  - Previous unlogged operations now have full audit trail
+  - DEBUG level available with verbose flags
+
+---
+
 ## [4.1.0] - 2026-02-25 (Phase 1 & 2 Complete)
 
 ### Added - Phase 1: Stabilization ✅
