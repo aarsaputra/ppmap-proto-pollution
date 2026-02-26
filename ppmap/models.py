@@ -1,4 +1,5 @@
 """Data models and enums for PPMAP"""
+
 from enum import Enum
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -38,9 +39,9 @@ class Finding:
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
-        d['type'] = self.type.value
-        d['severity'] = self.severity.value
-        d['discovered_at'] = self.discovered_at.isoformat()
+        d["type"] = self.type.value
+        d["severity"] = self.severity.value
+        d["discovered_at"] = self.discovered_at.isoformat()
         return d
 
 
@@ -53,8 +54,8 @@ class ScanReport:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'target': self.target,
-            'start_time': self.start_time.isoformat(),
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'findings': [f.to_dict() for f in self.findings]
+            "target": self.target,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "findings": [f.to_dict() for f in self.findings],
         }
