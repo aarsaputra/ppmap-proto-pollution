@@ -1,6 +1,7 @@
 """PPMAP Utilities Package
 
 This package provides utility functions and decorators for PPMAP:
+- Colors: ANSI color codes for terminal output
 - normalize_url: URL normalization
 - rate_limited: Rate limiting decorator  
 - retry_request: Retry decorator with exponential backoff
@@ -12,6 +13,23 @@ import logging
 from typing import Callable, Optional, Tuple, Type, Union
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# TERMINAL COLORS
+# ============================================================================
+
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
 
 
 # ============================================================================
@@ -165,8 +183,10 @@ def normalize_url(url: str) -> str:
 # ============================================================================
 
 __all__ = [
+    'Colors',
     'normalize_url',
     'rate_limited',
     'retry_request',
     'RateLimiter',
 ]
+
