@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM-based XSS with Prototype Pollution Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+            color: #856404;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+            border-radius: 3px;
+            word-break: break-all;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .gadget-tests {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .gadget-test {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 DOM-based XSS with Prototype Pollution</h1>
+        
+        <div class="warning">
+            ⚠️ <strong>INTENTIONALLY VULNERABLE</strong> - This page is designed to test XSS and PP exploitation techniques
+        </div>
+        
+        <div class="section">
+            <h2>Test 1: Direct innerHTML Injection</h2>
+            <p>This tests basic DOM XSS via innerHTML manipulation</p>
+            <label>User Input:</label>
+            <input type="text" id="test1-input" placeholder="Try: <img src=x onerror=alert('XSS')>">
+            <button onclick="test1()">Test innerHTML</button>
+            <div id="test1-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Test 2: jQuery HTML Method</h2>
+            <p>This tests jQuery .html() which can be exploited</p>
+            <label>User Input:</label>
+            <input type="text" id="test2-input" placeholder="Try: <option><img src=x onerror=alert('XSS')>">
+            <button onclick="test2()">Test jQuery .html()</button>
+            <div id="test2-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Test 3: Prototype Pollution + DOM Gadget</h2>
+            <p>This demonstrates PP combined with DOM manipulation gadgets</p>
+            <label>PP Payload (JSON):</label>
+            <textarea id="test3-input" placeholder='{"__proto__":{"innerHTML":"<img src=x onerror=alert(\"PP+DOM\")>"}}'></textarea>
+            <button onclick="test3()">Test PP + DOM</button>
+            <div id="test3-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Test 4: Object.defineProperty Gadget</h2>
+            <p>Exploiting Object.defineProperty with DOM properties</p>
+            <label>Gadget Payload (JSON):</label>
+            <input type="text" id="test4-input" placeholder='{"__proto__":{"onclick":"alert(\'Gadget XSS\')"}}'>
+            <button onclick="test4()">Test Gadget</button>
+            <div id="test4-output"></div>
+        </div>
+
+        <div class="section">
+            <h2>Detected Query Parameters</h2>
+            <p>Parameters passed in URL query string:</p>
+            <div id="params-output" style="background-color: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace;"></div>
+        </div>
+
+        <div class="section">
+            <h2>DOM Gadget Tests</h2>
+            <div class="gadget-tests">
+                <div class="gadget-test">
+                    <button onclick="testGadget1()">addEventListener Gadget</button>
+                </div>
+                <div class="gadget-test">
+                    <button onclick="testGadget2()">setTimeout Gadget</button>
+                </div>
+                <div class="gadget-test">
+                    <button onclick="testGadget3()">eval() Gadget</button>
+                </div>
+                <div class="gadget-test">
+                    <button onclick="testGadget4()">Function Constructor</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script>
+        // Display query parameters
+        function displayParams() {
+            const params = new URLSearchParams(window.location.search);
+            let output = '{\n';
+            for (let [key, value] of params) {
+                output += `  "${key}": "${value}",\n`;
+            }
+            output += '}';
+            document.getElementById('params-output').textContent = output;
+        }
+
+        // Test 1: Direct innerHTML
+        function test1() {
+            const input = document.getElementById('test1-input').value;
+            const output = document.getElementById('test1-output');
+            try {
+                output.innerHTML = input;
+                document.getElementById('test1-input').value = '';
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // Test 2: jQuery .html()
+        function test2() {
+            const input = document.getElementById('test2-input').value;
+            try {
+                $('#test2-output').html(input);
+                document.getElementById('test2-input').value = '';
+            } catch (e) {
+                $('#test2-output').text('Error: ' + e.message);
+            }
+        }
+
+        // Test 3: Prototype Pollution + DOM
+        function test3() {
+            const input = document.getElementById('test3-input').value;
+            const output = document.getElementById('test3-output');
+            try {
+                const payload = JSON.parse(input);
+                // Merge payload into prototype
+                Object.getOwnPropertyNames(payload).forEach(key => {
+                    if (key === '__proto__') {
+                        Object.assign(Object.prototype, payload[key]);
+                    }
+                });
+                output.textContent = 'PP applied. Check if DOM gadgets triggered.';
+                document.getElementById('test3-input').value = '';
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // Test 4: defineProperty Gadget
+        function test4() {
+            const input = document.getElementById('test4-input').value;
+            const output = document.getElementById('test4-output');
+            try {
+                const payload = JSON.parse(input);
+                const obj = {};
+                for (let key in payload) {
+                    if (key === '__proto__') {
+                        const proto = payload[key];
+                        for (let prop in proto) {
+                            Object.defineProperty(Object.prototype, prop, {
+                                value: proto[prop],
+                                configurable: true
+                            });
+                        }
+                    }
+                }
+                output.textContent = 'Property defined. Check console.';
+                document.getElementById('test4-input').value = '';
+            } catch (e) {
+                output.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // Gadget Test 1: addEventListener
+        function testGadget1() {
+            const div = document.createElement('div');
+            div.innerHTML = 'addEventListener test';
+            // Try to poison prototype with event handler
+            Object.defineProperty(Object.prototype, 'onload', {
+                value: function() { console.log('Gadget: onload triggered'); },
+                configurable: true
+            });
+            console.log('addEventListener gadget activated');
+        }
+
+        // Gadget Test 2: setTimeout
+        function testGadget2() {
+            try {
+                // Attempt to use poisoned prototype in setTimeout
+                Object.defineProperty(Object.prototype, 'callback', {
+                    value: function() { console.log('Gadget: setTimeout gadget triggered'); },
+                    configurable: true
+                });
+                console.log('setTimeout gadget activated');
+            } catch (e) {
+                console.log('setTimeout gadget error:', e.message);
+            }
+        }
+
+        // Gadget Test 3: eval() chain
+        function testGadget3() {
+            try {
+                Object.defineProperty(Object.prototype, 'evalPayload', {
+                    value: 'console.log("Gadget: eval executed")',
+                    configurable: true
+                });
+                console.log('eval gadget activated');
+            } catch (e) {
+                console.log('eval gadget error:', e.message);
+            }
+        }
+
+        // Gadget Test 4: Function constructor
+        function testGadget4() {
+            try {
+                Object.defineProperty(Object.prototype, 'functionBody', {
+                    value: 'console.log("Gadget: Function constructor executed")',
+                    configurable: true
+                });
+                console.log('Function constructor gadget activated');
+            } catch (e) {
+                console.log('Function constructor gadget error:', e.message);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', displayParams);
+
+        // Inline test for PP via query parameters
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const ppPayload = params.get('pp');
+            if (ppPayload) {
+                try {
+                    const payload = JSON.parse(decodeURIComponent(ppPayload));
+                    // Dangerous: direct merge of query parameter into prototype
+                    for (let key in payload) {
+                        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                            for (let prop in payload[key]) {
+                                Object.defineProperty(Object.prototype, prop, {
+                                    value: payload[key][prop],
+                                    configurable: true
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('PP error:', e);
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
