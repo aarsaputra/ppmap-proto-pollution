@@ -507,13 +507,13 @@ class TestCompleteScannerStealth:
     """Verify stealth param actually sets headers in CompleteSecurityScanner."""
 
     def test_stealth_headers_applied(self):
-        from ppmap.scanner import CompleteSecurityScanner
+        from ppmap.engine import CompleteSecurityScanner
         scanner = CompleteSecurityScanner(stealth=True)
         ua = scanner.session.headers.get("User-Agent", "")
         assert "Mozilla" in ua, f"Expected browser UA, got: {ua}"
 
     def test_no_stealth_no_custom_ua(self):
-        from ppmap.scanner import CompleteSecurityScanner
+        from ppmap.engine import CompleteSecurityScanner
         scanner = CompleteSecurityScanner(stealth=False)
         # Default requests UA without stealth
         ua = scanner.session.headers.get("User-Agent", "")
@@ -522,7 +522,7 @@ class TestCompleteScannerStealth:
 
     def test_session_exists(self):
         """BUG-3 fix: session must always be defined."""
-        from ppmap.scanner import CompleteSecurityScanner
+        from ppmap.engine import CompleteSecurityScanner
         scanner = CompleteSecurityScanner()
         assert hasattr(scanner, "session")
         assert scanner.session is not None
@@ -536,40 +536,40 @@ class TestCVEVersionTuple:
     """Verify _is_version_affected correctly handles OR multi-range specs."""
 
     def test_lt_spec_affected(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 4, 1), "<3.5.0") is True
 
     def test_lt_spec_not_affected(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 5, 0), "<3.5.0") is False
 
     def test_gte_spec_affected(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 0, 0), ">=3.0.0") is True
 
     def test_range_and_spec(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         # Matches AND: >=3.0.0 AND <3.0.1
         assert CVEDatabase._is_version_affected((3, 0, 0), ">=3.0.0 <3.0.1") is True
 
     def test_range_and_spec_not_affected(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         # version 3.0.1 not in range >=3.0.0 <3.0.1
         assert CVEDatabase._is_version_affected((3, 0, 1), ">=3.0.0 <3.0.1") is False
 
     def test_multi_range_or_first_match(self):
         """BUG-4 fix: comma = OR. '<2.2.0, >=3.0.0 <3.0.1' should match 1.9.0"""
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((1, 9, 0), "<2.2.0, >=3.0.0 <3.0.1") is True
 
     def test_multi_range_or_second_match(self):
         """BUG-4 fix: 3.0.0 matches second OR group '>=3.0.0 <3.0.1'"""
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 0, 0), "<2.2.0, >=3.0.0 <3.0.1") is True
 
     def test_multi_range_or_no_match(self):
         """3.5.0 should NOT match '<2.2.0, >=3.0.0 <3.0.1'"""
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase._is_version_affected((3, 5, 0), "<2.2.0, >=3.0.0 <3.0.1") is False
 
     def test_cve_2019_11358_jquery_331_affected(self):
@@ -578,7 +578,7 @@ class TestCVEVersionTuple:
         CVE-2019-11358 affects jQuery < 3.4.0. The last vulnerable version
         before the patch is 3.3.1. Fixed in 3.4.0.
         """
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         vulns = CVEDatabase.check_version("jquery", "3.3.1")
         cve_ids = [v["cve"] for v in vulns]
         assert "CVE-2019-11358" in cve_ids, (
@@ -593,7 +593,7 @@ class TestCVEVersionTuple:
         to be vulnerable, but CVE-2019-11358 was actually FIXED in jQuery 3.4.0.
         NVD range: >= 1.0.3, < 3.4.0  (NOT < 3.5.0 as was incorrectly set before)
         """
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         vulns = CVEDatabase.check_version("jquery", "3.4.1")
         cve_ids = [v["cve"] for v in vulns]
         assert "CVE-2019-11358" not in cve_ids, (
@@ -606,11 +606,11 @@ class TestCVEVersionTuple:
     def test_cve_2019_11358_jquery_350_not_affected(self):
         """jQuery 3.5.0 must NOT be flagged for CVE-2019-11358."""
 
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         vulns = CVEDatabase.check_version("jquery", "3.5.0")
         cve_ids = [v["cve"] for v in vulns]
         assert "CVE-2019-11358" not in cve_ids
 
     def test_unknown_library_returns_empty(self):
-        from ppmap.scanner import CVEDatabase
+        from ppmap.engine import CVEDatabase
         assert CVEDatabase.check_version("unknownlib", "1.0.0") == []
