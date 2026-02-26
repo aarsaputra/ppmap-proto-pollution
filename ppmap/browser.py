@@ -8,6 +8,7 @@ The helper will try to create a Selenium WebDriver if available; otherwise
 it falls back to Playwright (Chromium). This avoids ChromeDriver / Chrome
 version mismatches in environments where Playwright is available.
 """
+
 import logging
 from typing import Optional, Any
 
@@ -15,7 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class UnifiedBrowser:
-    def __init__(self, backend: str, impl: Any, playwright_context: Any = None, playwright_playwright: Any = None):
+    def __init__(
+        self,
+        backend: str,
+        impl: Any,
+        playwright_context: Any = None,
+        playwright_playwright: Any = None,
+    ):
         # backend: 'selenium' or 'playwright'
         self.backend = backend
         self.impl = impl
@@ -24,18 +31,19 @@ class UnifiedBrowser:
 
     # Navigation
     def get(self, url: str, wait: float = 0):
-        if self.backend == 'selenium':
+        if self.backend == "selenium":
             self.impl.get(url)
         else:
             # Playwright: use page.goto
-            self.impl.goto(url, wait_until='load', timeout=30_000)
+            self.impl.goto(url, wait_until="load", timeout=30_000)
         if wait:
             import time
+
             time.sleep(wait)
 
     # Execute arbitrary JS and return result
     def execute_script(self, script: str, *args):
-        if self.backend == 'selenium':
+        if self.backend == "selenium":
             return self.impl.execute_script(script, *args)
         else:
             # Wrap arbitrary script into a function for evaluate()
@@ -49,13 +57,13 @@ class UnifiedBrowser:
 
     @property
     def page_source(self) -> str:
-        if self.backend == 'selenium':
-            return getattr(self.impl, 'page_source', '')
+        if self.backend == "selenium":
+            return getattr(self.impl, "page_source", "")
         else:
             return self.impl.content()
 
-    def get_log(self, log_type: str = 'browser') -> list:
-        if self.backend == 'selenium':
+    def get_log(self, log_type: str = "browser") -> list:
+        if self.backend == "selenium":
             try:
                 return self.impl.get_log(log_type)
             except Exception:
@@ -66,7 +74,7 @@ class UnifiedBrowser:
             return []
 
     def get_alert_text(self, timeout: float = 1.0) -> Optional[str]:
-        if self.backend == 'selenium':
+        if self.backend == "selenium":
             try:
                 alert = self.impl.switch_to.alert
                 text = alert.text
@@ -80,7 +88,7 @@ class UnifiedBrowser:
         else:
             try:
                 # Playwright: wait for dialog event
-                dialog = self.impl.wait_for_event('dialog', timeout=int(timeout * 1000))
+                dialog = self.impl.wait_for_event("dialog", timeout=int(timeout * 1000))
                 text = dialog.message
                 try:
                     dialog.accept()
@@ -92,14 +100,14 @@ class UnifiedBrowser:
 
     # timeouts setters (no-op for playwright)
     def set_page_load_timeout(self, t: int):
-        if self.backend == 'selenium':
+        if self.backend == "selenium":
             try:
                 self.impl.set_page_load_timeout(t)
             except Exception:
                 pass
 
     def set_script_timeout(self, t: int):
-        if self.backend == 'selenium':
+        if self.backend == "selenium":
             try:
                 self.impl.set_script_timeout(t)
             except Exception:
@@ -107,7 +115,7 @@ class UnifiedBrowser:
 
     def close(self):
         try:
-            if self.backend == 'selenium':
+            if self.backend == "selenium":
                 self.impl.quit()
             else:
                 try:
@@ -123,7 +131,9 @@ class UnifiedBrowser:
             pass
 
 
-def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) -> Optional[UnifiedBrowser]:
+def get_browser(
+    headless: bool = True, timeout: int = 45, stealth: bool = True
+) -> Optional[UnifiedBrowser]:
     """Return a UnifiedBrowser instance using Selenium or Playwright fallback.
 
     - Tries Selenium (webdriver + webdriver_manager) first.
@@ -154,10 +164,12 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         opts.add_argument("--ignore-certificate-errors")
         opts.add_argument("--window-size=1920,1080")
         # Modern User-Agent (Chrome 131 — matches STEALTH_HEADERS in ppmap.py)
-        opts.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+        opts.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        )
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
-        
+
         try:
             logger.info("Attempting to use CHROMIUM driver")
             service = Service(WDM(chrome_type=ChromeType.CHROMIUM).install())
@@ -168,15 +180,18 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         driver = webdriver.Chrome(service=service, options=opts)
         # Remove navigator.webdriver flag via CDP
         try:
-            driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-                'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
-            })
+            driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {
+                    "source": 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+                },
+            )
         except Exception:
             pass  # CDP not available in all drivers
         driver.set_page_load_timeout(timeout)
         driver.set_script_timeout(timeout)
         logger.info("Selenium backend initialized successfully")
-        return UnifiedBrowser('selenium', driver)
+        return UnifiedBrowser("selenium", driver)
     except Exception:
         logger.warning("Selenium backend failed to initialize", exc_info=True)
         # Fall through to Playwright
@@ -190,15 +205,17 @@ def get_browser(headless: bool = True, timeout: int = 45, stealth: bool = True) 
         pw = pw_manager.start()
         browser = pw.chromium.launch(headless=headless)
         context = browser.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            viewport={'width': 1920, 'height': 1080},
-            locale='en-US',
-            timezone_id='Asia/Jakarta',
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            locale="en-US",
+            timezone_id="Asia/Jakarta",
         )
         page = context.new_page()
         logger.info("Playwright backend initialized successfully")
         # expose evaluate/content/goto compatible API on page
-        return UnifiedBrowser('playwright', page, playwright_context=context, playwright_playwright=pw)
+        return UnifiedBrowser(
+            "playwright", page, playwright_context=context, playwright_playwright=pw
+        )
     except Exception:
         logger.warning("Playwright backend failed to initialize", exc_info=True)
         return None
