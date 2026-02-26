@@ -16,17 +16,64 @@ update ChromeDriver or install a matching Chrome/Chromium version.
 import argparse
 import json
 import os
+import logging
 from datetime import datetime
+from urllib.parse import urlparse
 
 from ppmap.reports import EnhancedReportGenerator
 from ppmap.scanner import QuickPoC
+
+# ============================================================================
+# LOGGING SETUP
+# ============================================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# PLAYWRIGHT FALLBACK
+# ============================================================================
 
 try:
     from playwright.sync_api import sync_playwright
 
     PLAYWRIGHT_AVAILABLE = True
-except Exception:
+except Exception as e:
+    logger.warning(f"Playwright not available: {e}")
     PLAYWRIGHT_AVAILABLE = False
+
+
+def validate_url(url: str) -> bool:
+    """
+    Validate URL format to prevent issues during browser load.
+    
+    Args:
+        url: URL to validate
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    try:
+        result = urlparse(url)
+        
+        if not result.scheme:
+            logger.error("URL must include scheme (http/https)")
+            return False
+        
+        if result.scheme not in ['http', 'https']:
+            logger.error(f"Invalid scheme: {result.scheme} (must be http/https)")
+            return False
+        
+        if not result.netloc:
+            logger.error("URL must include domain")
+            return False
+        
+        return True
+    except Exception as e:
+        logger.error(f"Invalid URL format: {e}")
+        return False
 
 
 def main():
@@ -42,7 +89,14 @@ def main():
     target = args.target
     headless = args.headless
 
-    print(f"[+] QuickPoC local runner\nTarget: {target}\nHeadless: {headless}")
+    # SECURITY: Validate URL format before proceeding
+    if not validate_url(target):
+        logger.error("Invalid target URL")
+        return
+    
+    logger.info(f"[+] QuickPoC local runner")
+    print(f"Target: {target}")
+    print(f"Headless: {headless}")
 
     results = []
 
@@ -51,7 +105,9 @@ def main():
     ok = False
     try:
         ok = qp.setup_browser(target)
-    except Exception:
+        logger.info("Selenium QuickPoC initialized")
+    except Exception as e:
+        logger.error(f"Failed to setup Selenium browser: {e}")
         ok = False
 
     if ok:
@@ -66,6 +122,7 @@ def main():
                     results.append({"payload": payload, "executed": bool(executed)})
                     print(f"  - payload executed: {bool(executed)} payload={payload}")
                 except Exception as e:
+                    logger.error(f"Error executing payload: {e}")
                     results.append(
                         {"payload": payload, "executed": False, "error": str(e)}
                     )
@@ -73,21 +130,24 @@ def main():
         finally:
             qp.cleanup()
     else:
-        print(
-            "[!] Selenium QuickPoC not available or failed to start; trying Playwright fallback"
-        )
+        logger.warning("Selenium QuickPoC not available; trying Playwright fallback")
         # Playwright fallback (preferred for reproducible local runs)
         if not PLAYWRIGHT_AVAILABLE:
-            print(
-                "[!] Playwright not installed; please pip install playwright and run `playwright install`"
-            )
+            logger.error("Playwright not installed; run: pip install playwright && playwright install")
         else:
             try:
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(headless=headless)
                     page = browser.new_page()
                     page.set_default_navigation_timeout(args.timeout * 1000)
-                    page.goto(target)
+                    
+                    try:
+                        page.goto(target)
+                        logger.info(f"Successfully loaded {target}")
+                    except Exception as e:
+                        logger.error(f"Failed to load target: {e}")
+                        browser.close()
+                        return
 
                     safe_payloads = [
                         {"__proto__": {"ppmap_test": "pp_local"}},
@@ -95,9 +155,20 @@ def main():
                     ]
                     for payload in safe_payloads:
                         try:
-                            # execute $.extend if jQuery present
+                            # Execute $.extend if jQuery present with proper error handling
                             executed = page.evaluate(
-                                "(payload) => { try { if(window.jQuery){ window.jQuery.extend(true, {}, payload); return true;} return false;} ",
+                                """(payload) => {
+                                    try {
+                                        if(window.jQuery){
+                                            window.jQuery.extend(true, {}, payload);
+                                            return true;
+                                        }
+                                        return false;
+                                    } catch(e) {
+                                        console.error('Error executing payload:', e);
+                                        return false;
+                                    }
+                                }""",
                                 payload,
                             )
                             results.append(
@@ -106,25 +177,30 @@ def main():
                             print(
                                 f"  - playwright payload executed: {bool(executed)} payload={payload}"
                             )
+                            logger.info(f"Payload execution result: {executed}")
                         except Exception as e:
+                            logger.error(f"Playwright payload execution error: {e}")
                             results.append(
                                 {"payload": payload, "executed": False, "error": str(e)}
                             )
                             print(f"  - playwright payload error: {e}")
                     browser.close()
             except Exception as e:
-                print(f"[!] Playwright run failed: {e}")
+                logger.error(f"Playwright run failed: {e}")
 
     # write report
-    EnhancedReportGenerator(output_dir=args.output)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = {"target": target, "timestamp": timestamp, "results": results}
-    fp = os.path.join(args.output, f"quickpoc_{timestamp}.json")
-    os.makedirs(args.output, exist_ok=True)
-    with open(fp, "w") as fh:
-        json.dump(out, fh, indent=2)
-
-    print(f"[+] QuickPoC results saved to {fp}")
+    
+    try:
+        os.makedirs(args.output, exist_ok=True)
+        fp = os.path.join(args.output, f"quickpoc_{timestamp}.json")
+        with open(fp, "w", encoding="utf-8") as fh:
+            json.dump(out, fh, indent=2)
+        logger.info(f"QuickPoC results saved to {fp}")
+        print(f"[+] QuickPoC results saved to {fp}")
+    except Exception as e:
+        logger.error(f"Failed to save report: {e}")
 
 
 if __name__ == "__main__":
