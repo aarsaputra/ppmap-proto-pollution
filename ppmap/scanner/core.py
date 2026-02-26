@@ -10,6 +10,8 @@ from datetime import datetime
 
 # Local imports
 from ppmap.utils import Colors, normalize_url, print_section
+from ppmap.utils.rate_limit import rate_limited
+from ppmap.utils.retry import retry_request
 from ppmap.models.findings import Severity, VulnerabilityType, Finding
 from ppmap.models.reports import ScanMetrics, ScanReport
 from ppmap.config.settings import CONFIG, STEALTH_HEADERS
@@ -90,14 +92,28 @@ def safe_execute(func, *args, fallback=None, timeout=None, **kwargs):
         logger.debug(traceback.format_exc())
         return fallback
 
+from ppmap.models.config import ScanConfig
+
 class CompleteSecurityScanner:
     """Complete jQuery Prototype Pollution & XSS Scanner"""
     
-    def __init__(self, timeout=15, max_workers=3, verify_ssl=True, oob_enabled=False, stealth=False):
-        self.timeout = timeout
-        self.max_workers = max_workers
-        self.stealth = stealth
-        self.oob_enabled = oob_enabled
+    def __init__(self, config: Optional[ScanConfig] = None, **kwargs):
+        # Fallback for backward compatibility inside tests or implicit calls
+        if not config:
+            self.config = ScanConfig(
+                timeout=kwargs.get('timeout', 15),
+                max_workers=kwargs.get('max_workers', 3),
+                verify_ssl=kwargs.get('verify_ssl', True),
+                oob_enabled=kwargs.get('oob_enabled', False),
+                stealth=kwargs.get('stealth', False)
+            )
+        else:
+            self.config = config
+            
+        self.timeout = self.config.timeout
+        self.max_workers = self.config.max_workers
+        self.stealth = self.config.stealth
+        self.oob_enabled = self.config.oob_enabled
         self.oob_detector = None
         
         if self.oob_enabled:
@@ -105,7 +121,7 @@ class CompleteSecurityScanner:
         
         # Initialize session with proper headers to avoid WAF fingerprinting
         self.session = requests.Session()
-        self.session.verify = verify_ssl
+        self.session.verify = self.config.verify_ssl
         
         if self.stealth:
             # Apply realistic browser headers so WAF sees a real browser
@@ -556,6 +572,7 @@ class CompleteSecurityScanner:
         
         return findings
     
+    @rate_limited()
     def test_xss_with_details(self, base_url) -> List[Dict[str, Any]]:
         """Test XSS vulnerabilities with execution-based verification (NOT text search)"""
         print(f"{Colors.CYAN}[→] Testing XSS payloads...{Colors.ENDC}")
@@ -672,6 +689,8 @@ class CompleteSecurityScanner:
             print(f"{Colors.GREEN}[✓] No confirmed XSS detected{Colors.ENDC}")
         return findings
     
+    @rate_limited()
+    @retry_request(max_attempts=3, backoff=1.5, exceptions=(TimeoutException, WebDriverException))
     def test_post_parameters(self, base_url) -> List[Dict[str, Any]]:
         """Test POST parameters for XSS and PP vulnerabilities"""
         print(f"{Colors.CYAN}[→] Testing POST parameters...{Colors.ENDC}")
