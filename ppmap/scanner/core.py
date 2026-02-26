@@ -118,6 +118,104 @@ def safe_execute(func, *args, fallback=None, timeout=None, **kwargs):
 from ppmap.models.config import ScanConfig
 
 
+def extract_jquery_versions_robust(page_source: str, driver=None) -> Dict[str, Any]:
+    """
+    Enhanced jQuery version detection with priority ordering.
+    
+    Detection methods (ordered by reliability):
+    1. Dynamic: JavaScript execution (jQuery.fn.jquery) - Most accurate if page loads
+    2. Script src attributes: <script src="jquery-X.Y.Z.js"> - Explicit version
+    3. HTML patterns: Comments, inline scripts - Fallback
+    
+    Returns:
+        {
+            'dynamic': '3.3.1',  # From jQuery.fn.jquery execution
+            'src_versions': [('1.11.3', 'https://...'), ...],  # From script src
+            'pattern_versions': ['1.12.4'],  # From regex patterns
+            'recommended': '1.11.3'  # Best guess for actual loaded version
+        }
+    """
+    result = {
+        'dynamic': None,
+        'src_versions': [],
+        'pattern_versions': [],
+        'recommended': None,
+        'all_versions': set(),
+        'detection_method': None
+    }
+    
+    # METHOD 1: Dynamic execution (most accurate)
+    if driver:
+        try:
+            dynamic_version = driver.execute_script(
+                "return (typeof jQuery !== 'undefined' ? jQuery.fn.jquery : "
+                "(typeof window.jQuery !== 'undefined' ? window.jQuery.fn.jquery : "
+                "(typeof $ !== 'undefined' && $.fn ? $.fn.jquery : null)));"
+            )
+            if dynamic_version:
+                result['dynamic'] = dynamic_version
+                result['all_versions'].add(dynamic_version)
+                logger.debug(f"Dynamic jQuery version: {dynamic_version}")
+        except Exception as e:
+            logger.debug(f"Dynamic detection failed: {type(e).__name__}")
+    
+    # METHOD 2: Extract from script src attributes (most explicit)
+    try:
+        # Extract script tags with src attributes
+        script_pattern = r'<script[^>]+src=["\']([^"\']*jquery[^"\']*)["\']'
+        for match in re.finditer(script_pattern, page_source, re.IGNORECASE):
+            src_url = match.group(1)
+            # Extract version from URL: jquery-1.11.3.js, jquery.1-11-3.min.js, etc
+            version_match = re.search(r'jquery[.-/]+([\d.]+)', src_url, re.IGNORECASE)
+            if version_match:
+                version = version_match.group(1).rstrip('.')  # Remove trailing dots
+                # Validate version format (at least X.Y)
+                if re.match(r'^\d+\.\d+', version):
+                    result['src_versions'].append((version, src_url))
+                    result['all_versions'].add(version)
+                    logger.debug(f"Script src jQuery version: {version} from {src_url[:50]}")
+    except Exception as e:
+        logger.debug(f"Script src extraction failed: {e}")
+    
+    # METHOD 3: Regex patterns on page source
+    try:
+        patterns = [
+            r'jquery[/-]([\d.]+)\.js',  # jquery-1.11.3.js or jquery/2.1.1.js
+            r'jquery[.-]([\d.]+)',       # jquery-1.11.3 or jquery.2.1.1
+            r'jQuery v([\d.]+)',         # jQuery v1.11.3
+            r'jquery:\s*["\']?([\d.]+)["\']?',  # jquery: "1.11.3"
+        ]
+        for pattern in patterns:
+            for match in re.finditer(pattern, page_source, re.IGNORECASE):
+                version = match.group(1).rstrip('.')  # Remove trailing dots/dots
+                # Validate version format (at least X.Y)
+                if re.match(r'^\d+\.\d+', version):
+                    result['pattern_versions'].append(version)
+                    result['all_versions'].add(version)
+                    logger.debug(f"Pattern match jQuery version: {version}")
+    except Exception as e:
+        logger.debug(f"Pattern extraction failed: {e}")
+    
+    # PRIORITY SELECTION
+    # 1. If dynamic script execution worked, that's the actual loaded version
+    if result['dynamic']:
+        result['recommended'] = result['dynamic']
+        result['detection_method'] = 'dynamic_execution'
+    # 2. Prefer script src versions (explicit declarations) over patterns
+    elif result['src_versions']:
+        # Pick the one that appears first in HTML (likely the primary jQuery)
+        result['recommended'] = result['src_versions'][0][0]
+        result['detection_method'] = 'script_src'
+    # 3. Use regex pattern matches (least reliable)
+    elif result['pattern_versions']:
+        # De-duplicate and sort, preferring older versions (more vulnerable)
+        unique_patterns = sorted(list(set(result['pattern_versions'])))
+        result['recommended'] = unique_patterns[0]
+        result['detection_method'] = 'pattern_fallback'
+    
+    return result
+
+
 class CompleteSecurityScanner:
     """Complete jQuery Prototype Pollution & XSS Scanner"""
 
@@ -215,132 +313,69 @@ class CompleteSecurityScanner:
 
         findings: List[Dict[str, Any]] = []
 
-        # Step 1: Detect jQuery version (EXACT METHOD FROM scanner_v2.py)
+        # Step 1: Detect jQuery version using ROBUST multi-method approach
+        page_source = ""
         try:
-            # Improved Detection: Check window.jQuery and window.$
-            jquery_version = self.driver.execute_script(
-                "return (typeof jQuery !== 'undefined' ? jQuery.fn.jquery : (typeof window.jQuery !== 'undefined' ? window.jQuery.fn.jquery : (typeof $ !== 'undefined' && $.fn ? $.fn.jquery : null)));"
+            if hasattr(self, "driver") and self.driver:
+                page_source = self.driver.page_source
+        except Exception as e:
+            logger.debug(f"Failed to get page source from driver: {e}")
+
+        # Use robust detection function
+        jquery_detection = extract_jquery_versions_robust(page_source, self.driver)
+        jquery_version = jquery_detection.get('recommended')
+        
+        # Log all detected versions for debugging
+        if jquery_detection.get('all_versions'):
+            versions_str = ", ".join(sorted(jquery_detection['all_versions']))
+            print(
+                f"{Colors.BLUE}[*] jQuery versions detected: {versions_str} (Method: {jquery_detection.get('detection_method', 'unknown')}){Colors.ENDC}"
             )
-            if not jquery_version:
-                # FALLBACK: Try regex on page source if script returned null
-                raise Exception("Script detection returned null")
-
-        except Exception:
-            # Static Analysis Fallback
-            jquery_version = None
-            try:
-                # Use source from memory if available, or try to get from requests session history
-                page_source = ""
-                if hasattr(self, "driver") and self.driver:
-                    try:
-                        page_source = self.driver.page_source
-                    except:
-                        pass
-
-                # If driver failed to give source, try requests session (most recent response)
-                if not page_source and hasattr(self, "session"):
-                    # We don't have direct access to last response object easily unless we stored it
-                    # But we can assume the scan_target called get() recently.
-                    # For safety, let's just re-request the page with requests if allowed
-                    # Or rely on what we can find.
-                    pass
-
-                # Regex patterns for jQuery version
-                # 1. Filename: jquery-1.12.4.js
-                # 2. Comment: jQuery v1.12.4
-                # 3. Object: jquery: "1.12.4"
-                import re
-
-                patterns = [
-                    r"jquery[/-]([\d.]{3,})",
-                    r"jQuery v([\d.]{3,})",
-                    r'jquery:\s*["\']([\d.]{3,})["\']',
-                ]
-
-                # We need content. If we can't get it from driver, we might be blind.
-                # Let's try to fetch it if we don't have it?
-                # PPMapScanner usually maintains session. Let's try requests.get if source is empty
-                if not page_source:
-                    # Try to recover using requests
-                    try:
-                        page_source = self.session.get(
-                            self.driver.current_url or "http://unknown",
-                            timeout=5,
-                            verify=False,
-                        ).text
-                    except:
-                        pass
-
-                if page_source:
-                    # 1. Detect ALL unique jQuery versions
-                    found_jquery_versions = set()
-                    for pattern in patterns:
-                        for match in re.finditer(pattern, page_source, re.IGNORECASE):
-                            found_jquery_versions.add(match.group(1))
-
-                    if found_jquery_versions:
-                        # Use the most critical/oldest version for main logic, but report all
-                        # Sort versions to pick the "best" candidate (usually oldest = most vulnerable)
-                        sorted_versions = sorted(list(found_jquery_versions))
-                        jquery_version = sorted_versions[0]
-
-                        print(
-                            f"{Colors.BLUE}[*] jQuery versions detected (Static Analysis): {', '.join(sorted_versions)}{Colors.ENDC}"
-                        )
-                        if len(sorted_versions) > 1:
-                            print(
-                                f"{Colors.WARNING}[!] Multiple jQuery versions found! Using {jquery_version} for primary check.{Colors.ENDC}"
-                            )
-
-                    # 2. Detect RequireJS (CVE-2024-38999) - as requested by user
-                    # Patterns: require.js, requirejs-2.3.6.js, "version": "2.3.6" near "requirejs"
-                    requirejs_patterns = [
-                        r"requirejs[/-]([\d]+\.[\d]+(?:\.[\d]+)?)",  # Require digits.digits(.digits)
-                        r"require\.js.*?([\d]+\.[\d]+(?:\.[\d]+)?)",
-                        r"RequireJS ([\d]+\.[\d]+(?:\.[\d]+)?)",
-                    ]
-
-                    for r_pat in requirejs_patterns:
-                        r_match = re.search(r_pat, page_source, re.IGNORECASE)
-                        if r_match:
-                            r_ver = r_match.group(1)
-                            print(
-                                f"{Colors.BLUE}[*] RequireJS {r_ver} detected!{Colors.ENDC}"
-                            )
-                            # Check for CVE-2024-38999 (RequireJS <= 2.3.6)
-                            try:
-                                # BUG-5 FIX: pad to 3 elements and use tuple compare
-                                r_parts = [int(x) for x in r_ver.split(".")[:3]]
-                                r_tuple = tuple(r_parts + [0] * (3 - len(r_parts)))
-                                if r_tuple <= (2, 3, 6):
-                                    print(
-                                        f"{Colors.FAIL}[!] VULNERABLE: RequireJS {r_ver} (CVE-2024-38999 - Prototype Pollution){Colors.ENDC}"
-                                    )
-                                    findings.append(
-                                        {
-                                            "type": "requirejs_pp",
-                                            "cve": "CVE-2024-38999",
-                                            "name": "RequireJS Prototype Pollution",
-                                            "severity": "CRITICAL",
-                                            "version": r_ver,
-                                        }
-                                    )
-                            except Exception as e:
-                                logger.debug(f"RequireJS version check error: {e}")
-                            break
-
-            except Exception as e:
-                logger.debug(f"Ignored error: {type(e).__name__} - {e}")
-
-            if not jquery_version:
-                print(f"{Colors.GREEN}[✓] jQuery not detected{Colors.ENDC}")
-                return findings
-
-            # If we found it via static analysis, proceed
-            if jquery_version:
+            if jquery_detection.get('dynamic') and jquery_detection['dynamic'] != jquery_version:
                 print(
-                    f"{Colors.BLUE}[*] jQuery {jquery_version} detected (Static Fallback){Colors.ENDC}"
+                    f"{Colors.WARNING}[!] Dynamic load detected: {jquery_detection['dynamic']} (different from recommended {jquery_version}){Colors.ENDC}"
                 )
+        
+        # Handle RequireJS as well (from page source)
+        try:
+            if page_source:
+                requirejs_patterns = [
+                    r"requirejs[/-]([\d]+\.[\d]+(?:\.[\d]+)?)",
+                    r"require\.js.*?([\d]+\.[\d]+(?:\.[\d]+)?)",
+                    r"RequireJS ([\d]+\.[\d]+(?:\.[\d]+)?)",
+                ]
+                for r_pat in requirejs_patterns:
+                    r_match = re.search(r_pat, page_source, re.IGNORECASE)
+                    if r_match:
+                        r_ver = r_match.group(1)
+                        print(
+                            f"{Colors.BLUE}[*] RequireJS {r_ver} detected!{Colors.ENDC}"
+                        )
+                        try:
+                            r_parts = [int(x) for x in r_ver.split(".")[:3]]
+                            r_tuple = tuple(r_parts + [0] * (3 - len(r_parts)))
+                            if r_tuple <= (2, 3, 6):
+                                print(
+                                    f"{Colors.FAIL}[!] VULNERABLE: RequireJS {r_ver} (CVE-2024-38999 - Prototype Pollution){Colors.ENDC}"
+                                )
+                                findings.append(
+                                    {
+                                        "type": "requirejs_pp",
+                                        "cve": "CVE-2024-38999",
+                                        "name": "RequireJS Prototype Pollution",
+                                        "severity": "CRITICAL",
+                                        "version": r_ver,
+                                    }
+                                )
+                        except Exception as e:
+                            logger.debug(f"RequireJS version check error: {e}")
+                        break
+        except Exception as e:
+            logger.debug(f"RequireJS detection error: {e}")
+
+        if not jquery_version:
+            print(f"{Colors.GREEN}[✓] jQuery not detected{Colors.ENDC}")
+            return findings
 
         # Step 2: CVE IDENTIFICATION
         # BUG-1 FIX: parse full (major, minor, patch) tuple for accurate version compare
