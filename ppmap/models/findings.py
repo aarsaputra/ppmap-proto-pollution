@@ -1,19 +1,24 @@
 """Data models representing security scan findings."""
+
 from enum import Enum
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+
 class Severity(str, Enum):
     """Vulnerability severity levels"""
+
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
     INFO = "INFO"
 
+
 class VulnerabilityType(str, Enum):
     """Supported vulnerability types"""
+
     JQUERY_PP = "jquery_pp"
     XSS = "xss"
     POST_XSS = "post_xss"
@@ -22,7 +27,7 @@ class VulnerabilityType(str, Enum):
     CVE = "cve"
     ENDPOINT = "endpoint"
     FRAMEWORK = "framework"
-    
+
     # Newer categories
     REACT_FLIGHT = "react_flight_vulnerability"
     BLIND_OOB = "blind_oob"
@@ -50,6 +55,7 @@ class VulnerabilityType(str, Enum):
 @dataclass
 class Finding:
     """Represents a single security finding"""
+
     type: VulnerabilityType
     severity: Severity
     name: str
@@ -64,14 +70,14 @@ class Finding:
     remediation: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     discovered_at: datetime = field(default_factory=datetime.now)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         data = asdict(self)
-        data['type'] = self.type.value
-        data['severity'] = self.severity.value
-        data['discovered_at'] = self.discovered_at.isoformat()
+        data["type"] = self.type.value
+        data["severity"] = self.severity.value
+        data["discovered_at"] = self.discovered_at.isoformat()
         return data
-    
+
     def __str__(self) -> str:
         return f"[{self.severity.value}] {self.type.value}: {self.name}"

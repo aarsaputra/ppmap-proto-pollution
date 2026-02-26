@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  ppmap_lab:
+    image: node:18-alpine
+    container_name: ppmap_vulnerable_lab
+    working_dir: /app
+    volumes:
+      - ./ppmap_lab:/app
+    command: sh -c "npm install && npm start"
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:3000" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  ppmap:
+    build: .
+    container_name: ppmap_scanner
+    depends_on:
+      ppmap_lab:
+        condition: service_healthy
+    volumes:
+      - ./reports:/app/reports
+    # Example command demonstrating a scan against the local lab
+    command: [ "--scan", "http://ppmap_lab:3000", "--output", "/app/reports" ]

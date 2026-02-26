@@ -1,4 +1,5 @@
 """Central logging setup for PPMAP"""
+
 import sys
 import logging
 from pathlib import Path
@@ -11,10 +12,10 @@ def setup_logging(log_level=logging.INFO, log_file=None):
     log_dir.mkdir(exist_ok=True)
 
     detailed_formatter = logging.Formatter(
-        '[%(asctime)s] [%(levelname)-8s] [%(name)s:%(funcName)s:%(lineno)d] %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "[%(asctime)s] [%(levelname)-8s] [%(name)s:%(funcName)s:%(lineno)d] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-    simple_formatter = logging.Formatter('[%(levelname)-8s] %(message)s')
+    simple_formatter = logging.Formatter("[%(levelname)-8s] %(message)s")
 
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
@@ -25,7 +26,9 @@ def setup_logging(log_level=logging.INFO, log_file=None):
     console_handler.setFormatter(simple_formatter)
     root_logger.addHandler(console_handler)
 
-    file_handler = logging.FileHandler(log_dir / f"ppmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+    file_handler = logging.FileHandler(
+        log_dir / f"ppmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(detailed_formatter)
     root_logger.addHandler(file_handler)
