@@ -32,6 +32,26 @@ class Colors:
     BOLD = "\033[1m"
 
 
+def print_section(title: str) -> None:
+    """
+    Print a formatted section header with ANSI color codes.
+    
+    Args:
+        title: The section title to display
+        
+    Example:
+        >>> print_section("Starting Scan")
+        # Outputs:
+        # 
+        # ================================================================================
+        #   Starting Scan
+        # ================================================================================
+    """
+    print(f"\n{Colors.CYAN}{'='*80}")
+    print(f"  {title}")
+    print(f"{'='*80}{Colors.ENDC}")
+
+
 # ============================================================================
 # RATE LIMITING
 # ============================================================================
@@ -184,9 +204,11 @@ def normalize_url(url: str) -> str:
 
 __all__ = [
     'Colors',
+    'print_section',
     'normalize_url',
     'rate_limited',
     'retry_request',
     'RateLimiter',
 ]
+
 
