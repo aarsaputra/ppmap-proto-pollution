@@ -251,23 +251,30 @@ if frida.connect():
 
 ```text
 pentest_proto/
-├── ppmap.py                      # CLI Wrapper & Entry Point
-├── ppmap/                        # Core Package
-│   ├── scanner.py               # Main Scanning Logic
-│   ├── browser.py               # Browser Automation
-│   └── ...
+├── ppmap.py                      # CLI Wrapper
+├── ppmap/                        # Modular Core Package
+│   ├── config/                   # Configuration
+│   │   └── settings.py           # Global CONFIG and WAF signatures
+│   ├── models/                   # Data Models
+│   │   ├── findings.py           # Vulnerability types and rules
+│   │   └── reports.py            # Metrics and telemetry
+│   ├── scanner/                  # Main Engine
+│   │   └── core.py               # CompleteSecurityScanner orchestrator
+│   ├── engine.py                 # Core modules (formerly scanner.py)
+│   ├── browser.py                # Browser Automation
+│   ├── utils.py                  # Common utilities and print formatting
+│   └── ...                       # Other specialized modules (e.g. oob.py)
 ├── ppmap_lab/                    # Vulnerable Lab Environment (Express.js)
-│   ├── server.js                # Lab Server
-│   └── start.sh                 # Quick Start Script
+│   ├── server.js                 # Lab Server
+│   └── start.sh                  # Quick Start Script
 ├── utils/                        # Utilities & Payloads
 ├── reports/                      # Scan Reports
 ├── config.example.yaml           # Configuration Template
-├── requirements.txt             # Dependencies
-├── README.md                    # This file
-├── QUICKSTART.md               # Quick start
-├── MANUAL_TESTING_*.md         # Testing guides
-├── refrensi.md                 # Research & References
-└── tools/                      # Helper scripts (analyze_reports.py, etc.)
+├── requirements.txt              # Production Dependencies
+├── requirements-dev.txt          # QA and linting Tools
+├── README.md                     # This documentation
+├── QUICKSTART.md                 # Quick start guide
+└── ...
 ```
 
 ---
