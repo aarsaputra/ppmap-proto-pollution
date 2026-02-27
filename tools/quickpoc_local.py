@@ -21,7 +21,6 @@ import sys
 from datetime import datetime
 from urllib.parse import urlparse
 
-from ppmap.reports import EnhancedReportGenerator
 from ppmap.engine import QuickPoC
 
 # ============================================================================

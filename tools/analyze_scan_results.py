@@ -26,10 +26,10 @@ def validate_file_path(filepath: str, allowed_dir: Path) -> Path:
         # Ensure the resolved path starts with the resolved allowed_dir
         # This prevents ../../etc/passwd type attacks
         if not path.is_relative_to(allowed_dir):
-            logger.error(f"🔴 SECURITY: Path traversal attack detected!")
+            logger.error("🔴 SECURITY: Path traversal attack detected!")
             logger.error(f"   Attempted to access: {path}")
             logger.error(f"   Allowed directory: {allowed_dir}")
-            logger.error(f"   Access DENIED")
+            logger.error("   Access DENIED")
             return None
 
         if not path.exists():
