@@ -11,7 +11,7 @@ def organize_reports(source_dir: str, dest_base: str, match_string: str = None):
             print(f"Error creating destination directory '{dest_base}': {e}")
             return
 
-    print("""
+    print(r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |

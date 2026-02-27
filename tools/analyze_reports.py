@@ -2,7 +2,6 @@ import json
 import glob
 import argparse
 import logging
-import sys
 import csv
 from pathlib import Path
 from collections import defaultdict
