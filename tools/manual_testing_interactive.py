@@ -77,8 +77,8 @@ class ManualTestingGuide:
         print(f"{Fore.GREEN}{'─'*70}")
         print(content)
 
-    def show_main_menu(self):
-        """Show main menu"""
+    def show_main_menu(self, max_retries=5):
+        """Show main menu with retry limit to prevent infinite loop"""
         self.print_header()
         print(f"{Fore.YELLOW}Pilih vulnerability untuk di-testing:\n")
 
@@ -91,7 +91,7 @@ class ManualTestingGuide:
             )
 
         print("  0. Exit")
-        while True:
+        for attempt in range(max_retries):
             choice = input(
                 f"{Fore.CYAN}Pilih nomor (0-{len(items)}): {Style.RESET_ALL}"
             ).strip()
@@ -113,6 +113,8 @@ class ManualTestingGuide:
                 print(
                     f"{Fore.RED}Invalid choice! Please enter a number.{Style.RESET_ALL}"
                 )
+        print(f"{Fore.RED}Max retries exceeded. Exiting.{Style.RESET_ALL}")
+        sys.exit(1)
 
     def show_vulnerability_details(self, vuln_key):
         """Show detailed payload for vulnerability"""
