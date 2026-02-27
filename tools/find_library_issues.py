@@ -8,8 +8,7 @@ from pathlib import Path
 # LOGGING SETUP
 # ============================================================================
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ logger = logging.getLogger(__name__)
 def check_reports(report_dir: str, domain_pattern: str = "*"):
     """
     Check for library-related vulnerabilities in reports.
-    
+
     Args:
         report_dir: Directory containing reports
         domain_pattern: Domain pattern to search for (default: * for all)
@@ -39,9 +38,11 @@ def check_reports(report_dir: str, domain_pattern: str = "*"):
 
     # Remove duplicates
     files = list(set(files))
-    
+
     if not files:
-        logger.warning(f"No report files found matching pattern '{domain_pattern}' in '{report_dir}'")
+        logger.warning(
+            f"No report files found matching pattern '{domain_pattern}' in '{report_dir}'"
+        )
         return {}
 
     logger.info(f"Found {len(files)} report files")
@@ -75,7 +76,9 @@ def check_reports(report_dir: str, domain_pattern: str = "*"):
 
             if lib_findings:
                 targets[target] = lib_findings
-                logger.info(f"{target}: Found {len(lib_findings)} library-related vulnerabilities")
+                logger.info(
+                    f"{target}: Found {len(lib_findings)} library-related vulnerabilities"
+                )
 
         except FileNotFoundError:
             logger.warning(f"File not found {fpath}")
@@ -94,14 +97,12 @@ def main():
         description="Find library-related vulnerabilities in scan reports"
     )
     parser.add_argument(
-        "--report-dir",
-        default="report",
-        help="Report directory (default: report)"
+        "--report-dir", default="report", help="Report directory (default: report)"
     )
     parser.add_argument(
         "--domain",
         default="*",
-        help="Domain pattern to search for (default: * for all)"
+        help="Domain pattern to search for (default: * for all)",
     )
     args = parser.parse_args()
 
