@@ -57,7 +57,7 @@ class ManualTestingGuide:
     def print_header(self):
         """Print header"""
         print(f"\n{Fore.CYAN}{'='*70}")
-        print("""
+        print(r"""
     ____  ____  __  __    _    ____  
    |  _ \|  _ \|  \/  |  / \  |  _ \ 
    | |_) | |_) | |\/| | / _ \ | |_) |
