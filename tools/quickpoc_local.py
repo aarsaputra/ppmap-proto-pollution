@@ -17,18 +17,18 @@ import argparse
 import json
 import os
 import logging
+import sys
 from datetime import datetime
 from urllib.parse import urlparse
 
 from ppmap.reports import EnhancedReportGenerator
-from ppmap.scanner import QuickPoC
+from ppmap.engine import QuickPoC
 
 # ============================================================================
 # LOGGING SETUP
 # ============================================================================
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -48,31 +48,24 @@ except Exception as e:
 def validate_url(url: str) -> bool:
     """
     Validate URL format to prevent issues during browser load.
-    
+
     Args:
         url: URL to validate
-        
+
     Returns:
         True if valid, False otherwise
     """
     try:
-        result = urlparse(url)
-        
-        if not result.scheme:
-            logger.error("URL must include scheme (http/https)")
+        res = urlparse(url)
+        if not res.scheme or res.scheme not in ["http", "https"]:
+            logger.error("URL must include valid scheme (http/https)")
             return False
-        
-        if result.scheme not in ['http', 'https']:
-            logger.error(f"Invalid scheme: {result.scheme} (must be http/https)")
-            return False
-        
-        if not result.netloc:
+        if not res.netloc:
             logger.error("URL must include domain")
             return False
-        
         return True
     except Exception as e:
-        logger.error(f"Invalid URL format: {e}")
+        logger.error(f"Invalid URL: {e}")
         return False
 
 
@@ -91,12 +84,9 @@ def main():
 
     # SECURITY: Validate URL format before proceeding
     if not validate_url(target):
-        logger.error("Invalid target URL")
-        return
-    
-    logger.info(f"[+] QuickPoC local runner")
-    print(f"Target: {target}")
-    print(f"Headless: {headless}")
+        sys.exit(1)
+
+    logger.info(f"QuickPoC local runner\nTarget: {target}\nHeadless: {headless}")
 
     results = []
 
@@ -120,27 +110,32 @@ def main():
                 try:
                     executed = qp.test_payload(payload)
                     results.append({"payload": payload, "executed": bool(executed)})
-                    print(f"  - payload executed: {bool(executed)} payload={payload}")
+                    logger.info(
+                        f"  - payload executed: {bool(executed)} payload={payload}"
+                    )
                 except Exception as e:
-                    logger.error(f"Error executing payload: {e}")
                     results.append(
                         {"payload": payload, "executed": False, "error": str(e)}
                     )
-                    print(f"  - payload error: {e}")
+                    logger.error(f"  - payload error: {e}")
         finally:
             qp.cleanup()
     else:
-        logger.warning("Selenium QuickPoC not available; trying Playwright fallback")
+        logger.warning(
+            "Selenium QuickPoC not available or failed to start; trying Playwright fallback"
+        )
         # Playwright fallback (preferred for reproducible local runs)
         if not PLAYWRIGHT_AVAILABLE:
-            logger.error("Playwright not installed; run: pip install playwright && playwright install")
+            logger.error(
+                "Playwright not installed; please pip install playwright and run `playwright install`"
+            )
         else:
             try:
                 with sync_playwright() as pw:
                     browser = pw.chromium.launch(headless=headless)
                     page = browser.new_page()
                     page.set_default_navigation_timeout(args.timeout * 1000)
-                    
+
                     try:
                         page.goto(target)
                         logger.info(f"Successfully loaded {target}")
@@ -155,17 +150,17 @@ def main():
                     ]
                     for payload in safe_payloads:
                         try:
-                            # Execute $.extend if jQuery present with proper error handling
+                            # execute $.extend if jQuery present. Fixed JS block.
                             executed = page.evaluate(
-                                """(payload) => {
-                                    try {
-                                        if(window.jQuery){
-                                            window.jQuery.extend(true, {}, payload);
+                                """(payload) => { 
+                                    try { 
+                                        if(window.jQuery){ 
+                                            window.jQuery.extend(true, {}, payload); 
                                             return true;
-                                        }
+                                        } 
                                         return false;
                                     } catch(e) {
-                                        console.error('Error executing payload:', e);
+                                        console.error('Error:', e);
                                         return false;
                                     }
                                 }""",
@@ -174,16 +169,14 @@ def main():
                             results.append(
                                 {"payload": payload, "executed": bool(executed)}
                             )
-                            print(
+                            logger.info(
                                 f"  - playwright payload executed: {bool(executed)} payload={payload}"
                             )
-                            logger.info(f"Payload execution result: {executed}")
                         except Exception as e:
-                            logger.error(f"Playwright payload execution error: {e}")
                             results.append(
                                 {"payload": payload, "executed": False, "error": str(e)}
                             )
-                            print(f"  - playwright payload error: {e}")
+                            logger.error(f"  - playwright payload error: {e}")
                     browser.close()
             except Exception as e:
                 logger.error(f"Playwright run failed: {e}")
@@ -191,14 +184,13 @@ def main():
     # write report
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = {"target": target, "timestamp": timestamp, "results": results}
-    
+
     try:
         os.makedirs(args.output, exist_ok=True)
         fp = os.path.join(args.output, f"quickpoc_{timestamp}.json")
-        with open(fp, "w", encoding="utf-8") as fh:
+        with open(fp, "w") as fh:
             json.dump(out, fh, indent=2)
         logger.info(f"QuickPoC results saved to {fp}")
-        print(f"[+] QuickPoC results saved to {fp}")
     except Exception as e:
         logger.error(f"Failed to save report: {e}")
 

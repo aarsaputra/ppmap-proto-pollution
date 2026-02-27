@@ -11,8 +11,7 @@ from collections import defaultdict
 # LOGGING SETUP
 # ============================================================================
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -20,45 +19,21 @@ logger = logging.getLogger(__name__)
 # MARKDOWN SECURITY
 # ============================================================================
 
+
 def escape_markdown(text: str) -> str:
-    """
-    Escape special markdown characters to prevent injection.
-    
-    This prevents payloads containing backticks, asterisks, or underscores 
-    from breaking the markdown formatting.
-    
-    Args:
-        text: Text to escape
-        
-    Returns:
-        Escaped text safe for markdown
-    """
+    """Escape special markdown characters to avoid breaking the report structure."""
     if not text:
         return "N/A"
-    
     text = str(text)
-    
-    # Escape backticks (used for code blocks)
-    text = text.replace('`', '\\`')
-    
-    # Escape asterisks (used for bold/italic)
-    text = text.replace('*', '\\*')
-    
-    # Escape underscores (used for emphasis, but be careful not to over-escape)
-    # We'll use a simple approach: replace _ only if it's not already escaped
-    text = text.replace('_', '\\_')
-    
-    # Escape square brackets (used for links)
-    text = text.replace('[', '\\[')
-    text = text.replace(']', '\\]')
-    
-    # Escape hash (used for headings)
-    text = text.replace('#', '\\#')
-    
+    text = text.replace("`", "\\`")
+    text = text.replace("*", "\\*")
+    text = text.replace("_", "\\_")
     return text
 
 
-def generate_markdown_report(report_dir: str, title: str = None, output_file: str = None):
+def generate_markdown_report(
+    report_dir: str, title: str = None, output_file: str = None
+):
     base_path = Path(report_dir).resolve()
     if not base_path.exists() or not base_path.is_dir():
         logger.error(f"Directory '{report_dir}' not found.")
@@ -66,13 +41,13 @@ def generate_markdown_report(report_dir: str, title: str = None, output_file: st
 
     search_pattern = str(base_path / "*/report.json")
     report_files = glob.glob(search_pattern)
-    
+
     if not report_files:
         logger.warning(f"No report files found in {report_dir}")
         return
-    
+
     logger.info(f"Found {len(report_files)} report files")
-    
+
     vulnerable_targets = []
     vuln_counts = defaultdict(int)
 
@@ -108,20 +83,24 @@ def generate_markdown_report(report_dir: str, title: str = None, output_file: st
             logger.warning(f"Permission denied reading {report_path}")
         except IOError as e:
             logger.warning(f"IO Error reading {report_path}: {e}")
-    
+
     unique_targets_count = len(set(vulnerable_targets))
-    
+
     # Auto-detect title if not provided
     if not title:
         if vulnerable_targets:
-            title = "*.".join(set(vulnerable_targets)).split()[0] if vulnerable_targets else "Report"
+            title = (
+                "*.".join(set(vulnerable_targets)).split()[0]
+                if vulnerable_targets
+                else "Report"
+            )
         else:
             title = "Prototype Pollution Scan"
-    
+
     # Auto-generate output filename if not provided
     if not output_file:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        safe_title = title.replace('*', 'wildcard').replace('/', '_').replace(':', '')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_title = title.replace("*", "wildcard").replace("/", "_").replace(":", "")
         output_file = f"scan_report_{safe_title}_{timestamp}.md"
 
     # Generate Markdown Content
@@ -178,7 +157,8 @@ A comprehensive automated scan was conducted on `{safe_title}` targets to detect
             severity = finding.get("severity", "UNKNOWN")
             vuln_type = finding.get("type", "Unknown Type").replace("_", " ").title()
             description = finding.get("description", "No description provided.")
-            payload = finding.get("payload", "N/A")
+            raw_payload = finding.get("payload", "N/A")
+            safe_payload = escape_markdown(raw_payload)
 
             # Severity Icon
             icon = (
@@ -187,14 +167,16 @@ A comprehensive automated scan was conducted on `{safe_title}` targets to detect
 
             md_content += f"\n#### {i}. {icon} {vuln_type} ({severity})\n"
             md_content += f"- **Description:** {escape_markdown(description)}\n"
-            if payload != "N/A":
-                # SECURITY: Escape payload to prevent markdown injection
-                safe_payload = escape_markdown(str(payload))
+            if raw_payload != "N/A":
                 md_content += f"- **Payload:** `{safe_payload}`\n"
             if "component" in finding:
-                md_content += f"- **Component:** {escape_markdown(str(finding['component']))}\n"
+                md_content += (
+                    f"- **Component:** {escape_markdown(str(finding['component']))}\n"
+                )
             if "method" in finding:
-                md_content += f"- **Method:** {escape_markdown(str(finding['method']))}\n"
+                md_content += (
+                    f"- **Method:** {escape_markdown(str(finding['method']))}\n"
+                )
 
     md_content += "\n---\n*Report generated automatically by PPMAP Analyzer Agent.*\n"
 
@@ -232,12 +214,12 @@ def main():
         help="Title for the report (auto-detected if not specified)",
     )
     parser.add_argument(
-        "--out", 
-        default=None, 
-        help="Output Markdown file (auto-generated if not specified)"
+        "--out",
+        default=None,
+        help="Output Markdown file (auto-generated if not specified)",
     )
     args = parser.parse_args()
-    
+
     logger.info(f"Generating report from {args.dir}")
     generate_markdown_report(args.dir, args.title, args.out)
 
