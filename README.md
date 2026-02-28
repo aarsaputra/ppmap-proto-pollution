@@ -50,16 +50,19 @@
 - Object.defineProperty() bypass
 - child_process RCE detection (Safe mode)
 
-**Tier 4 - Modern Bypass Techniques (2024/2025 Research):**
+**Tier 4 - Modern Bypass Techniques (2024/2026 Research):**
 - Constructor-based pollution (Primary modern bypass)
 - Sanitization bypass (Recursive filter evasion)
 - Descriptor pollution (Object.defineProperty exploitation)
 - Blind Gadget Fuzzer (pp-finder/BlackFan/Yuske research)
+- **Deep Chain Fuzzing** (Recursive nested path pollution: `__proto__.config.request.url`)
+- **HTTP Header Fuzzing** (Active injection via `X-Forwarded-For: __proto__[admin]=true`)
 
 **Tier 5 - Research Gap Features (refrensi.md Integration):**
 - CORS Header Pollution (Safe server-side detection)
 - Third-Party Library Gadgets (GA, GTM, Adobe DTM, Vue.js, DOMPurify)
 - Storage API Pollution (localStorage/sessionStorage)
+- **Advanced Endpoint Discovery** (Regex-based deep JavaScript source extraction)
 
 **Tier 6 - CVE-Specific & Real-World Exploits:**
 - CVE-Specific Payloads (6 CVEs: Lodash, deep-merge, Protobufjs, etc.)
