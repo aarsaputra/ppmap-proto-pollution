@@ -322,7 +322,7 @@ python3 ppmap.py --scan http://localhost:3000
 - ✅ Storage API Pollution
 
 #### **Phase 2: CVE-Specific Payloads**
-- ✅ CVE-2025-13465 (Lodash)
+- ✅ Lodash Injection Gadget Test
 - ✅ CVE-2024-38986 (deep-merge RCE)
 - ✅ CVE-2020-8203 (Lodash merge)
 - ✅ CVE-2019-7609 (Protobufjs)

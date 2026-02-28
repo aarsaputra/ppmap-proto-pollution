@@ -202,7 +202,7 @@ Medium (6.9)
 
 Inventarisasi CVE Signifikan
 Pustaka JavaScript sering kali menjadi titik lemah dalam rantai pasokan perangkat lunak. Berikut adalah daftar CVE utama yang sering dirujuk dalam literatur keamanan prototype pollution.
-CVE-2025-13465 (Lodash): Kerentanan pada fungsi _.unset dan _.omit yang memungkinkan penghapusan metode pada prototipe global, meskipun tidak memungkinkan penulisan ulang secara langsung.7
+CVE-2025-13465 (Lodash): Kerentanan pada fungsi _.unset dan _.omit yang memungkinkan penghapusan metode pada prototipe global, meskipun tidak memungkinkan penulisan ulang secara langsung.7 *(Catatan: PPMAP saat ini tidak memverifikasi eksploitasi berbasis penghapusan ini, melainkan hanya mendeteksi keberadaan _.unset dan menguji celah injeksi via Lodash. Lihat LIMITATIONS.md)*
 CVE-2024-38986 (@75lb/deep-merge): Kerentanan kritis yang muncul karena ketergantungan pada metode penggabungan Lodash yang sudah usang, memungkinkan RCE dan DoS.19
 CVE-2020-8203 (Lodash): Salah satu kerentanan paling terkenal yang mempengaruhi fungsi _.merge, memungkinkan polusi melalui kunci __proto__.7
 CVE-2022-25878 (Protobufjs): Kerentanan saat melakukan parsing atau pemuatan file .proto, yang dapat mencemari prototipe melalui fungsi util.setProperty.9
