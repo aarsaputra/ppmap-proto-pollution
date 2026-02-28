@@ -3468,14 +3468,18 @@ class CompleteSecurityScanner:
         findings: List[Dict[str, Any]] = []
 
         cve_tests = [
-            # CVE-2025-13465 - Lodash _.unset / _.omit
+            # Lodash _.unset / _.omit Injection Gadget Test (Previously labeled CVE-2025-13465)
+            # NOTE: This test detects Lodash usage and sends an injection payload.
+            # It does NOT verify deletion-based exploitation (CVE-2025-13465).
+            # True detection of _.unset deletion requires behavioral side-channel verification.
+            # Current coverage: presence detection + injection gadget only.
             {
-                "cve": "CVE-2025-13465",
+                "cve": "Lodash _.unset Injection Gadget",
                 "library": "Lodash",
                 "method": "_.unset / _.omit",
-                "payload": '{"constructor":{"prototype":{"polluted":"CVE-2025-13465"}}}',
+                "payload": '{"constructor":{"prototype":{"polluted":"LODASH_UNSET_INJECTION"}}}',
                 "detection": ["lodash", "_.unset", "_.omit"],
-                "severity": "CRITICAL",
+                "severity": "HIGH",
             },
             # CVE-2024-38986 - @75lb/deep-merge RCE
             {

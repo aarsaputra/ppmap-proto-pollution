@@ -65,7 +65,7 @@
 - **Advanced Endpoint Discovery** (Regex-based deep JavaScript source extraction)
 
 **Tier 6 - CVE-Specific & Real-World Exploits:**
-- CVE-Specific Payloads (6 CVEs: Lodash, deep-merge, Protobufjs, etc.)
+- CVE-Specific Payloads (Deep-merge, Protobufjs, Safe-eval, etc.)
 - Kibana Telemetry RCE (HackerOne #852613 - $10k bounty)
 - Blitz.js RCE Chain (CVE-2022-23631)
 - Elastic XSS (HackerOne #998398)
@@ -221,7 +221,7 @@ if frida.connect():
 - CVE-2020-11022 - jQuery HTML Prefilter XSS
 - CVE-2015-9251 - jQuery CSS Import XSS
 - CVE-2021-44906 - minimist Prototype Pollution
-- CVE-2025-13465 - Lodash _.unset / _.omit (NEW - Phase 2)
+- Lodash Injection Gadget - Lodash _.unset / _.omit (NEW - Phase 2)
 - CVE-2024-38986 - @75lb/deep-merge RCE (NEW - Phase 2)
 - CVE-2020-8203 - Lodash _.merge (NEW - Phase 2)
 - CVE-2022-25878 - Protobufjs parse (NEW - Phase 2)

@@ -182,8 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Storage API Pollution** - Tests localStorage/sessionStorage direct access vulnerabilities
 - **Gadget Database Expansion** - Added 17 new properties to `utils/gadgets.py` (total: 40 properties)
 
-### Added - Phase 2 (CVE-Specific Payloads)
-- **CVE-2025-13465** - Lodash `_.unset` / `_.omit` prototype pollution
+### Added - Phase 2 (CVE-Specific Payloads/Gadgets)
+- **Lodash Injection Gadget** - Lodash `_.unset` / `_.omit` prototype pollution partial detection
 - **CVE-2024-38986** - @75lb/deep-merge RCE via shell property
 - **CVE-2020-8203** - Lodash `_.merge` prototype pollution
 - **CVE-2019-7609** - Protobufjs `parse()` pollution
