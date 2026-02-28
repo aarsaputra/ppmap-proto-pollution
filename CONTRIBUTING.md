@@ -269,6 +269,8 @@ Before submitting a PR, ensure:
 
 ## 📜 Code of Conduct
 
+Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
 ### **Our Standards**
 - Be respectful and inclusive
 - Welcome newcomers
@@ -339,6 +341,6 @@ Your contributions help make the security community stronger and safer.
 
 ---
 
-**Last Updated**: January 31, 2026  
-**Project Version**: 3.5.0  
+**Last Updated**: February 27, 2026  
+**Project Version**: 4.1.0  
 **Maintainers**: Security Research Team
