@@ -413,21 +413,33 @@ class EnhancedReportGenerator:
 
             # Detailed findings
             lines.append(f"---")
+            # Detailed findings
+            lines.append(f"---")
             lines.append(f"")
             lines.append(f"## Detailed Findings")
             lines.append(f"")
 
-            for i, f in enumerate(findings, 1):
-                kb = _get_finding_knowledge(f)
-                name = f.get("name", kb.get("title", f.get("type", "Unknown")))
-                severity = f.get("severity", "MEDIUM")
-                cve = f.get("cve", "")
-                verified = f.get("verified", False)
-                jquery_ver = f.get("jquery_version", "")
+            from collections import defaultdict
+            grouped_findings = defaultdict(list)
+            for f in findings:
+                # Group by URL if present, otherwise fallback to target
+                grouped_findings[f.get("url", target)].append(f)
 
-                lines.append(f"### Finding {i}: {name}")
+            for current_url, url_findings in grouped_findings.items():
+                lines.append(f"### 📂 Endpoint: {current_url}")
                 lines.append(f"")
-                lines.append(f"| Field | Value |")
+
+                for i, f in enumerate(url_findings, 1):
+                    kb = _get_finding_knowledge(f)
+                    name = f.get("name", kb.get("title", f.get("type", "Unknown")))
+                    severity = f.get("severity", "MEDIUM")
+                    cve = f.get("cve", "")
+                    verified = f.get("verified", False)
+                    jquery_ver = f.get("jquery_version", "")
+
+                    lines.append(f"#### Finding {i}: {name}")
+                    lines.append(f"")
+                    lines.append(f"| Field | Value |")
                 lines.append(f"|-------|-------|")
                 lines.append(f"| **Severity** | {severity} |")
                 if cve:
@@ -642,26 +654,37 @@ class EnhancedReportGenerator:
     </div>
 """
 
-            for idx, f in enumerate(findings, 1):
-                kb = _get_finding_knowledge(f)
-                name = f.get("name", kb.get("title", f.get("type", "Unknown")))
-                severity = str(f.get("severity", "MEDIUM")).upper()
-                cve = f.get("cve", "")
-                verified = f.get("verified", False)
-                jquery_ver = f.get("jquery_version", "")
-                payload = f.get("payload", "")
+            from collections import defaultdict
+            grouped_findings = defaultdict(list)
+            for f in findings:
+                # Group by URL if present, otherwise fallback to target
+                grouped_findings[f.get("url", target)].append(f)
 
-                sev_lower = severity.split()[0].lower()
-                if sev_lower not in ("critical", "high", "medium", "low"):
-                    sev_lower = "medium"
-
-                ver_label = (
-                    '<span class="verified">✅ Verified</span>'
-                    if verified
-                    else '<span class="unverified">⚠️ Version-based</span>'
-                )
-
+            for current_url, url_findings in grouped_findings.items():
                 html += f"""
+    <div class="endpoint-section" style="margin-top:2rem; padding-top:1rem; border-top:2px solid var(--border);">
+        <h2 style="color:var(--accent); margin-bottom:1rem;">📂 Endpoint: <a href="{html_escape(current_url)}" target="_blank" style="color:var(--text);">{html_escape(current_url)}</a></h2>
+"""
+                for idx, f in enumerate(url_findings, 1):
+                    kb = _get_finding_knowledge(f)
+                    name = f.get("name", kb.get("title", f.get("type", "Unknown")))
+                    severity = str(f.get("severity", "MEDIUM")).upper()
+                    cve = f.get("cve", "")
+                    verified = f.get("verified", False)
+                    jquery_ver = f.get("jquery_version", "")
+                    payload = f.get("payload", "")
+
+                    sev_lower = severity.split()[0].lower()
+                    if sev_lower not in ("critical", "high", "medium", "low"):
+                        sev_lower = "medium"
+
+                    ver_label = (
+                        '<span class="verified">✅ Verified</span>'
+                        if verified
+                        else '<span class="unverified">⚠️ Version-based</span>'
+                    )
+
+                    html += f"""
     <div class="finding">
         <div class="finding-header">
             <h3>#{idx} — {html_escape(str(name))}</h3>
@@ -671,56 +694,57 @@ class EnhancedReportGenerator:
             <div class="section">
                 <table>
 """
-                if cve:
-                    html += f'<tr><td>CVE</td><td><a href="{html_escape(kb.get("reference", ""))}" target="_blank">{html_escape(str(cve))}</a></td></tr>\n'
-                if jquery_ver:
-                    html += f"<tr><td>jQuery</td><td>{html_escape(str(jquery_ver))}</td></tr>\n"
-                if kb.get("affected"):
-                    html += f'<tr><td>Affected</td><td>{html_escape(str(kb["affected"]))}</td></tr>\n'
-                html += "</table></div>\n"
+                    if cve:
+                        html += f'<tr><td>CVE</td><td><a href="{html_escape(kb.get("reference", ""))}" target="_blank">{html_escape(str(cve))}</a></td></tr>\n'
+                    if jquery_ver:
+                        html += f"<tr><td>jQuery</td><td>{html_escape(str(jquery_ver))}</td></tr>\n"
+                    if kb.get("affected"):
+                        html += f'<tr><td>Affected</td><td>{html_escape(str(kb["affected"]))}</td></tr>\n'
+                    html += "</table></div>\n"
 
-                # Description
-                desc = kb.get("description", f.get("description", ""))
-                if desc:
-                    html += f'<div class="section"><div class="section-title">Description</div><p>{html_escape(str(desc))}</p></div>\n'
+                    # Description
+                    desc = kb.get("description", f.get("description", ""))
+                    if desc:
+                        html += f'<div class="section"><div class="section-title">Description</div><p>{html_escape(str(desc))}</p></div>\n'
 
-                # Payload
-                if payload:
-                    payload_str = (
-                        json.dumps(payload, indent=2)
-                        if isinstance(payload, (dict, list))
-                        else str(payload)
-                    )
-                    html += f'<div class="section"><div class="section-title">Detection Payload</div><pre><code>{html_escape(payload_str)}</code></pre></div>\n'
+                    # Payload
+                    if payload:
+                        payload_str = (
+                            json.dumps(payload, indent=2)
+                            if isinstance(payload, (dict, list))
+                            else str(payload)
+                        )
+                        html += f'<div class="section"><div class="section-title">Detection Payload</div><pre><code>{html_escape(payload_str)}</code></pre></div>\n'
 
-                # Manual Steps
-                if kb.get("manual_steps"):
-                    html += '<div class="section"><div class="section-title">📋 Manual Verification Steps</div><ol class="steps">\n'
-                    for step in kb["manual_steps"]:
-                        html += f"<li>{html_escape(step)}</li>\n"
-                    html += "</ol></div>\n"
+                    # Manual Steps
+                    if kb.get("manual_steps"):
+                        html += '<div class="section"><div class="section-title">📋 Manual Verification Steps</div><ol class="steps">\n'
+                        for step in kb["manual_steps"]:
+                            html += f"<li>{html_escape(step)}</li>\n"
+                        html += "</ol></div>\n"
 
-                # PoC Script
-                if kb.get("poc_script"):
-                    esc_script = html_escape(kb["poc_script"])
-                    html += f"""<div class="section"><div class="section-title">🧪 PoC Script (F12 → Console)</div>
+                    # PoC Script
+                    if kb.get("poc_script"):
+                        esc_script = html_escape(kb["poc_script"])
+                        html += f"""<div class="section"><div class="section-title">🧪 PoC Script (F12 → Console)</div>
 <pre><button class="copy-btn" onclick="navigator.clipboard.writeText(this.nextElementSibling.textContent)">Copy</button><code>{esc_script}</code></pre></div>\n"""
 
-                # XSS Payloads
-                if kb.get("xss_payloads"):
-                    html += '<div class="section"><div class="section-title">⚡ Exploitation Payloads</div>\n'
-                    for xp in kb["xss_payloads"]:
-                        html += f"<pre><code>{html_escape(xp)}</code></pre>\n"
-                    html += "</div>\n"
+                    # XSS Payloads
+                    if kb.get("xss_payloads"):
+                        html += '<div class="section"><div class="section-title">⚡ Exploitation Payloads</div>\n'
+                        for xp in kb["xss_payloads"]:
+                            html += f"<pre><code>{html_escape(xp)}</code></pre>\n"
+                        html += "</div>\n"
 
-                # Remediation
-                if kb.get("remediation"):
-                    html += '<div class="section"><div class="section-title">🛡️ Remediation</div><div class="remediation"><ul>\n'
-                    for r in kb["remediation"]:
-                        html += f"<li>{html_escape(r)}</li>\n"
-                    html += "</ul></div></div>\n"
+                    # Remediation
+                    if kb.get("remediation"):
+                        html += '<div class="section"><div class="section-title">🛡️ Remediation</div><div class="remediation"><ul>\n'
+                        for r in kb["remediation"]:
+                            html += f"<li>{html_escape(r)}</li>\n"
+                        html += "</ul></div></div>\n"
 
-                html += "</div></div>\n"
+                    html += "</div></div>\n"
+                html += "</div>\n"
 
             html += f"""
     <div class="footer">
