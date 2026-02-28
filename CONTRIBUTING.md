@@ -12,6 +12,18 @@ PPMAP aims to be the most comprehensive prototype pollution scanner available, p
 
 ## 🤝 How to Contribute
 
+If you'd like to contribute, start by searching through the [pull requests](https://github.com/aarsaputra/ppmap-proto-pollution/pulls) to see whether someone else has raised a similar idea or question.
+
+If you don't see your idea listed, and you think it fits into the goals of this project, open a pull request.
+
+### 💡 Quick Tip for Beginners
+
+1. Always create a new branch for your changes.
+2. Write clear commit messages.
+3. Test your changes locally before submitting a PR.
+4. Follow the style guide.
+5. Be patient during reviews.
+
 ### 1. **Bug Reports**
 If you find a bug, please open an issue with:
 - Clear description of the bug
