@@ -518,6 +518,39 @@ class EndpointDiscovery:
                             discovered.add(absolute_url)
                             if current_depth < depth:
                                 to_visit.append((absolute_url, current_depth + 1))
+                                
+                    # Phase 8: Extract API endpoints hidden inside JavaScript / Inline handlers via RegEx
+                    import re
+                    # Match relative paths like "/api/..." or absolute like "http://..." inside quotes
+                    regex_patterns = [
+                        r'[\'"](?:GET|POST|PUT|DELETE)?\s*(/(?:api/)?[a-zA-Z0-9_\-./?&=]+)[\'"]',
+                        r'window\.open\(.*?[\'"](/[a-zA-Z0-9_\-./?&=]+)[\'"]',
+                        r'fetch\(.*?[\'"](/[a-zA-Z0-9_\-./?&=]+)[\'"]'
+                    ]
+                    
+                    # Search inside all scripts
+                    for script in soup.find_all("script"):
+                        content = script.string or ""
+                        for pattern in regex_patterns:
+                            for match in re.findall(pattern, content):
+                                abs_js_url = urljoin(current_url, match)
+                                if urlparse(abs_js_url).netloc == urlparse(base_url).netloc:
+                                    discovered.add(abs_js_url)
+                                    if current_depth < depth:
+                                        to_visit.append((abs_js_url, current_depth + 1))
+                                        
+                    # Search inside onclick/inline handlers on ANY tag
+                    for tag in soup.find_all(True):
+                        for attr in tag.attrs:
+                            if attr.startswith('on'): # onclick, onsubmit, onmouseover, etc
+                                content = str(tag[attr])
+                                for pattern in regex_patterns:
+                                    for match in re.findall(pattern, content):
+                                        abs_inline_url = urljoin(current_url, match)
+                                        if urlparse(abs_inline_url).netloc == urlparse(base_url).netloc:
+                                            discovered.add(abs_inline_url)
+                                            if current_depth < depth:
+                                                to_visit.append((abs_inline_url, current_depth + 1))
                 except Exception as e:
                     logger.debug(f"Deep discovery error at {current_url}: {e}")
                     continue

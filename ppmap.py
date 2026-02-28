@@ -654,13 +654,34 @@ ADVANCED OPTIONS:
                 stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
             )
 
+            from ppmap.engine import EndpointDiscovery
+            
             all_findings = []
             for target in target_iterator:
                 try:
-                    logger.info(f"Scanning target: {target}")
-                    findings = scanner.scan_target(target)
-                    if findings:
-                        all_findings.extend(findings)
+                    logger.info(f"Scanning base target: {target}")
+                    
+                    # Phase 8: Advanced Endpoint Discovery (JS & Regex integration)
+                    targets_to_scan = [target]
+                    try:
+                        discovery = EndpointDiscovery(session=scanner.session)
+                        # We use depth 1 so we don't accidentally crawl the internet.
+                        discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=30)
+                        for ep in discovered_eps:
+                            if ep not in targets_to_scan:
+                                targets_to_scan.append(ep)
+                        if len(targets_to_scan) > 1:
+                            print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
+                    except Exception as dis_err:
+                        logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
+
+                    for sub_target in targets_to_scan:
+                        logger.info(f" -> Testing endpoint: {sub_target}")
+                        if len(targets_to_scan) > 1:
+                            print(f"{Colors.BLUE}[→] Scanning Endpoint: {sub_target}{Colors.ENDC}")
+                        findings = scanner.scan_target(sub_target)
+                        if findings:
+                            all_findings.extend(findings)
                 except Exception as e:
                     logger.error(f"Error scanning {target}: {e}", exc_info=True)
                     continue
