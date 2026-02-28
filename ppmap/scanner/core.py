@@ -29,6 +29,7 @@ try:
         NoSuchElementException,
         StaleElementReferenceException,
         InvalidSessionIdException,
+        UnexpectedAlertPresentException,
     )
 
     SELENIUM_AVAILABLE = True
@@ -816,6 +817,25 @@ class CompleteSecurityScanner:
                             # Break retry loop as page loaded fine.
                             break
 
+                        except UnexpectedAlertPresentException:
+                            print(
+                                f"{Colors.FAIL}[!] XSS FOUND (Alert Triggered): {param}={payload[:40]}{Colors.ENDC}"
+                            )
+                            findings.append(
+                                {
+                                    "type": "xss",
+                                    "param": param,
+                                    "payload": payload,
+                                    "severity": "HIGH",
+                                    "url": test_url,
+                                }
+                            )
+                            # Handle alert cleanup via Selenium if possible, or just break
+                            try:
+                                self.driver.switch_to.alert.accept()
+                            except:
+                                pass
+                            break
                         except Exception as exec_e:
                             # Fallback: check if payload appears to be reflected in DOM
                             try:
@@ -872,8 +892,8 @@ class CompleteSecurityScanner:
             time.sleep(1)
 
             # Find POST forms
-            forms = self.driver.execute_script("""
-                return Array.from(document.querySelectorAll('form')).map(form => ({
+            forms = json.loads(self.driver.execute_script("""
+                return JSON.stringify(Array.from(document.querySelectorAll('form')).map(form => ({
                     method: (form.method || 'GET').toUpperCase(),
                     action: form.action || window.location.pathname,
                     inputs: Array.from(form.querySelectorAll('input, textarea')).map(inp => ({
@@ -881,8 +901,8 @@ class CompleteSecurityScanner:
                         type: inp.type,
                         value: inp.value
                     }))
-                }));
-            """)
+                })));
+            """))
 
             if not forms:
                 print(f"{Colors.YELLOW}[!] No POST forms found{Colors.ENDC}")
@@ -952,9 +972,26 @@ class CompleteSecurityScanner:
                                         "method": "POST",
                                     }
                                 )
+                        except UnexpectedAlertPresentException:
+                            print(f"{Colors.FAIL}[!] POST XSS FOUND (Alert Triggered): {param}={payload[:40]}{Colors.ENDC}")
+                            findings.append(
+                                {
+                                    "type": "post_xss",
+                                    "param": param,
+                                    "payload": payload,
+                                    "severity": "HIGH",
+                                    "method": "POST",
+                                }
+                            )
+                            try:
+                                self.driver.switch_to.alert.accept()
+                            except:
+                                pass
                         except Exception as e:
                             logger.debug(f"Ignored error: {type(e).__name__} - {e}")
-
+                            
+        except UnexpectedAlertPresentException:
+            pass
         except Exception as e:
             print(
                 f"{Colors.WARNING}[⚠] Error testing POST parameters: {str(e)[:50]}{Colors.ENDC}"
@@ -962,6 +999,76 @@ class CompleteSecurityScanner:
 
         if not findings:
             print(f"{Colors.GREEN}[✓] No POST vulnerabilities detected{Colors.ENDC}")
+        return findings
+
+    def test_deep_chain_pollution(self, base_url: str) -> List[Dict[str, Any]]:
+        """Phase 9: Fuzz endpoints with multi-level nested prototype injection."""
+        print(f"{Colors.BLUE}[*] Testing Deep Chain Prototype Pollution...{Colors.ENDC}")
+        findings: List[Dict[str, Any]] = []
+        marker = f"dyn_deep_{int(time.time())}_{random.randint(1000,9999)}"
+        
+        deep_payloads = [
+            {"__proto__": {"config": {"request": {"url": marker}}}},
+            {"constructor": {"prototype": {"options": {"headers": {"test": marker}}}}},
+            {"__proto__": {"data": {"user": {"isAdmin": marker}}}},
+            {"constructor": {"prototype": {"env": {"NODE_OPTIONS": marker}}}}
+        ]
+        
+        for payload in deep_payloads:
+            try:
+                response = self.session.post(base_url, json=payload, timeout=5, verify=False)
+                self.metrics.total_requests += 1
+                if marker in response.text:
+                    findings.append({
+                        "type": "deep_chain_pp",
+                        "severity": "CRITICAL",
+                        "payload": payload,
+                        "verified": True,
+                        "description": "Deep Chain Object Pollution successfully breached parsing boundaries."
+                    })
+                    print(f"{Colors.FAIL}[!] DEEP CHAIN PP FOUND: {payload}{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"Deep chain test error: {e}")
+                
+        if not findings:
+            print(f"{Colors.GREEN}[✓] No Deep Chain Prototype Pollution detected.{Colors.ENDC}")
+        return findings
+
+    def test_http_header_pollution(self, base_url: str) -> List[Dict[str, Any]]:
+        """Phase 9: Fuzz endpoints via HTTP Header Prototype Pollution injection."""
+        print(f"{Colors.BLUE}[*] Testing HTTP Header Prototype Pollution...{Colors.ENDC}")
+        findings: List[Dict[str, Any]] = []
+        marker = f"dyn_hdr_{int(time.time())}_{random.randint(1000,9999)}"
+        
+        test_headers = [
+            {"__proto__[admin]": "true", "X-Forwarded-For": "127.0.0.1"},
+            {"__proto__.polluted": marker, "Content-Type": "application/json"},
+            {"Cookie": f"__proto__[auth]={marker}"}
+        ]
+        
+        for headers in test_headers:
+            try:
+                # Merge with session headers to not lose User-Agent, etc.
+                merged_headers = self.session.headers.copy()
+                merged_headers.update(headers)
+                
+                response = self.session.get(base_url, headers=merged_headers, timeout=5, verify=False)
+                self.metrics.total_requests += 1
+                
+                if marker in response.text or "Error establishing a Redis connection" in response.text:
+                    findings.append({
+                        "type": "http_header_pp",
+                        "severity": "HIGH",
+                        "payload": headers,
+                        "verified": True,
+                        "description": "HTTP Header Parser is vulnerable to Prototype Pollution."
+                    })
+                    print(f"{Colors.FAIL}[!] HTTP HEADER PP FOUND: {headers}{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"Header pollution test error: {e}")
+                
+        if not findings:
+            print(f"{Colors.GREEN}[✓] No HTTP Header Prototype Pollution detected.{Colors.ENDC}")
         return findings
 
     def test_server_side_prototype_pollution(
@@ -1061,7 +1168,7 @@ class CompleteSecurityScanner:
 
                     # Cek apakah server merespons dengan indikasi PP
                     # Cek apakah server merespons dengan indikasi PP
-                    if "Error establishing a Redis connection" in response.text:
+                    if "Error establishing a Redis connection" in response.text or marker in response.text or "polluted" in response.text:
                         print(
                             f"{Colors.FAIL}[!] Server-Side PP FOUND: Parameter '{param_name}'{Colors.ENDC}"
                         )
@@ -1096,7 +1203,7 @@ class CompleteSecurityScanner:
 
                 # Cek response untuk tanda PP
                 # Cek response untuk tanda PP
-                if "Error establishing a Redis connection" in response.text:
+                if "Error establishing a Redis connection" in response.text or marker in response.text or "exploited" in response.text:
                     print(
                         f"{Colors.FAIL}[!] Server-Side PP FOUND: POST JSON Body{Colors.ENDC}"
                     )
@@ -1737,7 +1844,7 @@ class CompleteSecurityScanner:
         # Send a known "bad" payload that should absolutely be blocked by any WAF
         baseline_payload = "<script>alert(1)</script>"
         try:
-            from ppmap.engine import WAFDetector
+            from ppmap.engine import WAFDetector, WAFBypassPayloads
 
             # Try to trigger WAF
             resp_baseline = self.session.get(
@@ -4087,11 +4194,11 @@ class CompleteSecurityScanner:
             title = self._get_title(resp.text)
             print(f"    Status: {status_color}[{status}]{Colors.ENDC} | Title: {title}")
 
-            # Strict mode: Skip DEAD targets (Connection Error, 404, etc)
-            # BUT allow 403/401 because that might be WAF that we can bypass!
-            if status >= 500 or status == 404:
+            # Strict mode: Skip DEAD targets (Connection Error, 5xx server crashes, etc)
+            # BUT allow 403/401/404/405 because those might be POST-only APIs or WAF walls!
+            if status >= 500:
                 print(
-                    f"{Colors.WARNING}[-] Target returned {status} (Dead/Not Found). Skipping.{Colors.ENDC}"
+                    f"{Colors.WARNING}[-] Target returned {status} (Server Error). Skipping.{Colors.ENDC}"
                 )
                 return False
 
@@ -4284,6 +4391,10 @@ class CompleteSecurityScanner:
             status_override_findings = self.test_status_code_override(target_url)
             function_proto_findings = self.test_function_prototype_chain(target_url)
             persistence_findings = self.test_persistence_verification(target_url)
+            
+            # v5.0 PHASE 9 - SOTA FUZZING
+            deep_chain_findings = self.test_deep_chain_pollution(target_url)
+            http_header_findings = self.test_http_header_pollution(target_url)
 
             # v3.2 TIER-2 ENHANCEMENTS - MODERN FRAMEWORKS (React 19, SvelteKit)
             react_flight_findings = self.test_react_flight_protocol(target_url)
@@ -4334,6 +4445,8 @@ class CompleteSecurityScanner:
                 + (status_override_findings or [])
                 + (function_proto_findings or [])
                 + (persistence_findings or [])
+                + (deep_chain_findings or [])
+                + (http_header_findings or [])
                 + (react_flight_findings or [])
                 + (sveltekit_findings or [])
                 + (charset_findings or [])
