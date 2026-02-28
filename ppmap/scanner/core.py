@@ -4514,6 +4514,10 @@ class CompleteSecurityScanner:
             if self.driver:
                 self.driver.close()
 
+        for f in all_findings:
+            if "url" not in f:
+                f["url"] = target_url
+
         return all_findings
 
     def save_reports(
