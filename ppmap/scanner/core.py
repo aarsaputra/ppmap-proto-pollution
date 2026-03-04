@@ -935,22 +935,20 @@ class CompleteSecurityScanner:
                         marker = f"post_xss_{int(time.time() * 1000)}"
 
                         try:
-                            # Execute POST via JavaScript
+                            # Escape payload for JavaScript (extract outside f-string)
+                            escaped_payload = payload.replace('"', '\\"')
                             post_script = f"""
                             return new Promise(resolve => {{
                                 window.{marker} = false;
-                                
                                 const form = document.querySelector('form');
                                 if (form) {{
-                                    const input = form.querySelector('input[name="{param}"]') || document.createElement('input');
-                                    input.value = "{payload.replace('"', '\\"')}";
-                                    
+                                    const input = form.querySelector('input[name=\"{param}\"]') || document.createElement('input');
+                                    input.value = "{escaped_payload}";
                                     // Create hidden container to check execution
                                     const container = document.createElement('div');
                                     container.style.display = 'none';
                                     container.innerHTML = input.value;
                                     document.body.appendChild(container);
-                                    
                                     // Check if payload executed
                                     setTimeout(() => {{
                                         container.remove();
