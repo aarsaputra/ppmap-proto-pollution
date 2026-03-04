@@ -5,6 +5,7 @@ import re
 import logging
 import random
 import traceback
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
@@ -56,6 +57,15 @@ try:
     from ppmap.browser import get_browser
 except Exception:
     get_browser = None
+
+try:
+    from ppmap.graphql import scan_graphql
+    from ppmap.websocket import scan_websocket
+    from ppmap.sast import scan_js
+except ImportError:
+    scan_graphql = lambda *a, **k: []
+    scan_websocket = lambda *a, **k: []
+    scan_js = lambda *a, **k: []
 
 
 # Framework fingerprinting
@@ -3670,7 +3680,7 @@ return window['{marker}'];
                     timeout=5,
                     verify=False,
                 )
-                
+
                 if xml_resp.status_code == 500:
                     findings.append(
                         {
@@ -4520,6 +4530,18 @@ return window['{marker}'];
             blitzjs_findings = self.test_blitzjs_rce_chain(target_url)
             elastic_xss_findings = self.test_elastic_xss(target_url)
 
+            # v4.1 TIER 7 & 8 - GRAPHQL, WEBSOCKET & SAST (NEW)
+            print(f"{Colors.BLUE}[1m[→] Testing GraphQL & WebSocket PP...{Colors.ENDC}")
+            graphql_findings = scan_graphql(target_url, timeout=self.timeout)
+            websocket_findings = scan_websocket(target_url, timeout=self.timeout)
+
+            sast_findings = []
+            # SAST only if local path or explicitly requested (future)
+            # For now, we allow calling scan_js if target_url looks like a path
+            if os.path.exists(target_url):
+                print(f"{Colors.BLUE}[1m[→] Running SAST Scan...{Colors.ENDC}")
+                sast_findings = scan_js(target_url)
+
             # v4.0 OOB & BLIND DETECTION (NEW)
             oob_findings = []
             if self.oob_enabled:
@@ -4561,6 +4583,9 @@ return window['{marker}'];
                 + (kibana_findings or [])
                 + (blitzjs_findings or [])
                 + (elastic_xss_findings or [])
+                + (graphql_findings or [])
+                + (websocket_findings or [])
+                + (sast_findings or [])
                 + (oob_findings or [])
             )
             total = len(all_findings)
@@ -4596,6 +4621,9 @@ return window['{marker}'];
                 )
                 print(
                     f"{Colors.CYAN}Tier 4 - Advanced Bypass (2024/2025): Constructor={len(constructor_findings)} | Sanitization Bypass={len(sanitization_findings)} | Descriptor PP={len(descriptor_pollution_findings)} | Gadget Fuzzing={len(blind_gadget_findings)}{Colors.ENDC}"
+                )
+                print(
+                    f"{Colors.CYAN}Tier 7 & 8 - High-Tech: GraphQL={len(graphql_findings)} | WebSocket={len(websocket_findings)} | SAST={len(sast_findings)}{Colors.ENDC}"
                 )
 
                 # Legacy reporting disabled - handled by main()
@@ -4898,7 +4926,8 @@ return window['{marker}'];
                         Look for: Status 200 = Payload accepted, Status 403/400 = Blocked by WAF<br><br>
                         
                         <div class="verification-title">3. Check if Payload is Reflected:</div>
-                        <code style="display: block; margin: 10px 0;">curl -s "{html_escape(target_url)}?{html_escape(payload.replace('"', '\\"'))}" | grep -i "__proto__"</code>
+                        escaped_payload = html_escape(payload.replace('"', '\\"'))
+                        <code style="display: block; margin: 10px 0;">curl -s "{html_escape(target_url)}?{escaped_payload}" | grep -i "__proto__"</code>
                         If you see the payload in response = Potentially vulnerable<br><br>
                         
                         <div class="verification-title">4. Browser Console Verification:</div>
