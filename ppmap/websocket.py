@@ -118,7 +118,6 @@ class WebSocketScanner:
             self._ws = await asyncio.wait_for(
                 websockets.connect(
                     url,
-                    extra_headers=self.extra_headers,
                     ping_timeout=self.timeout,
                     close_timeout=self.timeout,
                 ),
