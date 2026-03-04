@@ -783,13 +783,15 @@ class CompleteSecurityScanner:
 
                         # Execute JavaScript to verify XSS
                         try:
+                            # Escape payload for JavaScript (extract outside f-string)
+                            escaped_payload = payload.replace('"', '\\"')
                             js_exploit = f"""
                             try {{
                                 window.xss_test = false;
                                 var container = document.createElement('div');
                                 container.style.display = 'none';
                                 document.body.appendChild(container);
-                                container.innerHTML = "{payload.replace('"', '\\"')}";
+                                container.innerHTML = "{escaped_payload}";
                                 var result = window.xss_test === true;
                                 container.remove();
                                 return result;
