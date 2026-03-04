@@ -211,7 +211,7 @@ if frida.connect():
 - ✅ **Mobile Scanner**: APK/IPA analysis, React Native/Capacitor/Ionic detection
 - ✅ **False Positive Engine**: Secondary verification, confidence scoring
 - ✅ **Performance Optimization**: Dynamic worker scaling, resource monitoring
-- ✅ **114 Unit Tests**: 100% pass rate
+- ✅ **203 Unit Tests**: 100% pass rate
 
 ---
 
@@ -314,35 +314,50 @@ open reports/example_com_20260206/report_20260206_120000.html
 |------|-------------|---------|
 | `--scan URL` | Start a full scan (all tiers 0-6) on target(s) | `--scan https://target.com` |
 | `--poc URL` | Run Quick PoC (jQuery only) | `--poc https://target.com` |
+| `--quickpoc-local URL` | Run local QuickPoC (Playwright/Selenium fallback) | `--quickpoc-local https://target.com` |
 | `-ls, --list FILE` | Scan targets from a file (one URL per line) | `-ls targets.txt` |
 | `--stdin` | Read targets from pipe (e.g., from subfinder) | `cat urls.txt \| python3 ppmap.py --scan --stdin` |
 | `-r, --request FILE` | Scan request from a file (Burp Suite format) | `-r req.txt` |
+| `--config FILE` | Config file (default: config.yaml) | `--config custom.yaml` |
 
 ### **Browser & Performance**
 | Flag | Description | Default |
 |------|-------------|---------|
+| `--browser {chrome,firefox}` | Browser engine to use | `chrome` |
 | `--headless` | Run browser in background (no UI) | `True` |
 | `--no-headless` | Show browser window (good for debugging) | `False` |
 | `--workers N` | Number of concurrent workers (threads) | `3` |
 | `--timeout N` | Request timeout in seconds | `30` |
 | `--async-scan` | Enable experimental async engine | `False` |
+| `--async-workers N` | Max async concurrent workers | `10` |
 
-### **Stealth & Bypass**
+### **Stealth, Bypass & Modules**
 | Flag | Description | Usage |
 |------|-------------|-------|
-| `--stealth` | Enable anti-bot/WAF evasion mode (Automatic UA rotation, Anti-Automation flags) | `--stealth` |
+| `--stealth` | Enable anti-bot/WAF evasion mode | `--stealth` |
 | `--delay N` | Delay between requests (seconds) | `--delay 2` |
 | `--rate-limit N` | Max requests per minute | `--rate-limit 60` |
-| `--user-agent STR` | Custom User-Agent string (Default: Modern Chrome 120.0) | `--user-agent "MyScanner/1.0"` |
+| `--user-agent STR` | Custom User-Agent string | `--user-agent "MyScanner/1.0"` |
 | `--proxy URL` | Use HTTP/S proxy | `--proxy http://127.0.0.1:8080` |
+| `--verify-ssl` | Verify SSL certificates | `--verify-ssl` |
+| `--insecure` | Disable SSL certificate verification | `--insecure` |
+| `--oob` | Enable OOB/Blind detection (Interact.sh) | `--oob` |
+| `--disable-jquery-pp` | Disable jQuery PP tests | `--disable-jquery-pp` |
+| `--disable-xss` | Disable XSS tests | `--disable-xss` |
+| `--disable-waf-bypass` | Disable WAF bypass tests | `--disable-waf-bypass` |
+| `--disable-discovery` | Disable endpoint discovery | `--disable-discovery` |
 
-### **Reporting**
+### **Reporting & Utility**
 | Flag | Description |
 |------|-------------|
 | `--output DIR` | Base directory for reports (default: `reports/`). Reports auto-organized into subdirectories: `DOMAIN_DATE/` |
-| `--format FMT` | Output formats: `json,html` (default), `csv,markdown` |
-| `--template TPL` | HTML template: `modern` (default) or `minimal` |
+| `--format FMT` | Output formats: `json`, `html`, `markdown`, `jupyter`, `csv`, `xml`, `md`, `pdf` |
+| `--template TPL` | HTML template: `modern` (default), `minimal`, or `detailed` |
 | `--no-poc` | Exclude Proof-of-Concept strings from report |
+| `--diff FILE1 FILE2` | Compare two scan result files |
+| `--preset TYPE` | Use configuration preset (`quick`, `thorough`, `stealth`) |
+| `--verbose`, `-v` | Verbose output (`-v`, `-vv`, `-vvv`) |
+| `--version` | Show program's version number |
 
 **Report Organization:** Reports are automatically saved to target-specific subdirectories:  
 `reports/example_com_20260206/report_20260206_120000.json`

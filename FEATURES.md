@@ -1,7 +1,7 @@
-# 📚 PPMAP v4.0.0 - Complete Feature Guide
+# 📚 PPMAP v4.1.0 - Complete Feature Guide
 
-**Version:** 4.0.0 Enterprise  
-**Last Updated:** February 8, 2026  
+**Version:** 4.1.0 Enterprise  
+**Last Updated:** March 4, 2026  
 **Quick Navigation:** [Detection Methods](#detection-methods) | [Usage Examples](#usage-examples) | [Lab Testing](#lab-testing) | [Documentation](#documentation)
 
 ---
@@ -11,7 +11,7 @@
 PPMAP adalah **Prototype Pollution Multi-Purpose Assessment Platform** - scanner paling komprehensif untuk mendeteksi prototype pollution vulnerabilities.
 
 **Key Statistics:**
-- ✅ **28 Detection Methods** (6 Tiers)
+- ✅ **32 Detection Methods** (6 Tiers + GraphQL/WebSocket/SAST)
 - ✅ **40 Gadget Properties** (Third-party libraries)
 - ✅ **15 CVE Coverage** (Real vulnerabilities)
 - ✅ **3 Bug Bounty Cases** ($10k+ exploits)
@@ -373,6 +373,6 @@ python3 ppmap.py --scan http://localhost:3000
 
 ---
 
-**Last Updated:** February 8, 2026  
-**Version:** 4.0.0 Enterprise  
+**Last Updated:** March 4, 2026  
+**Version:** 4.1.0 Enterprise  
 **Status:** Production Ready ✅
