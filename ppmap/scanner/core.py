@@ -5236,13 +5236,25 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
             if jquery_findings:
                 report_html += f"<h3>🎯 jQuery Prototype Pollution (CVE-2019-11358) ({len(jquery_findings)} found)</h3>"
                 for idx, vuln in enumerate(jquery_findings, 1):
+                    # Pre-calculate payload HTML to avoid backslashes/complex logic in f-strings
+                    payload_raw = vuln.get('payload')
+                    if payload_raw:
+                        payload_display = str(payload_raw)
+                        payload_has_div = f'<div class="payload-code" style="margin-top:5px; border-color:orange;">Has Payload: {html_escape(payload_display)}</div>'
+                    else:
+                        payload_display = "$.extend(true, {}, JSON.parse('{\"__proto__\": {\"devMode\": true}}'))"
+                        payload_has_div = ""
+                    
+                    escaped_payload_display = html_escape(payload_display)
+                    escaped_name = html_escape(vuln.get('name', 'Unknown'))
+                    
                     report_html += f'''
             <div class="vulnerability">
-                <strong>#{idx} - {html_escape(vuln.get('name', 'Unknown'))}</strong>
+                <strong>#{idx} - {escaped_name}</strong>
                 <span class="method-label critical">{vuln.get('severity', 'CRITICAL')}</span><br>
                 <strong>Payload:</strong><br>
-                <div class="payload-code">{html_escape(str(vuln.get('payload')) if vuln.get('payload') else "$.extend(true, {}, JSON.parse('{\"__proto__\": {\"devMode\": true}}'))")}</div>
-                {f'<div class="payload-code" style="margin-top:5px; border-color:orange;">Has Payload: {html_escape(str(vuln.get("payload")))}</div>' if vuln.get('payload') else ''}
+                <div class="payload-code">{escaped_payload_display}</div>
+                {payload_has_div}
                 <div style="margin-top: 10px;">
                     <strong>Verification Steps:</strong>
                     <div class="verification">
