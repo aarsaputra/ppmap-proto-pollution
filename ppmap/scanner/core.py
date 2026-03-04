@@ -4900,15 +4900,21 @@ return window['{marker}'];
                     method = finding.get("method", "Unknown")
                     payload = finding.get("payload", "")
                     severity = finding.get("severity", "HIGH")
+                    
+                    # Pre-calculate escaped strings to avoid backslashes in f-string (Python < 3.12 compatibility)
+                    curl_payload = payload.replace('"', '\\"')
+                    escaped_payload = html_escape(curl_payload)
+                    escaped_target_url = html_escape(target_url)
+                    escaped_method = html_escape(method)
 
                     report_html += f'''
             <div class="waf_bypass">
                 <div style="margin-bottom: 12px;">
-                    <strong>#{idx} - WAF Bypass via {html_escape(method)}</strong>
+                    <strong>#{idx} - WAF Bypass via {escaped_method}</strong>
                     <span class="method-label">{severity}</span>
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <strong>Bypass Technique:</strong> {html_escape(method)}<br>
+                    <strong>Bypass Technique:</strong> {escaped_method}<br>
                     <strong>Description:</strong> This payload attempts to bypass WAF filters using {html_escape(method.lower())} techniques.
                 </div>
                 <div style="margin-bottom: 10px;">
@@ -4919,15 +4925,15 @@ return window['{marker}'];
                     <strong>Manual Verification Steps:</strong><br>
                     <div class="verification">
                         <div class="verification-title">1. Test via Browser URL:</div>
-                        Open in your browser: <code style="word-break: break-all;">{html_escape(target_url)}?{html_escape(payload)}</code><br><br>
+                        Open in your browser: <code style="word-break: break-all;">{escaped_target_url}?{html_escape(payload)}</code><br><br>
                         
                         <div class="verification-title">2. Test via curl (Check HTTP Status):</div>
-                        <code style="display: block; margin: 10px 0;">curl -v "{html_escape(target_url)}?{html_escape(payload.replace('"', '\\"'))}"</code>
+                        <code style="display: block; margin: 10px 0;">curl -v "{escaped_target_url}?{escaped_payload}"</code>
                         Look for: Status 200 = Payload accepted, Status 403/400 = Blocked by WAF<br><br>
                         
                         <div class="verification-title">3. Check if Payload is Reflected:</div>
-                        escaped_payload = html_escape(payload.replace('"', '\\"'))
-                        <code style="display: block; margin: 10px 0;">curl -s "{html_escape(target_url)}?{escaped_payload}" | grep -i "__proto__"</code>
+                        escaped_payload = html_escape(payload.replace('"', '\\\\\"'))
+                        <code style="display: block; margin: 10px 0;">curl -s "{escaped_target_url}?{escaped_payload}" | grep -i "__proto__"</code>
                         If you see the payload in response = Potentially vulnerable<br><br>
                         
                         <div class="verification-title">4. Browser Console Verification:</div>
