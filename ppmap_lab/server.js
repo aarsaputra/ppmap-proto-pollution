@@ -2,10 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const _ = require('lodash');
-const deepMerge = require('@75lb/deep-merge');
+const deepMerge = require('@75lb/deep-merge').default || require('@75lb/deep-merge');
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
+const xml2js = require('xml2js');
 
 // GraphQL imports
 const { ApolloServer, gql } = require('apollo-server-express');
@@ -335,6 +336,65 @@ app.get('/elastic', (req, res) => {
 });
 
 // ============================================
+// PHASE 10 - COMMUNITY EXPLOIT GADGETS
+// ============================================
+
+// MongoDB BSON evalFunctions RCE simulation
+app.post('/api/v1/bson-eval', (req, res) => {
+    try {
+        let config = {};
+        config = deepMerge(config, req.body);
+
+        if (Object.prototype.evalFunctions && Object.prototype.$where) {
+            console.log("BSON evalFunctions RCE triggered:", Object.prototype.$where);
+        }
+        res.json({ success: true, prototype: Object.prototype, polluted: Object.prototype.polluted || Object.prototype.PPMAP });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ETA Template Engine simulation (CVE-2022-25967)
+app.post('/api/v1/eta-render', (req, res) => {
+    try {
+        let config = {};
+        config = deepMerge(config, req.body);
+
+        if (Object.prototype.varName) {
+            console.log("ETA Rendering RCE triggered:", Object.prototype.varName);
+        }
+        res.json({ success: true, prototype: Object.prototype, polluted: Object.prototype.polluted || Object.prototype.PPMAP });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// TypeORM Authentication Bypass simulation
+app.post('/api/v1/typeorm-auth', (req, res) => {
+    try {
+        let query = {};
+        query = deepMerge(query, req.body);
+
+        if (Object.prototype.where) {
+            console.log("TypeORM properties polluted:", Object.prototype.where);
+        }
+        res.json({ success: true, whereClause: Object.prototype.where || query.where, polluted: Object.prototype.polluted || Object.prototype.PPMAP });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// xml2js Prototype Pollution simulation
+app.post('/api/v1/xml2js', (req, res) => {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => {
+        try {
+            if (!body) return res.status(400).send("No XML body");
+            // Vulnerable XML parser
+            xml2js.parseString(body, { explicitArray: false }, (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, "msg": "Parsed XML", "polluted": Object.prototype.polluted || false });
+            });
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+});
+
+// ============================================
 // TIER 7 - GRAPHQL PP VULNERABILITIES
 // ============================================
 
@@ -513,15 +573,15 @@ app.post('/api/template', (req, res) => {
         // VULNERABLE: User input directly in template
         const templateContent = req.body.template || 'Welcome <%= userName %>';
         const userData = req.body.data || {};
-        
+
         // Merge prototype pollution with template data
         _.merge(userData, req.body.inject || {});
-        
+
         // VULNERABLE: Rendering template with user-controlled data
         const rendered = require('ejs').render(templateContent, userData, {
             filename: 'template'
         });
-        
+
         res.json({
             success: true,
             rendered: rendered,
@@ -529,7 +589,7 @@ app.post('/api/template', (req, res) => {
             prototype: Object.prototype
         });
     } catch (e) {
-        res.status(500).json({ 
+        res.status(500).json({
             error: e.message,
             vulnerable: true,
             hints: 'Can be exploited with EJS template injection + PP'
