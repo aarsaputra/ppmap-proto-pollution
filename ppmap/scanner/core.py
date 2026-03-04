@@ -742,13 +742,15 @@ class CompleteSecurityScanner:
                 marker = f"xss_success_{int(time.time() * 1000)}"
 
                 # Modify payload to set a global flag if executed
+                # Escape payload for JavaScript (extract outside f-string)
+                escaped_payload = payload.replace('"', '\\"')
                 js_payload = f"""
                     window.{marker} = false;
                     var d = document.createElement('div');
                     d.style.display = 'none';
                     document.body.appendChild(d);
                     try {{
-                        d.innerHTML = "{payload.replace('"', '\\"')}";
+                        d.innerHTML = "{escaped_payload}";
                         // Check if script executed or event fired
                         if (window['{marker}'] === true) {{
                             d.remove();
