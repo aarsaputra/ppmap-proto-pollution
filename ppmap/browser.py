@@ -15,6 +15,29 @@ from typing import Optional, Any
 logger = logging.getLogger(__name__)
 
 
+class BrowserAlert:
+    def __init__(self, browser: "UnifiedBrowser"):
+        self.browser = browser
+
+    @property
+    def text(self) -> Optional[str]:
+        return self.browser.get_alert_text()
+
+    def accept(self):
+        # In UnifiedBrowser.get_alert_text, it already accepts.
+        # This is for API compatibility.
+        pass
+
+    def dismiss(self):
+        # For API compatibility.
+        pass
+
+
+class BrowserSwitchTo:
+    def __init__(self, browser: "UnifiedBrowser"):
+        self.alert = BrowserAlert(browser)
+
+
 class UnifiedBrowser:
     def __init__(
         self,
@@ -28,6 +51,7 @@ class UnifiedBrowser:
         self.impl = impl
         self._pw_context = playwright_context
         self._pw = playwright_playwright
+        self.switch_to = BrowserSwitchTo(self)
 
     # Navigation
     def get(self, url: str, wait: float = 0):
@@ -40,6 +64,12 @@ class UnifiedBrowser:
             import time
 
             time.sleep(wait)
+
+    def refresh(self):
+        if self.backend == "selenium":
+            self.impl.refresh()
+        else:
+            self.impl.reload(wait_until="load", timeout=30_000)
 
     # Execute arbitrary JS and return result
     def execute_script(self, script: str, *args):
