@@ -174,6 +174,31 @@ class MobileAppScanner:
             except re.error as e:
                 logger.warning(f"Invalid pattern {name}: {e}")
 
+    def _validate_safe_path(self, base_dir: str, target_path: str) -> str:
+        """
+        FIXED: Prevent path traversal attacks by validating target path stays within base.
+        
+        Args:
+            base_dir: Base extraction directory
+            target_path: Path to validate
+            
+        Returns:
+            Validated absolute path if safe
+            
+        Raises:
+            ValueError: If path traversal detected
+        """
+        real_base = Path(base_dir).resolve()
+        real_target = (Path(base_dir) / target_path).resolve()
+        
+        # Ensure target path is within base directory
+        try:
+            real_target.relative_to(real_base)  # Raises ValueError if not relative
+        except ValueError:
+            raise ValueError(f"Path traversal detected: {target_path}")
+        
+        return str(real_target)
+
     def detect_framework(self, extracted_path: str) -> str:
         """Detect mobile framework from extracted contents."""
         # Check React Native
@@ -293,9 +318,12 @@ class MobileAppScanner:
             return "unknown"
 
         try:
+            # FIXED: Validate path to prevent directory traversal before subprocess
+            safe_path = self._validate_safe_path(self.temp_dir, Path(extract_path).name)
+            
             # Try using aapt if available
             result = subprocess.run(
-                ["aapt", "dump", "badging", extract_path],
+                ["aapt", "dump", "badging", safe_path],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -305,6 +333,9 @@ class MobileAppScanner:
                 return match.group(1)
         except (subprocess.SubprocessError, FileNotFoundError):
             pass
+        except ValueError as e:
+            logger.warning(f"Path validation failed: {e}")
+            return "unknown"
 
         return "unknown"
 
