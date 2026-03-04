@@ -56,6 +56,15 @@ class UnifiedBrowser:
                 return self.impl.evaluate(script)
 
     @property
+    def session_id(self) -> Optional[str]:
+        if self.backend == "selenium":
+            return getattr(self.impl, "session_id", None)
+        else:
+            # Playwright doesn't have a session_id like Selenium, 
+            # return a truthy string so caller checks pass
+            return "playwright_" + str(id(self.impl))
+
+    @property
     def page_source(self) -> str:
         if self.backend == "selenium":
             return getattr(self.impl, "page_source", "")

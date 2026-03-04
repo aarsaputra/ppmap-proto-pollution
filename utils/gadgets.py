@@ -29,7 +29,10 @@ GADGET_PROPERTIES = [
     # DOMPurify
     "ALLOWED_ATTR", "ALLOWED_TAGS", "documentMode",
     # BSON / Serialization
-    "evalFunctions", "deserialize",
+    "evalFunctions", "deserialize", "__idic__", "varName",
+    
+    # Security/Bot Management
+    "ak_bmsc", "bazadebezolkohpepamerx",
     
     # CORS / Headers
     "exposedHeaders", "allowedHeaders", "credentials",
