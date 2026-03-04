@@ -1,0 +1,209 @@
+[1m[96m
+    ____  ____  __  __    _    ____  
+   |  _ \|  _ \|  \/  |  / \  |  _ \ 
+   | |_) | |_) | |\/| | / _ \ | |_) |
+   |  __/|  __/| |  | |/ ___ \|  __/ 
+   |_|   |_|   |_|  |_/_/   \_\_|    
+                                     
+   Prototype Pollution Multi-Purpose Assessment Platform
+   v4.1.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+[0m
+
+[93m⚠️  DISCLAIMER:[0m
+This tool is for AUTHORIZED SECURITY TESTING ONLY.
+Unauthorized access to systems is ILLEGAL.
+Author assumes NO liability for misuse or damages.
+Use only with explicit permission on target systems.
+
+[92mRun with -h for help, --poc for quick PoC, --scan for full scan[0m
+
+[INFO    ] PPMAP started
+[INFO    ] Loaded configuration from config.yaml
+[INFO    ] Starting Full Scan mode on 1 target(s)
+Scanning targets:   0%|          | 0/1 [00:00<?, ?target/s][INFO    ] Scanning base target: http://localhost:3000/api/v1/bson-eval
+[INFO    ] Discovering endpoints (depth=1) for http://localhost:3000/api/v1/bson-eval...
+[INFO    ] Discovered 0 endpoints
+[INFO    ]  -> Testing endpoint: http://localhost:3000/api/v1/bson-eval
+[94m[*] Checking target status: http://localhost:3000/api/v1/bson-eval[0m
+    Status: [91m[404][0m | Title: Error
+
+[96m================================================================================
+  FULL SCAN MODE - Target: http://localhost:3000/api/v1/bson-eval
+================================================================================[0m
+[INFO    ] Attempting to use CHROMIUM driver
+[INFO    ] ====== WebDriver manager ======
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] Get LATEST chromedriver version for chromium
+[INFO    ] Driver [/home/lota1337/.wdm/drivers/chromedriver/linux64/144.0.7559.133/chromedriver-linux64/chromedriver] found in cache
+[INFO    ] Selenium backend initialized successfully
+[92m[✓] Browser ready[0m
+[94m[*] Detecting frameworks and technologies...[0m
+Detected Frameworks:
+  - EXPRESS (confidence: 70%)
+[92m[+] Prioritizing payload categories: express, nodejs_rce, json_spaces[0m
+[96m[→] Testing jQuery Prototype Pollution...[0m
+[92m[✓] jQuery not detected[0m
+[96m[→] Testing XSS payloads...[0m
+[94m[*] Discovering parameters from forms...[0m
+[93m[!] No parameters found, using defaults[0m
+
+Testing XSS Params:   0%|          | 0/5 [00:00<?, ?param/s][A
+Testing XSS Params:  20%|██        | 1/5 [00:02<00:08,  2.18s/param][A
+Testing XSS Params:  40%|████      | 2/5 [00:04<00:06,  2.19s/param][A
+Testing XSS Params:  60%|██████    | 3/5 [00:06<00:04,  2.15s/param][A
+Testing XSS Params:  80%|████████  | 4/5 [00:08<00:02,  2.14s/param][A
+Testing XSS Params: 100%|██████████| 5/5 [00:10<00:00,  2.11s/param][ATesting XSS Params: 100%|██████████| 5/5 [00:10<00:00,  2.13s/param]
+[92m[✓] No confirmed XSS detected[0m
+[96m[→] Testing POST parameters...[0m
+[93m[!] No POST forms found[0m
+[96m[→] Testing Server-Side Prototype Pollution...[0m
+
+Testing SSPP Params:   0%|          | 0/6 [00:00<?, ?param/s][ATesting SSPP Params: 100%|██████████| 6/6 [00:00<00:00, 380.54param/s]
+[92m[✓] No server-side PP detected[0m
+[96m[→] Testing DOM-based XSS with Prototype Pollution...[0m
+[94m[→] Testing: __proto__[value]=data:,alert(1)//...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?q=%3Cimg%20src%3Dx%20onerror%3D%27alert%2[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?q=%3Cimg%20src%3Dx%20onerror%3D%27alert%2[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?q=%3Cimg%20src%3Dx%20onerror%3D%27alert%2[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?q=%3Csvg%20onload%3D%27alert%28%22XSS%22%[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?search=%3Cimg%20src%3Dx%20onerror%3D%27al[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?search=%3Cimg%20src%3Dx%20onerror%3D%27al[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?search=%3Cimg%20src%3Dx%20onerror%3D%27al[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?search=%3Csvg%20onload%3D%27alert%28%22XS[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?query=%3Cimg%20src%3Dx%20onerror%3D%27ale[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?query=%3Cimg%20src%3Dx%20onerror%3D%27ale[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?query=%3Cimg%20src%3Dx%20onerror%3D%27ale[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?query=%3Csvg%20onload%3D%27alert%28%22XSS[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?id=%3Cimg%20src%3Dx%20onerror%3D%27alert%[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?id=%3Cimg%20src%3Dx%20onerror%3D%27alert%[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?id=%3Cimg%20src%3Dx%20onerror%3D%27alert%[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?id=%3Csvg%20onload%3D%27alert%28%22XSS%22[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?name=%3Cimg%20src%3Dx%20onerror%3D%27aler[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?name=%3Cimg%20src%3Dx%20onerror%3D%27aler[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?name=%3Cimg%20src%3Dx%20onerror%3D%27aler[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?name=%3Csvg%20onload%3D%27alert%28%22XSS%[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[value]=data:,alert(1)// - Faile[0m
+[94m[→] Testing: __proto__[value]=data:,alert(document.domain)//...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[value]=data:,alert(document.dom[0m
+[94m[→] Testing: constructor[prototype][value]=data:,alert(1)//...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?constructor[prototype][value]=data:,alert[0m
+[94m[→] Testing: __proto__[transport_url]=data:,alert(1);...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[transport_url]=data:,alert(1); [0m
+[94m[→] Testing: __proto__[src]=data:,alert(1);...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[src]=data:,alert(1); - Failed t[0m
+[94m[→] Testing: __proto__[href]=data:,alert(1);...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[href]=data:,alert(1); - Failed [0m
+[94m[→] Testing: __proto__[url]=data:,alert(1);...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[url]=data:,alert(1); - Failed t[0m
+[94m[→] Testing: __proto__[onload]=alert(1)...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[onload]=alert%281%29 - Failed t[0m
+[94m[→] Testing: __proto__[onclick]=alert(1)...[0m
+[94m[→] Browser log: http://localhost:3000/api/v1/bson-eval?__proto__[onclick]=alert%281%29 - Failed [0m
+[96m[→] No DOM XSS+PP detected via automated testing[0m
+[94m[→] Note: Some data: URL payloads may still be exploitable - test manually in browser![0m
+[96m[→] Testing Hash-based Prototype Pollution (WAF Bypass)...[0m
+[94m[→] Testing hash payload: #__proto__[hashpp_1772301516]=POLLUTED...[0m
+[94m[→] Testing hash payload: #__proto__[url]=javascript:alert(1)...[0m
+[94m[→] Testing hash payload: #constructor[prototype][hashpp_1772301516]=POLLUTE...[0m
+[92m[✓] No hash-based PP detected[0m
+[96m[→] Testing with WAF bypass techniques...[0m
+[91m[!] Generic WAF/Filter detected (Status 404)[0m
+[96m[*] Proceeding with WAF bypass techniques...[0m
+[92m[✓] No WAF bypass detected[0m
+[96m[→] Testing with confidence scoring...[0m
+[92m[✓] No PP detected via confidence scoring[0m
+[96m[→] Discovering endpoints for testing...[0m
+[INFO    ] Discovering endpoints (depth=2) for http://localhost:3000/api/v1/bson-eval...
+[INFO    ] Discovered 0 endpoints
+[92m[✓] Tested 0 endpoints[0m
+[96m[→] Testing blind JSON spaces overflow detection...[0m
+[96m[→] Testing status code override detection...[0m
+[96m[→] Testing Function.prototype chain pollution...[0m
+
+Function.prototype:   0%|                                        | 0/4 [00:00<?][A
+                                                                                [A[96m[→] Testing PP persistence across requests...[0m
+[91m[!] CRITICAL: PP is PERSISTENT - affects entire application![0m
+[94m[*] Testing Deep Chain Prototype Pollution...[0m
+[92m[✓] No Deep Chain Prototype Pollution detected.[0m
+[94m[*] Testing HTTP Header Prototype Pollution...[0m
+[92m[✓] No HTTP Header Prototype Pollution detected.[0m
+[96m[→] Testing React 19/Next.js Flight Protocol...[0m
+[92m[✓] React Flight Protocol test completed[0m
+[96m[→] Testing SvelteKit/Superforms for PP...[0m
+[92m[✓] SvelteKit/Superforms test completed[0m
+[96m[→] Testing charset override attacks...[0m
+[92m[✓] Charset override test completed[0m
+[96m[→] Testing fetch() API header pollution...[0m
+[92m[✓] fetch() API pollution test completed[0m
+[96m[→] Testing Object.defineProperty() bypass...[0m
+[92m[✓] Object.defineProperty() bypass test completed[0m
+[96m[→] Testing child_process RCE (Safe Detection)...[0m
+[92m[✓] child_process RCE test completed (No vulnerability detected)[0m
+[96m[→] Testing constructor-based pollution (Modern Bypass)...[0m
+
+Constructor PP:   0%|                                            | 0/8 [00:00<?][A
+                                                                                [A[92m[✓] Constructor pollution test completed[0m
+[96m[→] Testing sanitization bypass (Recursive Filter Evasion)...[0m
+[92m[✓] Sanitization bypass test completed[0m
+[96m[→] Testing Object.defineProperty descriptor pollution...[0m
+
+Descriptor PP:   0%|                                             | 0/6 [00:00<?][A
+                                                                                [A[92m[✓] Object.defineProperty bypass test completed (No vulnerability)[0m
+[1m[→] Testing Blind Gadget Properties (pp-finder list)...[0m
+
+Fuzzing Gadgets:   0%|                                          | 0/68 [00:00<?][A
+Fuzzing Gadgets:  40%|██████████████▋                      | 27/68 [00:00<00:00][A
+Fuzzing Gadgets:  81%|█████████████████████████████▉       | 55/68 [00:00<00:00][A
+                                                                                [A[92m[✓] Blind gadget fuzzing completed (No obvious crashes)[0m
+[1m[→] Testing CORS Header Pollution...[0m
+
+CORS PP:   0%|                                                   | 0/4 [00:00<?][A
+                                                                                [A[92m[✓] CORS header pollution test completed (No vulnerability)[0m
+[1m[→] Testing Third-Party Library Gadgets...[0m
+
+Gadget Tests:   0%|                                              | 0/6 [00:00<?][A
+                                                                                [A[92m[✓] Third-party gadget test completed (No vulnerability)[0m
+[1m[→] Testing Storage API Pollution...[0m
+[1m[→] Testing CVE-Specific Payloads...[0m
+[96m[*] Detected MongoDB BSON - Testing MongoDB BSON evalFunctions RCE[0m
+[96m[*] Detected ETA Template - Testing CVE-2022-25967[0m
+
+CVE Tests:   0%|                                                 | 0/2 [00:00<?][A
+                                                                                [A[91m[!] CRITICAL: MongoDB BSON evalFunctions RCE vulnerability detected![0m
+[91m[!] CRITICAL: CVE-2022-25967 vulnerability detected![0m
+[94m[→] Testing XML parsers (xml2js) for prototype pollution...[0m
+[91m[!] HIGH: xml2js XML prototype pollution detected![0m
+[92m[✓] Found 3 CVE-specific issue(s)[0m
+[1m[→] Testing Kibana Telemetry RCE (HackerOne #852613)...[0m
+
+Kibana RCE:   0%|                                                | 0/3 [00:00<?][A
+                                                                                [A[92m[✓] Kibana Telemetry RCE test completed (No vulnerability)[0m
+[1m[→] Testing Blitz.js RCE Chain (CVE-2022-23631)...[0m
+
+Blitz.js RCE:   0%|                                              | 0/3 [00:00<?][A
+                                                                                [A[92m[✓] Blitz.js RCE Chain test completed (No vulnerability)[0m
+[1m[→] Testing Elastic XSS (HackerOne #998398)...[0m
+
+Elastic XSS:   0%|                                               | 0/3 [00:00<?][A
+                                                                                [AScanning targets: 100%|██████████| 1/1 [00:46<00:00, 46.07s/target]Scanning targets: 100%|██████████| 1/1 [00:46<00:00, 46.07s/target]
+[92m[✓] Elastic XSS test completed (No vulnerability)[0m
+
+[1m[92mScan Complete! Vulnerabilities Found: 7[0m
+[94m[*] Scan Duration: 43.40s | Success Rate: 0.0%[0m
+
+[93mjQuery PP: 0 | XSS: 0 | POST XSS: 0 | Server-Side PP: 0 | DOM XSS+PP: 0 | Hash PP: 0 | WAF Bypass: 0[0m
+[96mConfidence Scored: 0 | Endpoints Tested: 0[0m
+[96mTier 1 - Blind Detection: JSON Spaces=0 | Status Override=0 | Function.proto=0 | Persistence=1[0m
+[96mTier 2 - Modern Frameworks: React Flight=0 | SvelteKit=0 | Charset=0[0m
+[96mTier 3 - PortSwigger Techniques: fetch()=0 | defineProperty=0 | child_process RCE=0[0m
+[96mTier 4 - Advanced Bypass (2024/2025): Constructor=0 | Sanitization Bypass=0 | Descriptor PP=0 | Gadget Fuzzing=0[0m
+[INFO    ] Generated 4 report format(s):
+[INFO    ]   - json: reports/localhost_20260228/report_20260228_125849.json
+[92m[✓] JSON report: reports/localhost_20260228/report_20260228_125849.json[0m
+[INFO    ]   - md: reports/localhost_20260228/report_20260228_125849.md
+[92m[✓] MD report: reports/localhost_20260228/report_20260228_125849.md[0m
+[INFO    ]   - csv: reports/localhost_20260228/report_20260228_125849.csv
+[92m[✓] CSV report: reports/localhost_20260228/report_20260228_125849.csv[0m
+[INFO    ]   - html: reports/localhost_20260228/report_20260228_125849.html
+[92m[✓] HTML report: reports/localhost_20260228/report_20260228_125849.html[0m
+[INFO    ] PPMAP completed
