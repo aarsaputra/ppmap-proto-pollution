@@ -10,7 +10,10 @@ import time
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import sys
-sys.path.insert(0, '/home/lota1337/python/pentest_proto')
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ppmap.scanner.core import CompleteSecurityScanner
 from ppmap.websocket import WebSocketScanner
