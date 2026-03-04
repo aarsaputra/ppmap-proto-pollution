@@ -14,7 +14,9 @@ import time
 
 # Import modules to test
 import sys
-sys.path.insert(0, '/home/lota1337/python/pentest_proto')
+import os
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ppmap.sast import SASTScanner, DANGEROUS_SINKS
 from ppmap.oob import OOBDetector
