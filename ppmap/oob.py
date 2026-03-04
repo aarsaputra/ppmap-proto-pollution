@@ -3,6 +3,7 @@ import logging
 import random
 import string
 from typing import List, Dict
+from urllib.parse import urlencode  # FIXED: Import for proper URL encoding
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,12 @@ class OOBDetector:
             return []
 
         try:
-            url = f"{self.server_url}/poll?id={self.correlation_id}&secret={self.secret_key}"
+            # FIXED: Properly URL-encode parameters to prevent parsing issues
+            params = {
+                'id': self.correlation_id,
+                'secret': self.secret_key
+            }
+            url = f"{self.server_url}/poll?{urlencode(params)}"
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
