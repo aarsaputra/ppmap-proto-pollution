@@ -131,8 +131,57 @@ Use only with explicit permission on target systems.
 
 
 # ============================================================================
-# DEPENDENCIES CHECK
+# QUICK POC MODE
 # ============================================================================
+def run_quick_poc(url: str, headless: bool = True) -> None:
+    """Run a fast non-destructive jQuery Prototype Pollution PoC on the target.
+
+    Uses the QuickPoC class from ppmap.engine which tries Selenium first and
+    falls back to Playwright if Selenium is unavailable.
+    """
+    from ppmap.engine import QuickPoC
+
+    print(f"{Colors.BOLD}[*] Quick PoC mode on {url}{Colors.ENDC}")
+
+    poc = QuickPoC(headless=headless)
+    ready = False
+    try:
+        ready = poc.setup_browser(url)
+    except Exception as e:
+        print(f"{Colors.FAIL}[!] Browser setup failed: {e}{Colors.ENDC}")
+
+    if not ready:
+        print(
+            f"{Colors.WARNING}[!] Browser not available — cannot run client-side PoC.{Colors.ENDC}\n"
+            f"    Try installing Playwright:  pip install playwright && playwright install chromium"
+        )
+        return
+
+    payloads = [
+        {"__proto__": {"ppmap_poc": "confirmed"}},
+        {"constructor": {"prototype": {"ppmap_poc": "confirmed"}}},
+    ]
+
+    confirmed = False
+    try:
+        for p in payloads:
+            try:
+                if poc.test_payload(p):
+                    print(
+                        f"{Colors.FAIL}[!] CONFIRMED: Prototype Pollution detected!\n"
+                        f"    Payload: {p}{Colors.ENDC}"
+                    )
+                    confirmed = True
+                    break
+            except Exception as e:
+                logger.debug(f"QuickPoC payload error: {e}")
+    finally:
+        poc.cleanup()
+
+    if not confirmed:
+        print(f"{Colors.GREEN}[✓] No Prototype Pollution detected via Quick PoC.{Colors.ENDC}")
+
+
 try:
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options

@@ -27,9 +27,10 @@ logger = logging.getLogger(__name__)
 class AsyncScanner:
     """Async scanning engine for high-performance assessments"""
 
-    def __init__(self, max_concurrent: int = 10, timeout: int = 30):
+    def __init__(self, max_concurrent: int = 10, timeout: int = 30, verify_ssl: bool = True):
         self.max_concurrent = max_concurrent
         self.timeout = timeout
+        self.verify_ssl = verify_ssl  # FIXED: Control SSL verification per instance
         self.results = []
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
@@ -39,11 +40,12 @@ class AsyncScanner:
         """Test single URL asynchronously"""
         async with self.semaphore:
             try:
-                # SSL check disabled for pentesting context
+                # FIXED: Use configurable SSL verification (default: True for security)
+                # Can be disabled with verify_ssl=False for testing self-signed certs
                 async with session.get(
                     url,
                     headers=headers,
-                    ssl=False,
+                    ssl=self.verify_ssl,  # True = verify SSL, False = skip verification
                     timeout=aiohttp.ClientTimeout(self.timeout),
                 ) as resp:
                     content = await resp.text()
