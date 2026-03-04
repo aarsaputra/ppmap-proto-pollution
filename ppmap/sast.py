@@ -83,15 +83,15 @@ DANGEROUS_SINKS = {
         "severity": "CRITICAL",
         "recommendation": "Avoid dynamic prototype manipulation",
     },
-    # JSON parsing
+    # JSON parsing - FIXED: Add length limit to prevent ReDoS on large inputs
     "JSON.parse": {
-        "pattern": r"JSON\.parse\s*\([^)]*\)",
+        "pattern": r"JSON\.parse\s*\([^)]{0,500}\)",  # Max 500 chars inside parentheses
         "severity": "LOW",
         "recommendation": "Consider using JSON.parse with reviver to filter __proto__",
     },
-    # Dynamic property access
+    # Dynamic property access - FIXED: Prevent ReDoS with non-greedy, length-limited pattern
     "bracket_notation": {
-        "pattern": r"\[[\w\s\[\]\.\'\"]+\]\s*=",
+        "pattern": r"\[[^\[\]]{1,100}\]\s*=",  # Non-greedy, max 100 chars
         "severity": "MEDIUM",
         "recommendation": "Validate property names before dynamic assignment",
     },
