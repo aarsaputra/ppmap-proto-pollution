@@ -1,0 +1,101 @@
+[1m[96m
+    ____  ____  __  __    _    ____  
+   |  _ \|  _ \|  \/  |  / \  |  _ \ 
+   | |_) | |_) | |\/| | / _ \ | |_) |
+   |  __/|  __/| |  | |/ ___ \|  __/ 
+   |_|   |_|   |_|  |_/_/   \_\_|    
+                                     
+   Prototype Pollution Multi-Purpose Assessment Platform
+   v4.1.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+[0m
+
+[93m⚠️  DISCLAIMER:[0m
+This tool is for AUTHORIZED SECURITY TESTING ONLY.
+Unauthorized access to systems is ILLEGAL.
+Author assumes NO liability for misuse or damages.
+Use only with explicit permission on target systems.
+
+[92mRun with -h for help, --poc for quick PoC, --scan for full scan[0m
+
+[INFO    ] PPMAP started
+usage: ppmap.py [-h] [--poc URL] [--quickpoc-local URL] [--scan [URL ...]]
+                [-ls FILE] [--stdin] [--request FILE] [--config CONFIG]
+                [--browser {chrome,firefox}] [--timeout TIMEOUT]
+                [--workers WORKERS] [--headless] [--no-headless] [--stealth]
+                [--delay DELAY] [--rate-limit N] [--user-agent USER_AGENT]
+                [--disable-jquery-pp] [--disable-xss] [--disable-waf-bypass]
+                [--disable-discovery] [--output OUTPUT] [--format FORMAT]
+                [--template TEMPLATE] [--no-poc] [--async-scan]
+                [--async-workers ASYNC_WORKERS] [--oob] [--verify-ssl]
+                [--insecure] [--proxy PROXY] [--diff FILE1 FILE2]
+                [--preset {quick,thorough,stealth}] [--verbose] [--version]
+
+PPMAP v4.1.0 - Prototype Pollution Assessment Platform (Enterprise Edition)
+
+options:
+  -h, --help            show this help message and exit
+  --poc URL             Run Quick PoC mode on target
+  --quickpoc-local URL  Run local QuickPoC (uses Playwright/Selenium fallback)
+  --scan [URL ...]      Run Full Scan mode on target(s)
+  -ls, --list FILE      Read target URLs from file (one URL per line)
+  --stdin               Read target URLs from stdin (for pipeline: subfinder | httpx | ppmap --scan --stdin)
+  --request, -r FILE    Scan from Burp Suite request file (authenticated scan)
+  --config CONFIG       Config file (default: config.yaml)
+  --browser {chrome,firefox}
+                        Browser to use (chrome|firefox)
+  --timeout TIMEOUT     Timeout per request in seconds (default: 30)
+  --workers WORKERS     Max concurrent workers (default: 3)
+  --headless            Headless browser (default: True)
+  --no-headless         Show browser window
+  --stealth             Enable stealth mode (anti-detection)
+  --delay DELAY         Delay between requests in seconds
+  --rate-limit N        Requests per minute limit
+  --user-agent USER_AGENT
+                        Custom User-Agent
+  --disable-jquery-pp   Disable jQuery PP tests
+  --disable-xss         Disable XSS tests
+  --disable-waf-bypass  Disable WAF bypass tests
+  --disable-discovery   Disable endpoint discovery
+  --output OUTPUT       Output directory (default: ./reports)
+  --format FORMAT       Report formats (json,html,markdown,jupyter,csv,xml,md,pdf)
+  --template TEMPLATE   Report template (modern, minimal, detailed)
+  --no-poc              Don't include PoC in reports
+  --async-scan          Enable async scanning engine (EXPERIMENTAL)
+  --async-workers ASYNC_WORKERS
+                        Max async concurrent workers (default: 10)
+  --oob                 Enable OOB/Blind detection (Uses Interact.sh)
+  --verify-ssl          Verify SSL certificates
+  --insecure            Disable SSL certificate verification (insecure)
+  --proxy PROXY         HTTP proxy (http://proxy:port)
+  --diff FILE1 FILE2    Compare two scan result files
+  --preset {quick,thorough,stealth}
+                        Use configuration preset (overrides defaults)
+  --verbose, -v         Verbose output (-v, -vv, -vvv)
+  --version             show program's version number and exit
+
+SCANNING MODES:
+  Quick PoC:
+    python ppmap.py --poc http://target.com
+  
+  Full Scan:
+    python ppmap.py --scan http://target.com
+  
+  Multiple targets:
+    python ppmap.py --scan http://target1.com http://target2.com http://target3.com
+  
+  With stealth mode:
+    python ppmap.py --scan http://target.com --stealth --delay 1
+  
+  Custom configuration:
+    python ppmap.py --scan http://target.com --config custom.yaml
+
+ADVANCED OPTIONS:
+  Rate limiting:
+    python ppmap.py --scan http://target.com --rate-limit 30
+  
+  Custom output:
+    python ppmap.py --scan http://target.com --output ./my_reports --format json,html,markdown
+  
+  Verbose logging:
+    PPMAP_DEBUG=1 python ppmap.py --scan http://target.com
+        
