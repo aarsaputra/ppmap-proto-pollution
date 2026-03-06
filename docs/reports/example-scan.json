@@ -1,0 +1,40 @@
+{
+    "target": "https://vulnerable-security-lab.test",
+    "scan_time": "2026-03-06T14:30:15",
+    "duration": 4.5,
+    "total_vulnerabilities": 3,
+    "metrics": {
+        "endpoints_scanned": 14,
+        "payloads_sent": 86,
+        "browser_restarts": 1
+    },
+    "findings": [
+        {
+            "id": "VULN-001",
+            "type": "Prototype Pollution",
+            "severity": "CRITICAL",
+            "component": "jQuery 3.4.1",
+            "cve": "CVE-2019-11358",
+            "description": "Object.prototype pollution via $.extend(true, {}, ...)",
+            "payload": "{\"__proto__\": {\"polluted\": true}}",
+            "reproduction": "1. Open console\n2. Run payload\n3. Check {}.polluted === true"
+        },
+        {
+            "id": "VULN-002",
+            "type": "DOM XSS",
+            "severity": "HIGH",
+            "component": "Vanilla JS Gadget",
+            "description": "Vulnerable sink in data-config attribute parsing",
+            "payload": "__proto__[value]=data:,alert(1)//",
+            "reproduction": "Navigate to URL with __proto__ parameter"
+        },
+        {
+            "id": "VULN-003",
+            "type": "WAF Bypass",
+            "severity": "MEDIUM",
+            "description": "Unicode character escaping detected in parameter parsing",
+            "payload": "\\u005f\\u005fproto\\u005f\\u005f",
+            "reproduction": "Send encoded payload to API endpoint"
+        }
+    ]
+}
