@@ -1,4 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 0. Burger Menu Toggle
+    const burger = document.querySelector('.burger');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (burger && navLinks) {
+        burger.addEventListener('click', () => {
+            burger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        // Close menu when clicking links
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                burger.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+    }
+
     // 1. Initialize Terminal Typing Animation
     initTerminal();
 
@@ -39,15 +58,15 @@ async function initTerminal() {
     if (!terminal) return;
 
     const lines = [
-        { type: 'command', text: 'ppmap --scan https://vulnerable-site.test' },
+        { type: 'command', text: 'python3 ppmap.py --scan http://localhost:3000' },
         { type: 'output', text: '[INFO] Starting PPMAP v4.1.0 Enterprise Engine...' },
-        { type: 'output', text: '[INFO] Scanning 9 Security Tiers...' },
-        { type: 'output', text: '[*] Discovering endpoints... Found 14 entry points.' },
-        { type: 'output', text: '[→] Testing Tier 1: jQuery Prototype Pollution...' },
-        { type: 'output', text: '[!] VULNERABLE: CVE-2019-11358 (Medium Coverage)' },
-        { type: 'output', text: '[→] Testing Tier 3: DOM XSS Gadgets...' },
-        { type: 'output', text: '[!] EXPLOIT CONFIRMED: alert(document.domain) triggered!' },
-        { type: 'output', text: '[✓] Scan Complete! 2 Critical, 1 High detected.' }
+        { type: 'output', text: '[INFO] Target: http://localhost:3000 (Lab Environment)' },
+        { type: 'output', text: '[*] Scanning 9 Security Tiers...' },
+        { type: 'output', text: '[→] Tier 1: jQuery Prototype Pollution... [VULNERABLE]' },
+        { type: 'output', text: '[→] Tier 4: DOM XSS Gadgets... [EXPLOIT CONFIRMED]' },
+        { type: 'output', text: '[→] Tier 7: GraphQL Injection Specialists... [CLEAN]' },
+        { type: 'output', text: '[✓] Scan Complete! Found 19 Vulnerabilities.' },
+        { type: 'output', text: '[!] jQuery PP: 4 | Server-Side: 6 | DOM XSS: 9' }
     ];
 
     terminal.innerHTML = '';
