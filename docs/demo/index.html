@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPMAP Demo Report | Vulnerability Analysis</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        body {
+            background: #0a0e14;
+        }
+
+        .dashboard {
+            padding-top: 8rem;
+        }
+
+        .report-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-item label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item span {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-item.danger span {
+            color: #ff5f56;
+        }
+
+        .finding-card {
+            background: #161b22;
+            border-left: 4px solid #30363d;
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: background 0.3s;
+        }
+
+        .finding-card.critical {
+            border-left-color: #ff5f56;
+        }
+
+        .finding-card.high {
+            border-left-color: #ffbd2e;
+        }
+
+        .finding-card.medium {
+            border-left-color: #00d4ff;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .severity-badge.critical {
+            background: rgba(255, 95, 86, 0.2);
+            color: #ff5f56;
+        }
+
+        .severity-badge.high {
+            background: rgba(255, 189, 46, 0.2);
+            color: #ffbd2e;
+        }
+
+        .severity-badge.medium {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        .finding-id {
+            float: right;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+        }
+
+        .cve-tag {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .code-block {
+            background: #0d1117;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            color: var(--primary);
+        }
+
+        pre {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+        }
+
+        .back-btn {
+            margin-bottom: 2rem;
+            display: inline-block;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="container">
+            <a href="../" class="logo-area">
+                <img src="../assets/logo.png" alt="PPMAP Logo" class="logo-icon">
+                PPMAP <span
+                    style="color: var(--primary); font-size: 0.8rem; vertical-align: middle; margin-left: 5px;">DEMO</span>
+            </a>
+            <a href="../" class="btn btn-secondary">Back to Site</a>
+        </div>
+    </nav>
+
+    <main class="container dashboard">
+        <div class="report-header">
+            <div class="stat-item">
+                <label>Target URL</label>
+                <span id="target-url">Loading...</span>
+            </div>
+            <div class="stat-item danger">
+                <label>Vulnerabilities</label>
+                <span id="total-vulns">0</span>
+            </div>
+            <div class="stat-item">
+                <label>Scan Date</label>
+                <span id="scan-date">--/--/--</span>
+            </div>
+            <div class="stat-item">
+                <label>Engine Version</label>
+                <span>v4.1.0-ent</span>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 2rem;">Vulnerability Findings</h2>
+        <div id="findings-list">
+            <!-- Findings dynamically injected here -->
+        </div>
+    </main>
+
+    <script src="../js/demo.js"></script>
+</body>
+
+</html>
