@@ -21,8 +21,27 @@ except ImportError:
     )
 
 CONFIG = {
-    "timeout": 15,
-    "max_workers": 3,
+    "scanning": {
+        "timeout": 15,
+        "max_workers": 3,
+        "stealth_mode": False,
+        "disable_ssl_verify": False,
+    },
+    "reporting": {
+        "format": ["json", "html"],
+        "output_dir": "./reports",
+        "template": "default",
+        "include_poc": True,
+    },
+    "rate_limiting": {
+        "enabled": False,
+        "requests_per_minute": 60,
+    },
+    "testing": {
+        "jquery_pp": True,
+        "xss": True,
+        "waf_bypass": True,
+    },
     "user_agents": ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
     "jquery_payloads": [
         {"__proto__": {"polluted": True}},
