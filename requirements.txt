@@ -9,7 +9,7 @@ lxml==4.9.3
 
 # Async & Performance
 aiohttp==3.9.1
-asyncio-contextmanager==1.0.0
+asyncio-contextmanager==1.0.1
 aiofiles==23.2.1
 
 # Configuration Management
