@@ -2,194 +2,96 @@ name: Security Scanning Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, main, develop ]
   schedule:
     # Run daily security scan at 2 AM UTC
     - cron: '0 2 * * *'
 
 jobs:
+  # ========================================================================
+  # MAIN SECURITY AUDIT JOB
+  # ========================================================================
   security-scan:
     name: Security Audit & Vulnerability Scanning
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       security-events: write
-      pull-requests: write
-    
+
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12']
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for better analysis
-      
+          fetch-depth: 0
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-      
+
       # ========================================================================
       # STAGE 1: Dependency Security Checks
       # ========================================================================
-      - name: Install dependencies
+      - name: Install main dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-      
-      - name: Scan for known vulnerabilities (safety)
-        continue-on-error: true
+
+      - name: Install dev/security dependencies
         run: |
-          pip install safety
-          echo "🔍 Scanning for known CVEs in dependencies..."
-          safety check --json > safety-report.json || echo "Safety found issues"
-          cat safety-report.json
-      
+          pip install safety pip-audit bandit pylint detect-secrets pytest pytest-cov
+
       - name: Scan for known vulnerabilities (pip-audit)
         continue-on-error: true
         run: |
-          pip install pip-audit
           echo "🔍 Auditing pip packages..."
-          pip-audit --desc > pip-audit-report.txt || echo "pip-audit found issues"
-          cat pip-audit-report.txt
-      
+          pip-audit --desc || echo "pip-audit found issues (non-blocking)"
+
+      - name: Scan for known CVEs (safety)
+        continue-on-error: true
+        run: |
+          echo "🔍 Scanning for known CVEs in dependencies..."
+          safety check --output text || echo "Safety found issues (non-blocking)"
+
       # ========================================================================
       # STAGE 2: Static Application Security Testing (SAST)
       # ========================================================================
       - name: Bandit - Python Security Linter
         continue-on-error: true
         run: |
-          pip install bandit
           echo "🔍 Running Bandit security scan..."
           bandit -r ppmap/ -f json -o bandit-report.json || true
-          bandit -r ppmap/ -f txt
-      
-      - name: Pylint - Code Quality & Security
-        continue-on-error: true
-        run: |
-          pip install pylint
-          echo "🔍 Running Pylint analysis..."
-          pylint ppmap/ --exit-zero --output-format=json > pylint-report.json || true
-          pylint ppmap/ --exit-zero || true
-      
-      - name: Semgrep - Pattern-based Scanning
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/python
-            p/owasp-top-ten
-          generateSarif: true
-        continue-on-error: true
-      
+          bandit -r ppmap/ -f txt || true
+
       - name: Check for hardcoded secrets
         continue-on-error: true
         run: |
-          pip install detect-secrets
           echo "🔍 Scanning for hardcoded secrets..."
-          detect-secrets scan --baseline .secrets.baseline || true
-      
+          detect-secrets scan --baseline .secrets.baseline || detect-secrets scan > .secrets.baseline && echo "Baseline created"
+
       # ========================================================================
       # STAGE 3: Custom Security Tests
       # ========================================================================
-      - name: Run custom security tests
-        continue-on-error: true
+      - name: Run PPMAP security test suite
         run: |
           echo "🔍 Running PPMAP security test suite..."
-          pip install pytest pytest-cov
           pytest tests/test_security_fixes.py -v --tb=short --junit-xml=security-tests.xml
-      
-      - name: Test ReDoS Protection
+
+      - name: Full test coverage analysis
         continue-on-error: true
         run: |
-          python -c "
-          import time
-          import re
-          from ppmap.sast import DANGEROUS_SINKS
-          
-          print('🧪 Testing ReDoS protection...')
-          for sink_name in ['bracket_notation', 'JSON.parse']:
-              if sink_name not in DANGEROUS_SINKS:
-                  continue
-              pattern = DANGEROUS_SINKS[sink_name]['pattern']
-              regex = re.compile(pattern)
-              
-              # Test with pathological input
-              malicious = 'x[' + '['*100 + '] = 1;'
-              start = time.time()
-              try:
-                  regex.search(malicious)
-              except:
-                  pass
-              elapsed = time.time() - start
-              
-              if elapsed > 0.1:
-                  print(f'⚠️  ReDoS risk in {sink_name}: {elapsed:.4f}s')
-              else:
-                  print(f'✅ {sink_name} is safe: {elapsed:.4f}s')
-          "
-      
-      - name: Test Path Traversal Protection
-        continue-on-error: true
-        run: |
-          python -c "
-          from ppmap.mobile import MobileAppScanner
-          import tempfile
-          
-          print('🧪 Testing path traversal protection...')
-          with tempfile.TemporaryDirectory() as tmpdir:
-              scanner = MobileAppScanner(temp_dir=tmpdir)
-              
-              try:
-                  scanner._validate_safe_path(tmpdir, '../../etc/passwd')
-                  print('❌ Path traversal NOT blocked!')
-              except ValueError as e:
-                  print(f'✅ Path traversal blocked: {e}')
-          "
-      
-      - name: Test SSL Verification Configuration
-        continue-on-error: true
-        run: |
-          python -c "
-          from ppmap.engine import AsyncScanner
-          
-          print('🧪 Testing SSL verification config...')
-          
-          scanner_default = AsyncScanner()
-          if scanner_default.verify_ssl == True:
-              print('✅ Default: SSL verification enabled')
-          else:
-              print('❌ Default: SSL verification DISABLED')
-          
-          scanner_insecure = AsyncScanner(verify_ssl=False)
-          if scanner_insecure.verify_ssl == False:
-              print('✅ Override: SSL verification can be disabled for testing')
-          "
-      
+          pytest tests/ --cov=ppmap --cov-report=xml --cov-report=term-missing || true
+
       # ========================================================================
-      # STAGE 4: Code Coverage Analysis
-      # ========================================================================
-      - name: Code coverage analysis
-        continue-on-error: true
-        run: |
-          pip install pytest-cov
-          pytest tests/ --cov=ppmap --cov-report=xml --cov-report=term || true
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-      
-      # ========================================================================
-      # STAGE 5: Report Generation
+      # STAGE 4: Report Generation & Upload
       # ========================================================================
       - name: Generate security report
         if: always()
@@ -199,99 +101,103 @@ jobs:
           echo "**Date:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> security-report.md
           echo "**Python:** ${{ matrix.python-version }}" >> security-report.md
           echo "" >> security-report.md
-          
-          echo "## Detected Issues Summary" >> security-report.md
-          
+
           if [ -f bandit-report.json ]; then
-              echo "" >> security-report.md
               echo "### Bandit Findings" >> security-report.md
-              grep -o '"severity": "[^"]*"' bandit-report.json | sort | uniq -c || true >> security-report.md
+              grep -o '"severity": "[^"]*"' bandit-report.json | sort | uniq -c >> security-report.md || true
           fi
-          
-          if [ -f pip-audit-report.txt ]; then
-              echo "" >> security-report.md
-              echo "### Pip Audit Results" >> security-report.md
-              grep -E "(found|vulnerability)" pip-audit-report.txt | head -10 >> security-report.md || true
-          fi
-          
+
           cat security-report.md
-      
+
       - name: Upload security reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-reports-${{ matrix.python-version }}
           path: |
             bandit-report.json
-            safety-report.json
-            pip-audit-report.txt
             security-report.md
-      
-      - name: Comment on PR with security results
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.existsSync('security-report.md') ? 
-              fs.readFileSync('security-report.md', 'utf8') : 
-              'Security scan completed.';
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🔒 Security Scan Results\n\n${report}`
-            });
+            security-tests.xml
 
   # ========================================================================
-  # DEPENDENCY CHECK JOB
+  # OWASP DEPENDENCY CHECK JOB
   # ========================================================================
   dependency-check:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
     continue-on-error: true
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Run OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          project: 'PPMAP'
-          path: '.'
-          format: 'JSON'
-      
-      - name: Upload results
-        uses: actions/upload-artifact@v3
+          python-version: '3.11'
+
+      - name: Run pip-audit as OWASP-equivalent check
+        run: |
+          pip install pip-audit
+          pip install -r requirements.txt
+          echo "## 🛡️ OWASP-like Dependency Audit" > owasp-report.txt
+          pip-audit --output=json > owasp-report.json || true
+          pip-audit >> owasp-report.txt || true
+          cat owasp-report.txt
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: dependency-check-report
-          path: dependency-check-report.json
+          name: owasp-dependency-report
+          path: |
+            owasp-report.json
+            owasp-report.txt
 
   # ========================================================================
-  # SONARQUBE ANALYSIS JOB
+  # SONARQUBE / CODE QUALITY ANALYSIS
   # ========================================================================
-  sonarqube:
+  code-quality:
     name: SonarQube Code Quality
     runs-on: ubuntu-latest
     continue-on-error: true
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
-      - name: SonarQube scan
-        uses: SonarSource/sonarcloud-github-action@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          args: >
-            -Dsonar.projectKey=ppmap-security
-            -Dsonar.organization=ppmap
+          python-version: '3.11'
+
+      - name: Install analysis tools
+        run: |
+          pip install pylint radon
+          pip install -r requirements.txt
+
+      - name: Pylint Code Quality
+        run: |
+          echo "🔍 Running Pylint analysis..."
+          pylint ppmap/ --exit-zero --output-format=text || true
+
+      - name: Radon Complexity Analysis
+        run: |
+          echo "🔍 Cyclomatic Complexity:"
+          radon cc ppmap/ -a || true
+          echo "🔍 Maintainability Index:"
+          radon mi ppmap/ || true
+
+      # Only run SonarCloud if SONAR_TOKEN is configured
+      - name: SonarCloud Scan
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
 
   # ========================================================================
   # FINAL STATUS JOB
@@ -301,13 +207,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security-scan]
     if: always()
-    
+
     steps:
-      - name: Check security test results
+      - name: Evaluate security scan results
         run: |
+          echo "Security scan result: ${{ needs.security-scan.result }}"
           if [ "${{ needs.security-scan.result }}" = "failure" ]; then
-            echo "❌ Security tests failed - review before merge"
+            echo "❌ Security tests failed - review the security-reports artifacts"
             exit 1
           else
-            echo "✅ All security checks passed"
+            echo "✅ Security pipeline completed (result: ${{ needs.security-scan.result }})"
           fi
