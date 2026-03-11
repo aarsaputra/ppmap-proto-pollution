@@ -152,7 +152,7 @@ nav .container {
 }
 
 .hero h1 {
-    font-size: 4rem;
+    font-size: clamp(1.8rem, 5vw, 4rem);
     font-weight: 800;
     margin-bottom: 1.5rem;
     background: linear-gradient(135deg, #fff 0%, var(--text-muted) 100%);
@@ -160,6 +160,7 @@ nav .container {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -2px;
+    line-height: 1.15;
 }
 
 .hero p {
@@ -290,7 +291,7 @@ nav .container {
 /* Features Grid */
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--gap);
     margin-top: 4rem;
 }
@@ -325,43 +326,79 @@ nav .container {
     font-size: 0.95rem;
 }
 
-/* Responsive */
+/* ======================================================
+   RESPONSIVE - Tablet (<=1024px)
+   ====================================================== */
 @media (max-width: 1024px) {
     .container {
         padding: 0 1.5rem;
     }
-
-    .hero h1 {
-        font-size: 3.5rem;
-    }
 }
 
+/* ======================================================
+   RESPONSIVE - Mobile (<=768px)
+   ====================================================== */
 @media (max-width: 768px) {
-    .hero h1 {
-        font-size: 2.8rem;
-        letter-spacing: -1px;
+    :root {
+        --gap: 1.25rem;
+    }
+
+    .container {
+        padding: 0 1rem;
+        width: 100%;
+    }
+
+    section {
+        padding: 4rem 0;
+    }
+
+    /* Hero */
+    .hero {
+        padding: 6.5rem 0 3rem;
     }
 
     .hero p {
-        font-size: 1.1rem;
+        font-size: 1rem;
+        padding: 0 0.5rem;
     }
 
+    .hero-actions {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+    }
+
+    /* Navbar */
     .nav-links {
         position: fixed;
         top: 0;
         right: -100%;
         width: 80%;
+        max-width: 300px;
         height: 100vh;
-        background: var(--bg-dark);
+        background: rgba(10, 14, 20, 0.98);
+        backdrop-filter: blur(20px);
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        gap: 2rem;
+        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
         z-index: 1000;
+        transition: right 0.3s ease;
     }
 
     .nav-links.active {
         right: 0;
+    }
+
+    .nav-links a {
+        font-size: 1.1rem;
     }
 
     .burger {
@@ -375,6 +412,7 @@ nav .container {
 
     .logo-area {
         order: 1;
+        font-size: 1.1rem;
     }
 
     /* Burger Animation */
@@ -390,36 +428,139 @@ nav .container {
         transform: rotate(-45deg) translate(5px, -5px);
     }
 
-    .hero-actions {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .btn {
-        width: 100%;
-        max-width: 300px;
-        justify-content: center;
-    }
-
+    /* Features */
     .features-grid {
         grid-template-columns: 1fr;
-    }
-
-    .hero {
-        padding: 8rem 0 4rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .hero h1 {
-        font-size: 2.2rem;
-    }
-
-    .terminal {
         margin-top: 2rem;
     }
 
     .feature-card {
         padding: 1.5rem;
+    }
+
+    /* Terminal */
+    .terminal {
+        margin: 2rem auto 0;
+        border-radius: 8px;
+    }
+
+    .terminal-body {
+        font-size: 0.78rem;
+        padding: 1rem;
+        overflow-x: auto;
+        word-break: break-word;
+    }
+
+    .terminal-line .command {
+        word-break: break-all;
+    }
+
+    /* Comparison Table */
+    .comparison-table,
+    table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Docs Article */
+    .content h1 {
+        font-size: 1.8rem;
+    }
+
+    .content h2 {
+        font-size: 1.3rem;
+    }
+
+    /* Badges */
+    .badges {
+        gap: 0.5rem;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.7rem;
+    }
+}
+
+/* ======================================================
+   RESPONSIVE - Small Mobile (<=480px) — Infinix 50 Pro+
+   ====================================================== */
+@media (max-width: 480px) {
+    .container {
+        padding: 0 0.85rem;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
+    img,
+    pre,
+    table,
+    iframe {
+        max-width: 100%;
+    }
+
+    /* Hero */
+    .hero {
+        padding: 5.5rem 0 2.5rem;
+    }
+
+    /* Terminal even smaller font */
+    .terminal-body {
+        font-size: 0.72rem;
+        padding: 0.8rem;
+    }
+
+    /* Feature cards */
+    .feature-card {
+        padding: 1.25rem;
+        border-radius: 8px;
+    }
+
+    /* Docs nav */
+    .logo-area {
+        font-size: 1rem;
+    }
+
+    .logo-icon {
+        height: 24px;
+    }
+
+    /* Section padding */
+    section {
+        padding: 3rem 0;
+    }
+
+    /* Requirement card list */
+    .feature-card ul li {
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+
+    /* Best practices section */
+    #best-practices ul li {
+        font-size: 0.85rem;
+    }
+
+    /* Payload categories: 2-column on tiny screens */
+    #categories>div {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* Installation / Docs: reduce heading */
+    h1 {
+        font-size: 1.6rem !important;
+    }
+
+    h2 {
+        font-size: 1.3rem !important;
+    }
+
+    /* Buttons full width on tiny screens */
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.75rem 1.5rem;
     }
 }
