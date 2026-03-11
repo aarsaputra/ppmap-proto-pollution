@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any, Union
-from pydantic import BaseModel, HttpUrl, Field, validator
+from pydantic import BaseModel, HttpUrl, Field, field_validator, ValidationInfo
 
 
 class ScanConfig(BaseModel):
@@ -30,20 +30,23 @@ class ScanConfig(BaseModel):
         default=0.5, ge=0.0, description="Delay between requests in seconds"
     )
 
-    @validator("timeout")
+    @field_validator("timeout")
+    @classmethod
     def validate_timeout(cls, v):
         if not (1 <= v <= 300):
             raise ValueError("Timeout must be between 1 and 300 seconds")
         return v
 
-    @validator("max_workers")
+    @field_validator("max_workers")
+    @classmethod
     def validate_workers(cls, v):
         if not (1 <= v <= 50):
             raise ValueError("Max workers must be between 1 and 50")
         return v
 
-    @validator("delay")
-    def validate_delay(cls, v, values):
-        if values.get("stealth") and v < 1.0:
+    @field_validator("delay")
+    @classmethod
+    def validate_delay(cls, v, info: ValidationInfo):
+        if info.data.get("stealth") and v < 1.0:
             return 1.0  # Force at least 1s delay in stealth mode
         return v
