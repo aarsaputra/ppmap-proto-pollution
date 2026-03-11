@@ -159,6 +159,7 @@ class MobileAppScanner:
             max_workers: Parallel analysis threads
         """
         self.temp_dir = temp_dir or tempfile.mkdtemp(prefix="ppmap_mobile_")
+        self._resolved_base_dir = Path(self.temp_dir).resolve()
         self.use_sast = use_sast and SASTScanner is not None
         self.max_workers = max_workers
         self._compiled_patterns: Dict[str, re.Pattern] = {}
@@ -188,12 +189,11 @@ class MobileAppScanner:
         Raises:
             ValueError: If path traversal detected
         """
-        real_base = Path(base_dir).resolve()
-        real_target = (Path(base_dir) / target_path).resolve()
+        real_target = (self._resolved_base_dir / target_path).resolve()
         
         # Ensure target path is within base directory
         try:
-            real_target.relative_to(real_base)  # Raises ValueError if not relative
+            real_target.relative_to(self._resolved_base_dir)  # Raises ValueError if not relative
         except ValueError:
             raise ValueError(f"Path traversal detected: {target_path}")
         
