@@ -718,9 +718,17 @@ ADVANCED OPTIONS:
                         discovery = EndpointDiscovery(session=scanner.session)
                         # We use depth 1 so we don't accidentally crawl the internet.
                         discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=30)
+                        
+                        from ppmap.utils import is_static_file
+                        
                         for ep in discovered_eps:
                             if ep not in targets_to_scan:
+                                # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
+                                if is_static_file(ep):
+                                    logger.debug(f"Skipping static asset: {ep}")
+                                    continue
                                 targets_to_scan.append(ep)
+                                
                         if len(targets_to_scan) > 1:
                             print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
                     except Exception as dis_err:
@@ -730,7 +738,11 @@ ADVANCED OPTIONS:
                         logger.info(f" -> Testing endpoint: {sub_target}")
                         if len(targets_to_scan) > 1:
                             print(f"{Colors.BLUE}[→] Scanning Endpoint: {sub_target}{Colors.ENDC}")
-                        findings = scanner.scan_target(sub_target)
+                        
+                        # OPTIMIZATION: Disable recursive discovery for sub-targets (prevent scan explosion)
+                        is_base = (sub_target == target)
+                        findings = scanner.scan_target(sub_target, run_discovery=is_base)
+                        
                         if findings:
                             all_findings.extend(findings)
                 except Exception as e:
