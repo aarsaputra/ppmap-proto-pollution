@@ -4257,9 +4257,25 @@ return window['{marker}'];
         return []
 
     def setup_browser(self, target_url):
-        """Setup browser for scanning"""
+        """Setup browser for scanning (with reuse optimization)"""
         try:
             from ppmap.browser import get_browser
+
+            # OPTIMIZATION: If driver already exists and is responsive, just navigate
+            if self.driver:
+                try:
+                    # Quick check if session is still alive
+                    self.driver.current_url
+                    logger.info("Reusing existing browser backend")
+                    self.driver.get(target_url, wait=0.5)
+                    return True
+                except Exception:
+                    logger.debug("Existing browser session stale, re-initializing")
+                    try:
+                        self.driver.quit()
+                    except:
+                        pass
+                    self.driver = None
 
             browser = get_browser(headless=True, timeout=self.timeout)
             if not browser:
@@ -4400,7 +4416,7 @@ return window['{marker}'];
 
         return findings
 
-    def scan_target(self, target_url, request_data=None):
+    def scan_target(self, target_url, request_data=None, run_discovery=True):
         """Scan single target"""
         all_findings = []
 
@@ -4496,7 +4512,10 @@ return window['{marker}'];
             # v3.0 ADVANCED FEATURES - NEW TESTS
             waf_bypass_findings = self.test_with_waf_bypass(target_url)
             confidence_findings = self.test_with_confidence_scoring()
-            endpoint_findings = self.discover_and_test_endpoints(target_url)
+            
+            endpoint_findings = []
+            if run_discovery:
+                endpoint_findings = self.discover_and_test_endpoints(target_url)
 
             # v3.1 TIER-1 ENHANCEMENTS - BLIND DETECTION & ADVANCED BYPASS (NEW)
             json_spaces_findings = self.test_json_spaces_overflow(target_url)

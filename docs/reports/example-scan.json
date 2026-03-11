@@ -1,16 +1,37 @@
 {
-    "target": "https://vulnerable-security-lab.test",
-    "scan_time": "2026-03-06T14:30:15",
-    "duration": 4.5,
-    "total_vulnerabilities": 3,
+    "target": "https://enterprise-security-target.test",
+    "scan_time": "2026-03-10T20:45:00Z",
+    "duration": 12.8,
+    "total_vulnerabilities": 6,
     "metrics": {
-        "endpoints_scanned": 14,
-        "payloads_sent": 86,
-        "browser_restarts": 1
+        "endpoints_scanned": 42,
+        "assets_filtered": 156,
+        "payloads_sent": 1240,
+        "browser_restarts": 1,
+        "time_saved_by_reuse": "18s"
     },
     "findings": [
         {
             "id": "VULN-001",
+            "type": "GraphQL Prototype Pollution",
+            "severity": "CRITICAL",
+            "component": "Apollo Server 4.x",
+            "cve": "RESEARCH-2024-GQL-PP",
+            "description": "Object.prototype pollution via nested input object merging in GraphQL mutations.",
+            "payload": "mutation { updateProfile(input: {\"__proto__\": {\"admin\": true}}) { name } }",
+            "reproduction": "1. Send mutation with __proto__ key in input object\n2. Verify Object.prototype.admin is true on server context"
+        },
+        {
+            "id": "VULN-002",
+            "type": "WebSocket Proto Injection",
+            "severity": "HIGH",
+            "component": "Socket.IO 4.7.x",
+            "description": "Persistent Prototype Pollution via Socket.IO event payload manipulation.",
+            "payload": "socket.emit('settings_update', {'__proto__': {'theme': 'dark'}})",
+            "reproduction": "1. Intercept WS frame\n2. Inject payload into JSON event\n3. Verify pollution on subsequent events"
+        },
+        {
+            "id": "VULN-003",
             "type": "Prototype Pollution",
             "severity": "CRITICAL",
             "component": "jQuery 3.4.1",
@@ -20,19 +41,29 @@
             "reproduction": "1. Open console\n2. Run payload\n3. Check {}.polluted === true"
         },
         {
-            "id": "VULN-002",
-            "type": "DOM XSS",
+            "id": "VULN-004",
+            "type": "SAST Sink Found",
             "severity": "HIGH",
-            "component": "Vanilla JS Gadget",
-            "description": "Vulnerable sink in data-config attribute parsing",
-            "payload": "__proto__[value]=data:,alert(1)//",
-            "reproduction": "Navigate to URL with __proto__ parameter"
+            "component": "source.js (Static Analysis)",
+            "description": "Static analysis detected a dangerous sink using untrusted user input in a merge function.",
+            "payload": "source.js:L156 -> Object.assign(target, JSON.parse(userInput))",
+            "reproduction": "Review source.js at line 156 for missing __proto__ validation."
         },
         {
-            "id": "VULN-003",
+            "id": "VULN-005",
+            "type": "DOM XSS Gadget",
+            "severity": "HIGH",
+            "component": "Next.js Flight Protocol",
+            "description": "Vulnerable sink in React Flight Protocol parsing leading to DOM XSS.",
+            "payload": "__proto__[href]=javascript:alert(1)",
+            "reproduction": "Navigate to URL with __proto__ parameter targeting React state"
+        },
+        {
+            "id": "VULN-006",
             "type": "WAF Bypass",
             "severity": "MEDIUM",
-            "description": "Unicode character escaping detected in parameter parsing",
+            "component": "Cloudflare Bypass",
+            "description": "Unicode character escaping detected in parameter parsing bypassing standard WAF regex.",
             "payload": "\\u005f\\u005fproto\\u005f\\u005f",
             "reproduction": "Send encoded payload to API endpoint"
         }

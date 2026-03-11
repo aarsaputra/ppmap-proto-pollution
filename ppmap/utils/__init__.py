@@ -209,6 +209,38 @@ __all__ = [
     'rate_limited',
     'retry_request',
     'RateLimiter',
+    'is_static_file',
 ]
+
+
+def is_static_file(url: str) -> bool:
+    """
+    Check if a URL points to a static file that shouldn't be scanned.
+    
+    Args:
+        url: URL to check
+        
+    Returns:
+        True if it's a static file, False otherwise
+    """
+    import os
+    from urllib.parse import urlparse
+    
+    # Extensions that are definitely not scannable for Prototype Pollution
+    static_extensions = {
+        '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.webp', # Images/Docs
+        '.woff', '.woff2', '.ttf', '.eot',                               # Fonts
+        '.mp4', '.webm', '.ogg', '.mp3', '.wav',                         # Media
+        '.zip', '.tar', '.gz', '.7z', '.rar',                            # Archives
+        '.exe', '.bin', '.dmg', '.iso',                                  # Binaries
+    }
+    
+    # Optionally exclude .css and .map if we only care about HTML/JS logic
+    # static_extensions.update({'.css', '.map'})
+    
+    parsed = urlparse(url)
+    _, ext = os.path.splitext(parsed.path.lower())
+    
+    return ext in static_extensions
 
 

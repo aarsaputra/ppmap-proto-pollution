@@ -30,7 +30,8 @@
 - POST parameter XSS
 - **Smart WAF Detection** (Baseline Check + Signature Identification)
 - WAF Bypass (50+ variations)
-- Endpoint discovery
+- **Smart Scan Optimization** (Static File Filtering & Browser Reuse)
+- Endpoint discovery & Recursive Loop Prevention
 - Confidence scoring
 
 **Tier 1 - Blind Detection:**
@@ -141,6 +142,7 @@ open report/target_domain_timestamp/report.html
 ✅ **Smart WAF Detection** - Identifies WAFs and skips bypasses if not needed  
 ✅ **PortSwigger Techniques** - fetch(), defineProperty, child_process RCE  
 ✅ **Async Scanning** - Fast concurrent testing  
+✅ **High Performance** - Static asset filtering & Browser session reuse  
 
 ### 🚀 New in v4.x
 
@@ -265,7 +267,11 @@ pentest_proto/
 │   │   └── core.py               # CompleteSecurityScanner orchestrator
 │   ├── engine.py                 # Core modules (formerly scanner.py)
 │   ├── browser.py                # Browser Automation
-│   ├── utils.py                  # Common utilities and print formatting
+│   ├── log_setup.py              # Logging middleware
+│   ├── utils/                    # Common utilities directory
+│   │   ├── __init__.py           # is_static_file, print_section, etc.
+│   │   ├── rate_limit.py         # Rate limiting logic
+│   │   └── retry.py              # Retry decorators
 │   └── ...                       # Other specialized modules (e.g. oob.py)
 ├── ppmap_lab/                    # Vulnerable Lab Environment (Express.js)
 │   ├── server.js                 # Lab Server
