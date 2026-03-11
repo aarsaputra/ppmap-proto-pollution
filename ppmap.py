@@ -140,15 +140,18 @@ def run_quick_poc(url: str, headless: bool = True) -> None:
     falls back to Playwright if Selenium is unavailable.
     """
     from ppmap.engine import QuickPoC
+    from ppmap.payloads import QUICK_POC_PAYLOADS
 
     print(f"{Colors.BOLD}[*] Quick PoC mode on {url}{Colors.ENDC}")
 
     poc = QuickPoC(headless=headless)
     ready = False
     try:
+        print(f"{Colors.BLUE}[*] Setting up browser...{Colors.ENDC}")
         ready = poc.setup_browser(url)
     except Exception as e:
         print(f"{Colors.FAIL}[!] Browser setup failed: {e}{Colors.ENDC}")
+        logger.error(f"Browser setup failed: {e}", exc_info=True)
 
     if not ready:
         print(
@@ -157,15 +160,12 @@ def run_quick_poc(url: str, headless: bool = True) -> None:
         )
         return
 
-    payloads = [
-        {"__proto__": {"ppmap_poc": "confirmed"}},
-        {"constructor": {"prototype": {"ppmap_poc": "confirmed"}}},
-    ]
-
     confirmed = False
     try:
-        for p in payloads:
+        print(f"{Colors.BLUE}[*] Testing {len(QUICK_POC_PAYLOADS)} payloads...{Colors.ENDC}")
+        for i, p in enumerate(QUICK_POC_PAYLOADS):
             try:
+                print(f"{Colors.BLUE}[→] Testing payload #{i+1}...{Colors.ENDC}")
                 if poc.test_payload(p):
                     print(
                         f"{Colors.FAIL}[!] CONFIRMED: Prototype Pollution detected!\n"
@@ -174,8 +174,10 @@ def run_quick_poc(url: str, headless: bool = True) -> None:
                     confirmed = True
                     break
             except Exception as e:
-                logger.debug(f"QuickPoC payload error: {e}")
+                print(f"{Colors.WARNING}[!] Error testing payload: {e}{Colors.ENDC}")
+                logger.debug(f"QuickPoC payload error: {e}", exc_info=True)
     finally:
+        print(f"{Colors.BLUE}[*] Cleaning up...{Colors.ENDC}")
         poc.cleanup()
 
     if not confirmed:
