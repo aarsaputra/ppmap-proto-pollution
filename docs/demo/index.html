@@ -13,6 +13,7 @@
         rel="stylesheet">
 
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
     <style>
         body {
             background: #0a0e14;
@@ -49,6 +50,19 @@
 
         .stat-item.danger span {
             color: #ff5f56;
+        }
+
+        .stat-item.success span {
+            color: var(--primary);
+        }
+
+        .badge-v {
+            background: var(--primary);
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 800;
         }
 
         .finding-card {
@@ -147,17 +161,17 @@
 <body>
     <nav>
         <div class="container">
-            <a href="../" class="logo-area">
+            <a href="../index.html" class="logo-area">
                 <img src="../assets/logo.png" alt="PPMAP Logo" class="logo-icon">
                 PPMAP <span
                     style="color: var(--primary); font-size: 0.8rem; vertical-align: middle; margin-left: 5px;">DEMO</span>
             </a>
-            <a href="../" class="btn btn-secondary">Back to Site</a>
+            <a href="../index.html" class="btn btn-secondary">Back to Site</a>
         </div>
     </nav>
 
     <main class="container dashboard">
-        <div class="report-header">
+        <div class="report-header shadow">
             <div class="stat-item">
                 <label>Target URL</label>
                 <span id="target-url">Loading...</span>
@@ -171,8 +185,20 @@
                 <span id="scan-date">--/--/--</span>
             </div>
             <div class="stat-item">
+                <label>Endpoints</label>
+                <span id="endpoints-scanned">0</span>
+            </div>
+            <div class="stat-item success">
+                <label>Assets Filtered</label>
+                <span id="assets-filtered">0</span>
+            </div>
+            <div class="stat-item">
+                <label>Time Saved</label>
+                <span id="time-saved">0s</span>
+            </div>
+            <div class="stat-item">
                 <label>Engine Version</label>
-                <span>v4.1.0-ent</span>
+                <span class="badge-v">v4.1.0-ent</span>
             </div>
         </div>
 

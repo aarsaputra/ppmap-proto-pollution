@@ -22,6 +22,19 @@ function renderReport(data) {
     document.getElementById('total-vulns').textContent = data.total_vulnerabilities;
     document.getElementById('scan-date').textContent = new Date(data.scan_time).toLocaleDateString();
 
+    // Update New Metrics if they exist
+    if (data.metrics) {
+        if (document.getElementById('endpoints-scanned')) {
+            document.getElementById('endpoints-scanned').textContent = data.metrics.endpoints_scanned;
+        }
+        if (document.getElementById('assets-filtered')) {
+            document.getElementById('assets-filtered').textContent = data.metrics.assets_filtered;
+        }
+        if (document.getElementById('time-saved')) {
+            document.getElementById('time-saved').textContent = data.metrics.time_saved_by_reuse;
+        }
+    }
+
     // Render Findings
     container.innerHTML = '';
     data.findings.forEach(finding => {
