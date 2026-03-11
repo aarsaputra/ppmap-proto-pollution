@@ -410,6 +410,13 @@ nav .container {
         display: none;
     }
 
+    /* Keep the demo page Back button visible on mobile */
+    nav .nav-back-btn {
+        display: inline-flex;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+
     .logo-area {
         order: 1;
         font-size: 1.1rem;
@@ -455,13 +462,23 @@ nav .container {
         word-break: break-all;
     }
 
-    /* Comparison Table */
-    .comparison-table,
-    table {
+    /* Comparison Table - use scrollable wrapper approach */
+    .comparison-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+
+    /* Docs tables (usage.html, etc) - wrap in scroll container */
+    .content table {
         display: block;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100%;
     }
+
+    /* Do NOT set display:block globally on table — ruins all table layouts */
 
     /* Docs Article */
     .content h1 {
