@@ -13,7 +13,7 @@ from datetime import datetime
 from ppmap.utils import Colors, normalize_url, print_section
 from ppmap.utils.rate_limit import rate_limited
 from ppmap.utils.retry import retry_request
-from ppmap.models.findings import Severity, VulnerabilityType, Finding
+from ppmap.models.findings import Finding, VulnerabilityType
 from ppmap.models.reports import ScanMetrics, ScanReport
 from ppmap.config.settings import CONFIG, STEALTH_HEADERS
 from ppmap.engine import EndpointDiscovery, ParameterDiscovery
@@ -126,6 +126,7 @@ def safe_execute(func, *args, fallback=None, timeout=None, **kwargs):
         return fallback
 
 
+from ppmap.payloads import XSS_PAYLOADS, DEFAULT_XSS_PARAMS
 from ppmap.models.config import ScanConfig
 
 
@@ -318,11 +319,18 @@ class CompleteSecurityScanner:
             )
             return {"prototype_ok": True}
 
-    def test_jquery_prototype_pollution(self) -> List[Dict[str, Any]]:
-        """Test jQuery Prototype Pollution (CVE-2019-11358) with proper CVE detection"""
+    def test_jquery_prototype_pollution(self) -> List[Finding]:
+        """
+        Test jQuery Prototype Pollution (CVE-2019-11358 and others) with proper CVE detection.
+        This function performs the following steps:
+        1. Detects the jQuery version using a robust multi-method approach.
+        2. Identifies potential CVEs based on the detected jQuery version.
+        3. Attempts to verify the vulnerabilities using browser-based tests.
+        4. Returns a list of Finding objects.
+        """
         print(f"{Colors.CYAN}[→] Testing jQuery Prototype Pollution...{Colors.ENDC}")
 
-        findings: List[Dict[str, Any]] = []
+        findings: List[Finding] = []
 
         # Step 1: Detect jQuery version using ROBUST multi-method approach
         page_source = ""
@@ -370,13 +378,12 @@ class CompleteSecurityScanner:
                                     f"{Colors.FAIL}[!] VULNERABLE: RequireJS {r_ver} (CVE-2024-38999 - Prototype Pollution){Colors.ENDC}"
                                 )
                                 findings.append(
-                                    {
-                                        "type": "requirejs_pp",
-                                        "cve": "CVE-2024-38999",
-                                        "name": "RequireJS Prototype Pollution",
-                                        "severity": "CRITICAL",
-                                        "version": r_ver,
-                                    }
+                                    Finding(
+                                        type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                                        name="RequireJS Prototype Pollution",
+                                        severity=Severity.CRITICAL,
+                                        description=f"RequireJS {r_ver} is vulnerable to prototype pollution (CVE-2024-38999).",
+                                    )
                                 )
                         except Exception as e:
                             logger.debug(f"RequireJS version check error: {e}")
@@ -400,19 +407,20 @@ class CompleteSecurityScanner:
                 ver_tuple = ver_tuple + (0,)
             major, minor, patch = ver_tuple
 
-            # CVE-2019-11358: Prototype Pollution (jQuery < 3.5.0)
-            if ver_tuple < (3, 5, 0):
+            # CVE-2019-11358: Prototype Pollution (jQuery < 3.4.0)
+            if ver_tuple < (3, 4, 0):
                 print(
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2019-11358 (Prototype Pollution){Colors.ENDC}"
                 )
                 print(f"    jQuery {jquery_version} < 3.5.0 is vulnerable!")
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2019-11358",
-                        "name": "Prototype Pollution in jQuery $.extend()",
-                        "severity": "CRITICAL",
-                        "jquery_version": jquery_version,
-                    }
+                    Finding(
+                        type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                        name="Prototype Pollution in jQuery $.extend()",
+                        severity=Severity.CRITICAL,
+                        description=f"jQuery {jquery_version} is vulnerable to prototype pollution (CVE-2019-11358).",
+                        cve="CVE-2019-11358",
+                    )
                 )
 
             # CVE-2020-11022: HTML Prefilter XSS (jQuery < 3.5.0)
@@ -421,12 +429,13 @@ class CompleteSecurityScanner:
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11022 (HTML Prefilter XSS){Colors.ENDC}"
                 )
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2020-11022",
-                        "name": "HTML Prefilter XSS in jQuery",
-                        "severity": "HIGH",
-                        "jquery_version": jquery_version,
-                    }
+                    Finding(
+                        type=VulnerabilityType.XSS,
+                        name="HTML Prefilter XSS in jQuery",
+                        severity=Severity.HIGH,
+                        description=f"jQuery {jquery_version} is vulnerable to HTML Prefilter XSS (CVE-2020-11022).",
+                        cve="CVE-2020-11022",
+                    )
                 )
 
             # BUG-6 FIX CORRECTED: CVE-2020-11023 affects jQuery < 3.5.0 (NOT only == 3.5.0)
@@ -437,13 +446,13 @@ class CompleteSecurityScanner:
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-11023 (<option> XSS in jQuery.html()){Colors.ENDC}"
                 )
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2020-11023",
-                        "name": "jQuery.html() <option> element XSS",
-                        "severity": "HIGH",
-                        "jquery_version": jquery_version,
-                        "description": "Unescaped HTML in <option> elements via .html()/.append() methods",
-                    }
+                    Finding(
+                        type=VulnerabilityType.XSS,
+                        name="jQuery.html() <option> element XSS",
+                        severity=Severity.HIGH,
+                        description=f"jQuery {jquery_version} is vulnerable to XSS via the <option> element (CVE-2020-11023).",
+                        cve="CVE-2020-11023",
+                    )
                 )
 
             # CVE-2020-23064: XSS via DOM manipulation methods (jQuery < 3.5.0)
@@ -455,13 +464,13 @@ class CompleteSecurityScanner:
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2020-23064 (DOM Manipulation XSS){Colors.ENDC}"
                 )
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2020-23064",
-                        "name": "jQuery DOM Manipulation XSS (.before/.after/.replaceWith)",
-                        "severity": "HIGH",
-                        "jquery_version": jquery_version,
-                        "description": "Unsafe HTML passed to DOM manipulation methods executes scripts",
-                    }
+                    Finding(
+                        type=VulnerabilityType.XSS,
+                        name="jQuery DOM Manipulation XSS (.before/.after/.replaceWith)",
+                        severity=Severity.HIGH,
+                        description=f"jQuery {jquery_version} is vulnerable to DOM Manipulation XSS (CVE-2020-23064).",
+                        cve="CVE-2020-23064",
+                    )
                 )
 
             # CVE-2015-9251: Cross-domain AJAX auto-eval (jQuery < 3.0.0)
@@ -473,13 +482,13 @@ class CompleteSecurityScanner:
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2015-9251 (Cross-domain AJAX auto-eval XSS){Colors.ENDC}"
                 )
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2015-9251",
-                        "name": "jQuery Cross-domain AJAX auto-eval XSS",
-                        "severity": "HIGH",
-                        "jquery_version": jquery_version,
-                        "description": "AJAX responses with Content-Type: text/javascript auto-eval via globalEval()",
-                    }
+                    Finding(
+                        type=VulnerabilityType.XSS,
+                        name="jQuery Cross-domain AJAX auto-eval XSS",
+                        severity=Severity.HIGH,
+                        description=f"jQuery {jquery_version} is vulnerable to Cross-domain AJAX auto-eval XSS (CVE-2015-9251).",
+                        cve="CVE-2015-9251",
+                    )
                 )
 
             # CVE-2012-6708: $.parseJSON XSS (jQuery < 1.9.0)
@@ -488,12 +497,13 @@ class CompleteSecurityScanner:
                     f"{Colors.FAIL}[!] VULNERABLE to CVE-2012-6708 ($.parseJSON XSS){Colors.ENDC}"
                 )
                 cve_vulnerabilities.append(
-                    {
-                        "cve": "CVE-2012-6708",
-                        "name": "jQuery $.parseJSON XSS",
-                        "severity": "MEDIUM",
-                        "jquery_version": jquery_version,
-                    }
+                    Finding(
+                        type=VulnerabilityType.XSS,
+                        name="jQuery $.parseJSON XSS",
+                        severity=Severity.MEDIUM,
+                        description=f"jQuery {jquery_version} is vulnerable to XSS via $.parseJSON (CVE-2012-6708).",
+                        cve="CVE-2012-6708",
+                    )
                 )
 
         except Exception as e:
@@ -511,7 +521,7 @@ class CompleteSecurityScanner:
             self.prototype_snapshot = None
 
         # Step 4: jQuery $.extend() vulnerability test (CVE-2019-11358)
-        if cve_vulnerabilities:  # Only if version vulnerable
+        if any(c.cve == "CVE-2019-11358" for c in cve_vulnerabilities):  # Only if version vulnerable
             rand_id = f"pp_{int(time.time())}"
 
             js_check = f"""
@@ -529,14 +539,14 @@ class CompleteSecurityScanner:
                         f"{Colors.FAIL}[!] $.extend() confirms Prototype Pollution vulnerability!{Colors.ENDC}"
                     )
                     findings.append(
-                        {
-                            "type": "jquery_pp_verified",
-                            "name": "jQuery $.extend() Prototype Pollution VERIFIED",
-                            "severity": "CRITICAL",
-                            "cve": "CVE-2019-11358",
-                            "jquery_version": jquery_version,
-                            "verified": True,
-                        }
+                        Finding(
+                            type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                            name="jQuery $.extend() Prototype Pollution VERIFIED",
+                            severity=Severity.CRITICAL,
+                            description=f"jQuery {jquery_version} is vulnerable to prototype pollution (CVE-2019-11358).",
+                            cve="CVE-2019-11358",
+                            verified=True,
+                        )
                     )
             except Exception as e:
                 logger.debug(f"Ignored error: {type(e).__name__} - {e}")
@@ -548,7 +558,7 @@ class CompleteSecurityScanner:
         # CVE-2020-11022: HTML Prefilter bypass via <style> + <img onerror>
         # BUG FIX: Old payload `<option><style></option><img onerror>` is actually CVE-2020-11023.
         # CVE-2020-11022 specific: bypass htmlPrefilter regex using self-closing style tag.
-        if any(c["cve"] == "CVE-2020-11022" for c in cve_vulnerabilities):
+        if any(c.cve == "CVE-2020-11022" for c in cve_vulnerabilities):
             m = f"cve11022_{int(time.time())}"
             js_11022 = f"""
             try {{
@@ -566,16 +576,15 @@ class CompleteSecurityScanner:
                         f"{Colors.FAIL}[!] CVE-2020-11022 VERIFIED: htmlPrefilter bypass XSS executed!{Colors.ENDC}"
                     )
                     findings.append(
-                        {
-                            "type": "jquery_xss_verified",
-                            "name": "jQuery htmlPrefilter XSS (VERIFIED)",
-                            "severity": "HIGH",
-                            "cve": "CVE-2020-11022",
-                            "jquery_version": jquery_version,
-                            "verified": True,
-                            "description": "jQuery .html() htmlPrefilter regex bypassed via <style></style><img onerror>",
-                            "poc": f"$('<div>').appendTo('body').html('<style></style><img src=x onerror=alert(1)>')",
-                        }
+                        Finding(
+                            type=VulnerabilityType.XSS,
+                            name="jQuery htmlPrefilter XSS (VERIFIED)",
+                            severity=Severity.HIGH,
+                            description=f"jQuery {jquery_version} is vulnerable to HTML Prefilter XSS (CVE-2020-11022).",
+                            cve="CVE-2020-11022",
+                            verified=True,
+                            payload="$('<div>').appendTo('body').html('<style></style><img src=x onerror=alert(1)>')",
+                        )
                     )
                 else:
                     print(
@@ -586,7 +595,7 @@ class CompleteSecurityScanner:
 
         # CVE-2020-11023: <option> element XSS
         # The <option><style></option><img onerror> pattern is specific to this CVE.
-        if any(c["cve"] == "CVE-2020-11023" for c in cve_vulnerabilities):
+        if any(c.cve == "CVE-2020-11023" for c in cve_vulnerabilities):
             m = f"cve11023_{int(time.time())}"
             js_11023 = f"""
             try {{
@@ -604,16 +613,15 @@ class CompleteSecurityScanner:
                         f"{Colors.FAIL}[!] CVE-2020-11023 VERIFIED: <option> element XSS executed!{Colors.ENDC}"
                     )
                     findings.append(
-                        {
-                            "type": "jquery_xss_verified",
-                            "name": "jQuery <option> element XSS (VERIFIED)",
-                            "severity": "HIGH",
-                            "cve": "CVE-2020-11023",
-                            "jquery_version": jquery_version,
-                            "verified": True,
-                            "description": "jQuery .html() does not sanitize <option><img onerror> combination",
-                            "poc": "$('<select>').appendTo('body').html('<option><img src=x onerror=alert(1)></option>')",
-                        }
+                        Finding(
+                            type=VulnerabilityType.XSS,
+                            name="jQuery <option> element XSS (VERIFIED)",
+                            severity=Severity.HIGH,
+                            description=f"jQuery {jquery_version} is vulnerable to XSS via the <option> element (CVE-2020-11023).",
+                            cve="CVE-2020-11023",
+                            verified=True,
+                            payload="$('<select>').appendTo('body').html('<option><img src=x onerror=alert(1)></option>')",
+                        )
                     )
                 else:
                     print(
@@ -624,7 +632,7 @@ class CompleteSecurityScanner:
 
         # CVE-2020-23064: DOM manipulation XSS via .append() with raw img
         # Tests .append() without prior sanitization — sibling of CVE-2020-11023
-        if any(c["cve"] == "CVE-2020-23064" for c in cve_vulnerabilities):
+        if any(c.cve == "CVE-2020-23064" for c in cve_vulnerabilities):
             m = f"cve23064_{int(time.time())}"
             js_23064 = f"""
             try {{
@@ -642,16 +650,15 @@ class CompleteSecurityScanner:
                         f"{Colors.FAIL}[!] CVE-2020-23064 VERIFIED: DOM manipulation XSS executed via .append()!{Colors.ENDC}"
                     )
                     findings.append(
-                        {
-                            "type": "jquery_xss_verified",
-                            "name": "jQuery DOM Manipulation XSS (VERIFIED)",
-                            "severity": "HIGH",
-                            "cve": "CVE-2020-23064",
-                            "jquery_version": jquery_version,
-                            "verified": True,
-                            "description": "jQuery .append() does not sanitize <img/><img onerror> combination",
-                            "poc": "$('<div>').appendTo('body').append('<img/><img src=x onerror=alert(1)>')",
-                        }
+                        Finding(
+                            type=VulnerabilityType.XSS,
+                            name="jQuery DOM Manipulation XSS (VERIFIED)",
+                            severity=Severity.HIGH,
+                            description=f"jQuery {jquery_version} is vulnerable to DOM Manipulation XSS (CVE-2020-23064).",
+                            cve="CVE-2020-23064",
+                            verified=True,
+                            payload="$('<div>').appendTo('body').append('<img/><img src=x onerror=alert(1)>')",
+                        )
                     )
                 else:
                     print(
@@ -663,7 +670,7 @@ class CompleteSecurityScanner:
         # CVE-2015-9251: Check if AJAX text/javascript auto-eval converter is active
         # This checks for the presence of the vulnerable converter in jQuery's settings.
         # Full exploitation requires cross-domain AJAX, but we can verify the converter exists.
-        if any(c["cve"] == "CVE-2015-9251" for c in cve_vulnerabilities):
+        if any(c.cve == "CVE-2015-9251" for c in cve_vulnerabilities):
             js_9251 = """
             try {
                 var conv = jQuery && jQuery.ajaxSettings && jQuery.ajaxSettings.converters;
@@ -676,17 +683,15 @@ class CompleteSecurityScanner:
                         f"{Colors.FAIL}[!] CVE-2015-9251 VERIFIED: text/javascript auto-eval converter ACTIVE in jQuery!{Colors.ENDC}"
                     )
                     findings.append(
-                        {
-                            "type": "jquery_xss_verified",
-                            "name": "jQuery AJAX auto-eval converter Active (CVE-2015-9251)",
-                            "severity": "MEDIUM",
-                            "cve": "CVE-2015-9251",
-                            "jquery_version": jquery_version,
-                            "verified": True,
-                            "description": 'jQuery.ajaxSettings.converters["text script"] = globalEval is active. '
-                            "Cross-domain AJAX responses with Content-Type: text/javascript will be auto-eval'd.",
-                            "poc": 'typeof jQuery.ajaxSettings.converters["text script"] === "function"  // returns true',
-                        }
+                        Finding(
+                            type=VulnerabilityType.XSS,
+                            name="jQuery AJAX auto-eval converter Active (CVE-2015-9251)",
+                            severity=Severity.MEDIUM,
+                            description=f"jQuery {jquery_version} is vulnerable to Cross-domain AJAX auto-eval XSS (CVE-2015-9251).",
+                            cve="CVE-2015-9251",
+                            verified=True,
+                            payload='typeof jQuery.ajaxSettings.converters["text script"] === "function"  // returns true',
+                        )
                     )
                 else:
                     print(
@@ -717,11 +722,11 @@ class CompleteSecurityScanner:
         return findings
 
     @rate_limited()
-    def test_xss_with_details(self, base_url) -> List[Dict[str, Any]]:
+    def test_xss_with_details(self, base_url) -> List[Finding]:
         """Test XSS vulnerabilities with execution-based verification (NOT text search)"""
         print(f"{Colors.CYAN}[→] Testing XSS payloads...{Colors.ENDC}")
 
-        findings: List[Dict[str, Any]] = []
+        findings: List[Finding] = []
 
         # Discover parameters dynamically from HTML forms
         print(f"{Colors.BLUE}[*] Discovering parameters from forms...{Colors.ENDC}")
@@ -735,7 +740,7 @@ class CompleteSecurityScanner:
             print(
                 f"{Colors.YELLOW}[!] No parameters found, using defaults{Colors.ENDC}"
             )
-            test_params = ["q", "search", "query", "id", "name"]
+            test_params = DEFAULT_XSS_PARAMS
 
         # Limit to first 5 parameters to avoid timeout
         test_params = test_params[:5]
@@ -747,7 +752,7 @@ class CompleteSecurityScanner:
             else test_params
         )
         for param in iterator:
-            for payload in CONFIG["xss_payloads"][:2]:
+            for payload in XSS_PAYLOADS[:2]:
                 # Create a unique marker that will be set if XSS is executed
                 marker = f"xss_success_{int(time.time() * 1000)}"
 
@@ -815,13 +820,14 @@ return window['{marker}'];
                                     f"{Colors.FAIL}[!] XSS FOUND: {param}={payload[:40]}{Colors.ENDC}"
                                 )
                                 findings.append(
-                                    {
-                                        "type": "xss",
-                                        "param": param,
-                                        "payload": payload,
-                                        "severity": "HIGH",
-                                        "url": test_url,
-                                    }
+                                    Finding(
+                                        type=VulnerabilityType.XSS,
+                                        name=f"Reflected XSS in '{param}' parameter",
+                                        severity=Severity.HIGH,
+                                        description=f"The parameter '{param}' is vulnerable to reflected XSS.",
+                                        payload=payload,
+                                        url=test_url,
+                                    )
                                 )
                                 break  # Found, no need to retry or continue with this payload? Actually continue to find more?
                                 # If found, we break the retry loop, but continue the loop over payloads?
@@ -836,13 +842,14 @@ return window['{marker}'];
                                 f"{Colors.FAIL}[!] XSS FOUND (Alert Triggered): {param}={payload[:40]}{Colors.ENDC}"
                             )
                             findings.append(
-                                {
-                                    "type": "xss",
-                                    "param": param,
-                                    "payload": payload,
-                                    "severity": "HIGH",
-                                    "url": test_url,
-                                }
+                                Finding(
+                                    type=VulnerabilityType.XSS,
+                                    name=f"Reflected XSS in '{param}' parameter (Alert Triggered)",
+                                    severity=Severity.HIGH,
+                                    description=f"The parameter '{param}' is vulnerable to reflected XSS.",
+                                    payload=payload,
+                                    url=test_url,
+                                )
                             )
                             # Handle alert cleanup via Selenium if possible, or just break
                             try:
