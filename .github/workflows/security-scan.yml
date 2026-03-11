@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -r requirements-dev.txt 2>/dev/null || true
+          pip install -r requirements-dev.txt
       
       - name: Scan for known vulnerabilities (safety)
         continue-on-error: true
@@ -257,7 +257,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
+        uses: dependency-check/Dependency-Check_Action@v5
         with:
           project: 'PPMAP'
           path: '.'
@@ -284,14 +284,14 @@ jobs:
           fetch-depth: 0
       
       - name: SonarQube scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v2
         with:
           args: >
             -Dsonar.projectKey=ppmap-security
             -Dsonar.organization=ppmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN || '' }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # ========================================================================
   # FINAL STATUS JOB

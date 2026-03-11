@@ -125,6 +125,12 @@ DANGEROUS_SINKS = {
         "cve": "CVE-2018-3728",
         "recommendation": "Update Hoek to >= 5.0.3",
     },
+    # Dynamic require
+    "require": {
+        "pattern": r"require\s*\((?!\s*['\"][\w\-/.]+['\"])\s*[^)]+\)",
+        "severity": "LOW",
+        "recommendation": "Avoid dynamic require, use static imports if possible",
+    },
 }
 
 # Sources that could introduce tainted data
