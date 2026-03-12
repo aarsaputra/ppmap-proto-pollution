@@ -13,7 +13,7 @@ from datetime import datetime
 from ppmap.utils import Colors, normalize_url, print_section
 from ppmap.utils.rate_limit import rate_limited
 from ppmap.utils.retry import retry_request
-from ppmap.models.findings import Finding, VulnerabilityType
+from ppmap.models.findings import Finding, VulnerabilityType, Severity
 from ppmap.models.reports import ScanMetrics, ScanReport
 from ppmap.config.settings import CONFIG, STEALTH_HEADERS
 from ppmap.engine import EndpointDiscovery, ParameterDiscovery
