@@ -148,7 +148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lab now at: 20 endpoints, 8 tiers, 32 detection methods
 
 ### Changed
-- Upgraded to v4.1.0 across codebase
+- Upgraded to v4.2.0 across codebase
 - CI pipeline tests now 100% passing
 
 ---
