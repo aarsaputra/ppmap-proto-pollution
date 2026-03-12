@@ -64,9 +64,9 @@
                 </div>
             </section>
 
-            <!-- Path A: Professional Linux Setup -->
+            <!-- Path A: Linux Setup -->
             <section id="linux" style="margin-top: 4rem;">
-                <h2>Linux (Professional Setup)</h2>
+                <h2>Linux (Kali / Ubuntu)</h2>
                 <p>We recommend using <code>venv</code> to keep your system clean.</p>
                 <div class="terminal">
                     <div class="terminal-body">
@@ -85,6 +85,35 @@
                                 Requirements</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install
                                 --upgrade pip && pip install -r requirements.txt</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Path B: Windows Setup -->
+            <section id="windows" style="margin-top: 4rem;">
+                <h2>Windows (PowerShell / WSL2)</h2>
+                <p>We highly recommend using <strong>WSL2</strong> for the best experience, but native PowerShell is
+                    also supported.</p>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option A: PowerShell (Native)</h3>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">git clone
+                                https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">cd
+                                ppmap-proto-pollution</span></div>
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">pip install -r
+                                requirements.txt</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option B: WSL2 (Recommended)</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Follow the Linux
+                    instructions inside your WSL terminal.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
+                                && sudo apt install git python3-venv chromium-browser -y</span></div>
                     </div>
                 </div>
             </section>
