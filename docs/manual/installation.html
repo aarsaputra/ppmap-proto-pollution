@@ -48,64 +48,106 @@
     <main class="container" style="padding-top: 8rem;">
         <article class="content">
             <h1>Installation Guide</h1>
-            <p class="lead">PPMAP requires Python 3.8+ and a Chromium-based browser for full automation.</p>
+            <p class="lead">PPMAP is built for portability and research. We recommend using a virtual environment or
+                Docker for the best experience.</p>
 
+            <!-- Requirements Section -->
             <section id="requirements" style="margin-bottom: 3rem;">
                 <div class="feature-card" style="background: rgba(0, 255, 136, 0.05); border-color: var(--primary);">
                     <h3>📋 Standard Requirements</h3>
                     <ul style="list-style: none; margin-top: 1rem; color: var(--text-main);">
                         <li>✅ <strong>Python:</strong> v3.8 or higher (v3.11+ recommended)</li>
-                        <li>✅ <strong>Browser:</strong> Google Chrome, Chromium, or Brave</li>
-                        <li>✅ <strong>RAM:</strong> 2GB minimum (4GB recommended for heavy async scans)</li>
-                        <li>✅ <strong>OS:</strong> Linux, macOS, or Windows (via WSL2 or PowerShell)</li>
+                        <li>✅ <strong>Browser:</strong> Chrome, Chromium, or Brave installed</li>
+                        <li>✅ <strong>Drivers:</strong> Handled automatically by <code>webdriver-manager</code></li>
+                        <li>✅ <strong>OS:</strong> Linux (Kali/Ubuntu), macOS, or Windows (WSL2)</li>
                     </ul>
                 </div>
             </section>
 
-            <section id="linux">
-                <h2>Linux (Kali / Ubuntu)</h2>
+            <!-- Path A: Professional Linux Setup -->
+            <section id="linux" style="margin-top: 4rem;">
+                <h2>Linux (Professional Setup)</h2>
+                <p>We recommend using <code>venv</code> to keep your system clean.</p>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt"># 1. Update system</span></div>
+                        <div class="terminal-line"><span class="prompt"># 1. Install dependencies</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
-                                && sudo apt install git python3-pip chrome-driver -y</span></div>
-                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Clone and
-                                install</span></div>
+                                && sudo apt install git python3-venv chromium-browser -y</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Clone and Setup
+                                Environment</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
                                 https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
-                                ppmap-proto-pollution</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install -r
-                                requirements.txt</span></div>
+                                ppmap-proto-pollution && python3 -m venv venv</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">source
+                                venv/bin/activate</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 3. Install
+                                Requirements</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install
+                                --upgrade pip && pip install -r requirements.txt</span></div>
                     </div>
                 </div>
             </section>
 
-            <section id="windows" style="margin-top: 4rem;">
-                <h2>Windows (PowerShell / WSL2)</h2>
-                <p>We highly recommend using **WSL2** for the best experience, but native PowerShell is also supported.
-                </p>
-
-                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option A: PowerShell (Native)</h3>
+            <!-- Path B: macOS Setup -->
+            <section id="macos" style="margin-top: 4rem;">
+                <h2>macOS (Homebrew)</h2>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">git clone
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">brew install
+                                python chromium</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
                                 https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
-                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">cd
-                                ppmap-proto-pollution</span></div>
-                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">pip install -r
-                                requirements.txt</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
+                                ppmap-proto-pollution && python3 -m venv venv</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">source
+                                venv/bin/activate && pip install -r requirements.txt</span></div>
                     </div>
                 </div>
+            </section>
 
-                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option B: WSL2 (Recommended)</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Follow the Linux
-                    instructions inside your WSL terminal.</p>
+            <!-- Path C: Docker Deployment -->
+            <section id="docker" style="margin-top: 4rem;">
+                <h2>Docker (Sandboxed)</h2>
+                <p>Perfect for one-off scans or running in isolated environments.</p>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
-                                && sudo apt install python3-pip chromium-browser -y</span></div>
+                        <div class="terminal-line"><span class="prompt"># Build the image</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">docker build -t
+                                ppmap .</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># Run a scan</span>
+                        </div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">docker run --rm
+                                ppmap --scan http://target.com</span></div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Verification Section -->
+            <section id="verify"
+                style="margin-top: 4rem; padding: 2rem; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border);">
+                <h2 style="margin-bottom: 1rem;">✅ Verify Installation</h2>
+                <div class="terminal" style="margin-top: 0;">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --help</span></div>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">If you see the help menu with
+                    all 32 scanning options, you are ready to go!</p>
+            </section>
+
+            <!-- Troubleshooting -->
+            <section id="troubleshooting" style="margin-top: 4rem;">
+                <h2 style="color: #ffbd2e;">⚠️ Troubleshooting</h2>
+                <div style="margin-top: 1.5rem;">
+                    <h4 style="color: #fff;">1. Chrome/Chromium not found</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Ensure a browser is
+                        installed and accessible in your PATH. On Linux/WSL, install <code>chromium-browser</code>.</p>
+
+                    <h4 style="color: #fff;">2. SSL: CERTIFICATE_VERIFY_FAILED</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Run with <code>--no-verify-ssl</code> if you
+                        are testing targets with self-signed certificates.</p>
                 </div>
             </section>
         </article>
