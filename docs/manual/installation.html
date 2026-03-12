@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Guide | PPMAP Documentation</title>
+    <meta name="description"
+        content="Step-by-step installation guide for PPMAP. Setup instructions for Kali Linux, Ubuntu, macOS, and Windows (PowerShell/WSL2).">
+    <meta property="og:title" content="PPMAP Installation | Enterprise Setup Guide">
+    <meta property="og:description"
+        content="Professional setup guide for the PPMAP Prototype Pollution scanner. Follow our instructions for cross-platform deployment.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://aarsaputra.github.io/ppmap-proto-pollution/manual/installation.html">
+    <link rel="canonical" href="https://aarsaputra.github.io/ppmap-proto-pollution/manual/installation.html">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="docs-page">
+    <div class="blob-bg"></div>
+    <nav>
+        <div class="container">
+            <a href="../" class="logo-area">
+                <img src="../assets/logo.png" alt="PPMAP Logo" class="logo-icon">
+                PPMAP <span
+                    style="color: var(--primary); font-size: 0.8rem; vertical-align: middle; margin-left: 5px; opacity: 0.8;">DOCS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html#features">Features</a></li>
+                <li><a href="installation.html" class="active">Installation</a></li>
+                <li><a href="usage.html">Usage</a></li>
+                <li><a href="payloads.html">Payloads</a></li>
+                <li><a href="../demo/index.html">View Demo Report</a></li>
+            </ul>
+            <button class="burger" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 8rem;">
+        <article class="content">
+            <h1>Installation Guide</h1>
+            <p class="lead">PPMAP requires Python 3.8+ and a Chromium-based browser for full automation.</p>
+
+            <section id="requirements" style="margin-bottom: 3rem;">
+                <div class="feature-card" style="background: rgba(0, 255, 136, 0.05); border-color: var(--primary);">
+                    <h3>📋 Standard Requirements</h3>
+                    <ul style="list-style: none; margin-top: 1rem; color: var(--text-main);">
+                        <li>✅ <strong>Python:</strong> v3.8 or higher (v3.11+ recommended)</li>
+                        <li>✅ <strong>Browser:</strong> Google Chrome, Chromium, or Brave</li>
+                        <li>✅ <strong>RAM:</strong> 2GB minimum (4GB recommended for heavy async scans)</li>
+                        <li>✅ <strong>OS:</strong> Linux, macOS, or Windows (via WSL2 or PowerShell)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="linux">
+                <h2>Linux (Kali / Ubuntu)</h2>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt"># 1. Update system</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
+                                && sudo apt install git python3-pip chrome-driver -y</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Clone and
+                                install</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
+                                https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
+                                ppmap-proto-pollution</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install -r
+                                requirements.txt</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="windows" style="margin-top: 4rem;">
+                <h2>Windows (PowerShell / WSL2)</h2>
+                <p>We highly recommend using **WSL2** for the best experience, but native PowerShell is also supported.
+                </p>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option A: PowerShell (Native)</h3>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">git clone
+                                https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">cd
+                                ppmap-proto-pollution</span></div>
+                        <div class="terminal-line"><span class="prompt">PS></span> <span class="command">pip install -r
+                                requirements.txt</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option B: WSL2 (Recommended)</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Follow the Linux
+                    instructions inside your WSL terminal.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
+                                && sudo apt install python3-pip chromium-browser -y</span></div>
+                    </div>
+                </div>
+            </section>
+        </article>
+    </main>
+
+    <footer style="padding: 4rem 0; text-align: center; border-top: 1px solid var(--border);">
+        <p>&copy; 2026 PPMAP Project. Maintained by Aar Saputra.</p>
+    </footer>
+
+    <script src="../js/main.js"></script>
+</body>
+
+</html>
