@@ -1,0 +1,20 @@
+# PPMAP v4.1.0 - Optional Heavy Reporting Dependencies
+# Install: pip install -r requirements-extra.txt
+#
+# These are large packages (100MB+) used for advanced report
+# generation (PDF, DOCX, Jupyter). Not required for scanning.
+
+-r requirements.txt
+
+# PDF Report Generation
+reportlab>=4.0.0
+
+# DOCX Report Generation
+python-docx>=0.8.11
+
+# Jupyter Notebook Reports
+nbformat>=5.9.0
+jupyter>=1.0.0
+
+# Monitoring (optional)
+prometheus-client>=0.19.0
