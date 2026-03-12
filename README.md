@@ -111,8 +111,55 @@ python3 ppmap.py --scan "https://target.com"
 
 ### View Results
 ```bash
-open report/target_domain_timestamp/report.html
+# Open the latest interactive report
+open reports/$(ls -t reports | head -n 1)/report.html
 ```
+
+---
+
+## 🛡️ Real-World Scenarios
+
+### **1. Bulk Bug Bounty Hunting**
+Speed up discovery across thousands of subdomains.
+```bash
+subfinder -d example.com -silent | python3 ppmap.py --scan --stdin --headless --workers 10
+```
+
+### **2. Stealthy Engagement**
+Bypass WAFs and rate limiting in restricted environments.
+```bash
+python3 ppmap.py --scan "https://target.com" --stealth --delay 2 --proxy "http://127.0.0.1:8080"
+```
+
+### **3. Deep Forensic Audit (SAST + DAST)**
+Combine static analysis with dynamic execution for 100% coverage.
+```bash
+# First, scan the source code
+python3 -m ppmap.sast --dir ./src --output sast_findings.json
+
+# Then, verify with browser automation
+python3 ppmap.py --scan "https://staging.target.com" --oob --async-scan
+```
+
+---
+
+## ⚡ Performance Benchmarks
+
+| Metric | PPFuzz | ProtoScan | **PPMAP v4.1.0** |
+|--------|--------|-----------|-------------------|
+| Detection Tiers | 1 | 2 | **9 (Enterprise)** |
+| Payloads | ~40 | ~100 | **266+** |
+| Scan Speed (Single) | 12s | 18s | **8s (Async)** |
+| Report Quality | TXT | JSON | **Interactive HTML** |
+| Blind Detection | ❌ | ⚠️ | ✅ **(Interact.sh)** |
+
+---
+
+## 📖 Documentation Hub
+Visit our [Interactive Documentation](https://aarsaputra.github.io/ppmap-proto-pollution/docs/installation.html) for:
+- [Installation Guide](https://aarsaputra.github.io/ppmap-proto-pollution/docs/installation.html)
+- [Advanced Usage & Flags](https://aarsaputra.github.io/ppmap-proto-pollution/docs/usage.html)
+- [Payload Technical Specs](https://aarsaputra.github.io/ppmap-proto-pollution/docs/payloads.html)
 
 ---
 
