@@ -20,6 +20,7 @@ pyyaml>=6.0.1
 # Data Processing & Type Hints
 typing-extensions>=4.8.0
 dataclasses-json>=0.6.1
+psutil>=5.9.0
 
 # Progress & UI
 tqdm>=4.66.0
