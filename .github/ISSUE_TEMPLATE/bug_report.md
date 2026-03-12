@@ -24,7 +24,7 @@ If applicable, add screenshots or console output/logs to help explain your probl
 **Environment (please complete the following information):**
  - OS: [e.g. Kali Linux, Ubuntu, macOS]
  - Python Version: [e.g. 3.10]
- - PPMAP Version: [e.g. v4.1.0]
+ - PPMAP Version: [e.g. v4.2.0]
 
 **Additional context**
 Add any other context about the problem here (e.g., specific target configurations or WAF presence).
