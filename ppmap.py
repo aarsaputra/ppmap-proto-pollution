@@ -8,7 +8,7 @@ r"""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.1.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.2.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -113,7 +113,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.1.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.2.0 Enterprise (Scanner | Browser | 0-Day | OOB)
 """
         + Colors.ENDC
         + f"""
@@ -243,7 +243,7 @@ def main():
     logger.info("PPMAP started")
 
     parser = argparse.ArgumentParser(
-        description="PPMAP v4.1.0 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.2.0 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
@@ -438,7 +438,7 @@ ADVANCED OPTIONS:
         default=0,
         help="Verbose output (-v, -vv, -vvv)",
     )
-    parser.add_argument("--version", action="version", version="PPMAP v4.1.0")
+    parser.add_argument("--version", action="version", version="PPMAP v4.2.0")
 
     # Argument completion
     try:
@@ -708,46 +708,50 @@ ADVANCED OPTIONS:
             from ppmap.engine import EndpointDiscovery
             
             all_findings = []
-            for target in target_iterator:
-                try:
-                    logger.info(f"Scanning base target: {target}")
-                    
-                    # Phase 8: Advanced Endpoint Discovery (JS & Regex integration)
-                    targets_to_scan = [target]
+            try:
+                for target in target_iterator:
                     try:
-                        discovery = EndpointDiscovery(session=scanner.session)
-                        # We use depth 1 so we don't accidentally crawl the internet.
-                        discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=30)
+                        logger.info(f"Scanning base target: {target}")
                         
-                        from ppmap.utils import is_static_file
-                        
-                        for ep in discovered_eps:
-                            if ep not in targets_to_scan:
-                                # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
-                                if is_static_file(ep):
-                                    logger.debug(f"Skipping static asset: {ep}")
-                                    continue
-                                targets_to_scan.append(ep)
-                                
-                        if len(targets_to_scan) > 1:
-                            print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
-                    except Exception as dis_err:
-                        logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
+                        # Phase 8: Advanced Endpoint Discovery (JS & Regex integration)
+                        targets_to_scan = [target]
+                        try:
+                            discovery = EndpointDiscovery(session=scanner.session)
+                            # We use depth 1 so we don't accidentally crawl the internet.
+                            discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=30)
+                            
+                            from ppmap.utils import is_static_file
+                            
+                            for ep in discovered_eps:
+                                if ep not in targets_to_scan:
+                                    # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
+                                    if is_static_file(ep):
+                                        logger.debug(f"Skipping static asset: {ep}")
+                                        continue
+                                    targets_to_scan.append(ep)
+                                    
+                            if len(targets_to_scan) > 1:
+                                print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
+                        except Exception as dis_err:
+                            logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
 
-                    for sub_target in targets_to_scan:
-                        logger.info(f" -> Testing endpoint: {sub_target}")
-                        if len(targets_to_scan) > 1:
-                            print(f"{Colors.BLUE}[→] Scanning Endpoint: {sub_target}{Colors.ENDC}")
-                        
-                        # OPTIMIZATION: Disable recursive discovery for sub-targets (prevent scan explosion)
-                        is_base = (sub_target == target)
-                        findings = scanner.scan_target(sub_target, run_discovery=is_base)
-                        
-                        if findings:
-                            all_findings.extend(findings)
-                except Exception as e:
-                    logger.error(f"Error scanning {target}: {e}", exc_info=True)
-                    continue
+                        for sub_target in targets_to_scan:
+                            logger.info(f" -> Testing endpoint: {sub_target}")
+                            if len(targets_to_scan) > 1:
+                                print(f"{Colors.BLUE}[→] Scanning Endpoint: {sub_target}{Colors.ENDC}")
+                            
+                            # OPTIMIZATION: Disable recursive discovery for sub-targets (prevent scan explosion)
+                            is_base = (sub_target == target)
+                            findings = scanner.scan_target(sub_target, run_discovery=is_base)
+                            
+                            if findings:
+                                all_findings.extend(findings)
+                    except Exception as e:
+                        logger.error(f"Error scanning {target}: {e}", exc_info=True)
+                        continue
+            except KeyboardInterrupt:
+                print(f"\n{Colors.WARNING}[!] Scan interrupted by user. Generating partial report...{Colors.ENDC}")
+                logger.info("Scan interrupted by user. Generating partial report.")
 
             # Generate reports for traditional scan (always save, even with 0 findings)
             report_gen = EnhancedReportGenerator(args.output)
