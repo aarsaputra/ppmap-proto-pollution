@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Guide | PPMAP Documentation</title>
+    <meta name="description"
+        content="Complete command-line interface guide for PPMAP. Master advanced flags, proxy settings, and scanning modes.">
+    <meta property="og:title" content="PPMAP Usage Guide & CLI Commands">
+    <meta property="og:description" content="Master the PPMAP scanner with our advanced CLI manual.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://aarsaputra.github.io/ppmap-proto-pollution/manual/usage.html">
+    <link rel="canonical" href="https://aarsaputra.github.io/ppmap-proto-pollution/manual/usage.html">
+    <meta name="twitter:card" content="summary">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="docs-page">
+    <div class="blob-bg"></div>
+    <nav>
+        <div class="container">
+            <a href="../" class="logo-area">
+                <img src="../assets/logo.png" alt="PPMAP Logo" class="logo-icon">
+                PPMAP <span
+                    style="color: var(--primary); font-size: 0.8rem; vertical-align: middle; margin-left: 5px; opacity: 0.8;">DOCS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html#features">Features</a></li>
+                <li><a href="installation.html">Installation</a></li>
+                <li><a href="usage.html" class="active">Usage</a></li>
+                <li><a href="payloads.html">Payloads</a></li>
+                <li><a href="../demo/index.html">View Demo Report</a></li>
+            </ul>
+            <button class="burger" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 8rem;">
+        <article class="content">
+            <h1>Usage & Commands</h1>
+            <p class="lead">Master the PPMAP CLI with advanced scanning techniques.</p>
+
+            <section id="basics">
+                <h2>Basic Scanning</h2>
+                <p>Run a full scan with all 9 detection tiers against a single target.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --scan "https://example.com"</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="advanced" style="margin-top: 4rem;">
+                <h2>Advanced Flags</h2>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 2rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                            <th style="padding: 1rem;">Flag</th>
+                            <th style="padding: 1rem;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--poc URL</code></td>
+                            <td>Run only jQuery-specific Quick PoC tests.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--oob</code></td>
+                            <td>Enable Out-of-Band (OOB) detection for blind vulnerabilities.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--stealth</code></td>
+                            <td>Enable anti-bot/WAF evasion measures (jitter, custom headers).</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--workers N</code></td>
+                            <td>Set number of concurrent scanner threads (default: 3).</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--discovery</code></td>
+                            <td>Enable deep endpoint discovery via JS regex matching.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--format FMT</code></td>
+                            <td>Output format: json, html, markdown, csv.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="best-practices"
+                style="margin-top: 4rem; padding: 2rem; background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius);">
+                <h2 style="color: var(--primary);">💡 Security Best Practices</h2>
+                <ul style="margin-top: 1rem; color: var(--text-muted); line-height: 1.8;">
+                    <li>🎯 <strong>Targeting:</strong> Always use <code>--poc</code> first to check for basic jQuery
+                        vulnerabilities before running a deep <code>--scan</code>.</li>
+                    <li>🕵️ <strong>Stealth:</strong> When scanning via VPN or Proxy, use
+                        <code>--stealth --delay 1</code> to avoid rate-limiting.
+                    </li>
+                    <li>📊 <strong>Reporting:</strong> Use <code>--format json,html</code> to get both machine-readable
+                        and human-friendly results.</li>
+                    <li>🚀 <strong>Performance:</strong> PPMAP v4.1.0 automatically skip static files. For large sites,
+                        use <code>--workers 5</code>.</li>
+                </ul>
+            </section>
+        </article>
+        <footer style="padding: 4rem 0; text-align: center; border-top: 1px solid var(--border);">
+            <p>&copy; 2026 PPMAP Project. Maintained by Aar Saputra.</p>
+        </footer>
+
+        <script src="../js/main.js"></script>
+</body>
+
+</html>
