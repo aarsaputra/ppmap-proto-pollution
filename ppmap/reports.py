@@ -373,10 +373,8 @@ class EnhancedReportGenerator:
             lines.append(f"| Field | Value |")
             lines.append(f"|-------|-------|")
             lines.append(f"| **Target** | `{target}` |")
-            lines.append(
-                f'| **Date** | {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} |'
-            )
-            lines.append(f"| **Scanner** | PPMAP v4.0 Enterprise |")
+            lines.append(f"| **Date** | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} |")
+            lines.append(f"| **Scanner** | PPMAP v4.2.0 Enterprise |")
             lines.append(f"| **Total Findings** | {len(findings)} |")
             lines.append(f"")
 
@@ -786,6 +784,16 @@ class EnhancedReportGenerator:
 
         original_output_dir = self.output_dir
         self.output_dir = target_dir
+
+        # Convert Finding objects to dictionaries for legacy support in templates
+        from ppmap.models.findings import Finding
+        processed_findings = []
+        for f in findings:
+            if isinstance(f, Finding):
+                processed_findings.append(f.to_dict())
+            else:
+                processed_findings.append(f)
+        findings = processed_findings
 
         if "json" in formats:
             try:
