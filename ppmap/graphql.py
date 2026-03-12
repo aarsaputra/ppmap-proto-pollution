@@ -169,7 +169,7 @@ class GraphQLScanner:
                 data = resp.json()
                 if "data" in data:
                     return base_url
-        except:
+        except Exception:
             pass
 
         return None
@@ -289,7 +289,7 @@ class GraphQLScanner:
         """Analyze response for PP indicators."""
         try:
             data = response.json()
-        except:
+        except Exception:
             return None
 
         # Check for pollution indicators in response

@@ -363,7 +363,7 @@ class PrototypePollutionVerifier:
                     if driver.execute_script(script):
                         results["methods"].append(method)
                         verified_count += 1
-                except:
+                except Exception:
                     pass
 
             if verified_count >= threshold:
@@ -371,7 +371,7 @@ class PrototypePollutionVerifier:
                 results["confidence"] = (
                     verified_count / len(verification_scripts)
                 ) * 100
-        except:
+        except Exception:
             pass
 
         return results
@@ -780,7 +780,7 @@ class CompleteSecurityScanner:
                         # But for this simple flow, we can poll after a batch or immediately?
                         # Polling too fast might miss it.
                         pass
-                    except:
+                    except Exception:
                         pass
 
                 # Check for interactions (simple check after batch)

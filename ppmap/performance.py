@@ -105,14 +105,14 @@ class DynamicWorkerScaler:
         if cpu_percent is None:
             try:
                 cpu_percent = psutil.cpu_percent(interval=0.1)
-            except:
+            except Exception:
                 cpu_percent = 50.0
         if memory_mb is None or memory_percent is None:
             try:
                 mem = psutil.virtual_memory()
                 memory_mb = mem.available / (1024 * 1024)
                 memory_percent = mem.percent
-            except:
+            except Exception:
                 memory_mb = 2048.0
                 memory_percent = 50.0
 
