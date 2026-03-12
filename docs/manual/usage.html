@@ -47,21 +47,66 @@
     <main class="container" style="padding-top: 8rem;">
         <article class="content">
             <h1>Usage & Commands</h1>
-            <p class="lead">Master the PPMAP CLI with advanced scanning techniques.</p>
+            <p class="lead">Master the PPMAP CLI with advanced scanning techniques, pipeline integrations, and
+                enterprise configurations.</p>
 
             <section id="basics">
                 <h2>Basic Scanning</h2>
-                <p>Run a full scan with all 9 detection tiers against a single target.</p>
+                <p>Run a full scan with all 32 detection methods against a single target.</p>
                 <div class="terminal">
                     <div class="terminal-body">
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
                                 --scan "https://example.com"</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># Quick PoC Mode
+                                (Testing jQuery only)</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --poc "https://example.com"</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="enterprise" style="margin-top: 4rem;">
+                <h2>Enterprise Scenarios</h2>
+                <p>PPMAP is built for scale. Here are real-world deployment examples.</p>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">1. CI/CD Pipeline Integration (Mass Scanning)</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Pipe targets directly from
+                    your recon tools (e.g., Subfinder + Httpx) into PPMAP using <code>--stdin</code>.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">subfinder -d
+                                example.com | httpx | python3 ppmap.py --scan --stdin</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># Alternatively, read
+                                from a file</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --scan -ls targets.txt --workers 10</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 2.5rem 0 1rem; font-size: 1.1rem;">2. Authenticated Scans (Burp Suite Integration)
+                </h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Export a raw HTTP request
+                    from Burp Suite ensuring all Cookies and Auth Headers are included.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --request req.txt --stealth</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 2.5rem 0 1rem; font-size: 1.1rem;">3. Out-of-Band (OOB) Blind Detection</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Automatically deploy and
+                    monitor an Interact.sh payload for asynchronous/blind vulnerabilities.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --scan "https://api.example.com" --oob</span></div>
                     </div>
                 </div>
             </section>
 
             <section id="advanced" style="margin-top: 4rem;">
-                <h2>Advanced Flags</h2>
+                <h2>Advanced Flags Reference</h2>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 2rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border); text-align: left;">
@@ -71,28 +116,28 @@
                     </thead>
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--poc URL</code></td>
-                            <td>Run only jQuery-specific Quick PoC tests.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--oob</code></td>
-                            <td>Enable Out-of-Band (OOB) detection for blind vulnerabilities.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 1rem;"><code>--stealth</code></td>
-                            <td>Enable anti-bot/WAF evasion measures (jitter, custom headers).</td>
+                            <td>Enable advanced WAF evasion, request jitter, and custom headers.</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--workers N</code></td>
-                            <td>Set number of concurrent scanner threads (default: 3).</td>
+                            <td style="padding: 1rem;"><code>--preset {quick,stealth,thorough}</code></td>
+                            <td>Instantly override config files with tuned scan presets.</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--discovery</code></td>
-                            <td>Enable deep endpoint discovery via JS regex matching.</td>
+                            <td style="padding: 1rem;"><code>--async-scan</code></td>
+                            <td>Enable the EXPERIMENTAL asynchronous engine for massive speedup.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--proxy URL</code></td>
+                            <td>Route traffic through a corporate proxy or local Burp instance.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 1rem;"><code>--diff FILE1 FILE2</code></td>
+                            <td>Compare two JSON reports to track regressions over time.</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 1rem;"><code>--format FMT</code></td>
-                            <td>Output format: json, html, markdown, csv.</td>
+                            <td>Output formats: <code>json, html, markdown, csv, pdf</code>.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -100,17 +145,14 @@
 
             <section id="best-practices"
                 style="margin-top: 4rem; padding: 2rem; background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius);">
-                <h2 style="color: var(--primary);">💡 Security Best Practices</h2>
+                <h2 style="color: var(--primary);">💡 Pro Tips</h2>
                 <ul style="margin-top: 1rem; color: var(--text-muted); line-height: 1.8;">
                     <li>🎯 <strong>Targeting:</strong> Always use <code>--poc</code> first to check for basic jQuery
                         vulnerabilities before running a deep <code>--scan</code>.</li>
-                    <li>🕵️ <strong>Stealth:</strong> When scanning via VPN or Proxy, use
-                        <code>--stealth --delay 1</code> to avoid rate-limiting.
-                    </li>
-                    <li>📊 <strong>Reporting:</strong> Use <code>--format json,html</code> to get both machine-readable
-                        and human-friendly results.</li>
-                    <li>🚀 <strong>Performance:</strong> PPMAP v4.1.0 automatically skip static files. For large sites,
-                        use <code>--workers 5</code>.</li>
+                    <li>🕵️ <strong>Stealth:</strong> When scanning strict WAFs, combine <code>--stealth</code> with
+                        <code>--delay 2</code> to lower noise.</li>
+                    <li>📊 <strong>Reporting:</strong> Use <code>--format json,html</code> and
+                        <code>--template modern</code> for executive-ready deliverables.</li>
                 </ul>
             </section>
         </article>
