@@ -4338,6 +4338,9 @@ return window['{marker}'];
 
             return True
         except Exception as e:
+            if getattr(self, 'stealth', False):
+                print(f"{Colors.WARNING}[!] Connection timeout/error. Target may be blocking non-browser clients (WAF). Proceeding in stealth mode via browser...{Colors.ENDC}")
+                return True
             print(f"{Colors.FAIL}[!] Target unreachable: {str(e)[:100]}{Colors.ENDC}")
             return False
 
