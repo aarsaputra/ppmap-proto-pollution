@@ -70,14 +70,12 @@ jobs:
       # STAGE 2: Static Application Security Testing (SAST)
       # ========================================================================
       - name: Bandit - Python Security Linter
-        continue-on-error: true
         run: |
           echo "🔍 Running Bandit security scan..."
           bandit -r ppmap/ -f json -o bandit-report.json || true
-          bandit -r ppmap/ -f txt || true
+          bandit -r ppmap/ -ll -f txt
 
       - name: Check for hardcoded secrets
-        continue-on-error: true
         run: |
           echo "🔍 Scanning for hardcoded secrets..."
           detect-secrets scan > .secrets.baseline && echo "Secrets scan complete"
@@ -86,11 +84,9 @@ jobs:
       # STAGE 3: Custom Security Tests
       # ========================================================================
       - name: Run PPMAP security test suite
-        # FIX: Non-blocking - test depends on local environment
-        continue-on-error: true
         run: |
           echo "🔍 Running PPMAP security test suite..."
-          pytest tests/test_security_fixes.py -v --tb=short --junit-xml=security-tests.xml || echo "Some tests skipped/failed (non-blocking)"
+          pytest tests/test_security_fixes.py -v --tb=short --junit-xml=security-tests.xml
 
       - name: Full test coverage analysis
         continue-on-error: true

@@ -854,7 +854,7 @@ return window['{marker}'];
                             # Handle alert cleanup via Selenium if possible, or just break
                             try:
                                 self.driver.switch_to.alert.accept()
-                            except:
+                            except Exception:
                                 pass
                             break
                         except Exception as exec_e:
@@ -871,7 +871,7 @@ return window['{marker}'];
                                         f"{Colors.WARNING}[⚠] Potential XSS: {param}={payload[:40]} (reflected in page){Colors.ENDC}"
                                     )
                                 break
-                            except:
+                            except Exception:
                                 pass
 
                             # If execute_script failed with navigation error, it bubbles up to outer except
@@ -1004,7 +1004,7 @@ return window['{marker}'];
                             )
                             try:
                                 self.driver.switch_to.alert.accept()
-                            except:
+                            except Exception:
                                 pass
                         except Exception as e:
                             logger.debug(f"Ignored error: {type(e).__name__} - {e}")
@@ -1206,7 +1206,7 @@ return window['{marker}'];
                                 ),
                             }
                         )
-                except:
+                except Exception:
                     pass
 
             # Test 3: Server-side PP via POST JSON
@@ -1239,7 +1239,7 @@ return window['{marker}'];
                             ),
                         }
                     )
-            except:
+            except Exception:
                 pass
 
         except Exception as e:
@@ -1396,7 +1396,7 @@ return window['{marker}'];
                                 "verified": False,
                             }
                         )
-                except:
+                except Exception:
                     pass
 
         if not findings:
@@ -1554,7 +1554,7 @@ return window['{marker}'];
                     js_resp = self.session.get(js_url, timeout=5, verify=False)
                     if js_resp.status_code == 200:
                         js_files.append(js_resp.text)
-                except:
+                except Exception:
                     pass
 
             gadget_info = self.detect_gadget_type(page_source, js_files)
@@ -1658,7 +1658,7 @@ return window['{marker}'];
                                     print(
                                         f"{Colors.BLUE}[→] Browser log: {log_entry.get('message')[:80]}{Colors.ENDC}"
                                     )
-                        except:
+                        except Exception:
                             pass
 
                         # Add finding if alert detected
@@ -1818,7 +1818,7 @@ return window['{marker}'];
                     try:
                         self.driver.get(target_url)
                         time.sleep(1)
-                    except:
+                    except Exception:
                         pass
 
                 except Exception as e:
@@ -1855,7 +1855,7 @@ return window['{marker}'];
                     f"{Colors.YELLOW}[!] Target reflects parameters. Skipping WAF Bypass check.{Colors.ENDC}"
                 )
                 return []
-        except:
+        except Exception:
             pass
         marker = f"bypass_{int(time.time())}"
 
@@ -1927,7 +1927,7 @@ return window['{marker}'];
                                     print(
                                         f"{Colors.WARNING}[!] WAF Bypass via JSON: {category}{Colors.ENDC}"
                                     )
-                        except:
+                        except Exception:
                             pass
                 else:
                     # Test URL payloads
@@ -1948,7 +1948,7 @@ return window['{marker}'];
                                     print(
                                         f"{Colors.WARNING}[!] WAF Bypass via URL: {category}{Colors.ENDC}"
                                     )
-                        except:
+                        except Exception:
                             pass
         except Exception as e:
             print(
@@ -2163,7 +2163,7 @@ return window['{marker}'];
                             f"{Colors.WARNING}[!] HIGH: Function.prototype chain pollution detected!{Colors.ENDC}"
                         )
                         break
-                except:
+                except Exception:
                     pass
 
             # Also test via URL parameters
@@ -2221,7 +2221,7 @@ return window['{marker}'];
                             f"{Colors.WARNING}[!] HIGH: URL-based Function.prototype pollution detected!{Colors.ENDC}"
                         )
                         break
-                except:
+                except Exception:
                     pass
 
         except Exception as e:
@@ -2375,7 +2375,7 @@ return window['{marker}'];
                                         f"{Colors.FAIL}[!] CRITICAL: React Flight Protocol vulnerable!{Colors.ENDC}"
                                     )
                                     return findings  # Return early if vulnerable
-                    except:
+                    except Exception:
                         pass
 
             print(
@@ -2465,7 +2465,7 @@ return window['{marker}'];
                                             "cve": "RESEARCH-2024-SVELTEKIT-RCE",
                                         }
                                     )
-                    except:
+                    except Exception:
                         pass
 
             if not findings:
@@ -2529,7 +2529,7 @@ return window['{marker}'];
                             f"{Colors.WARNING}[!] HIGH: UTF-7 charset override detected!{Colors.ENDC}"
                         )
                         break
-                except:
+                except Exception:
                     pass
 
             # Test ISO-2022 encoding
@@ -2564,7 +2564,7 @@ return window['{marker}'];
                             f"{Colors.WARNING}[!] MEDIUM: ISO-2022 charset bypass detected!{Colors.ENDC}"
                         )
                         break
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -2618,7 +2618,7 @@ return window['{marker}'];
                                 f"{Colors.FAIL}[!] HIGH: fetch() API header pollution detected!{Colors.ENDC}"
                             )
                             break
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -2672,7 +2672,7 @@ return window['{marker}'];
                                 f"{Colors.FAIL}[!] CRITICAL: Object.defineProperty() bypass detected!{Colors.ENDC}"
                             )
                             break
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -2774,7 +2774,7 @@ return window['{marker}'];
                                     f"{Colors.FAIL}[!] CRITICAL: Potential child_process RCE detected ({test['method']})!{Colors.ENDC}"
                                 )
                                 break
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -2811,7 +2811,7 @@ return window['{marker}'];
                     f"{Colors.YELLOW}[!] Target appears to reflect arbitrary parameters. Skipping Constructor PP to avoid False Positives.{Colors.ENDC}"
                 )
                 return []
-        except:
+        except Exception:
             pass
 
         try:
@@ -2928,7 +2928,7 @@ return window['{marker}'];
                                         f"{Colors.FAIL}[!] CRITICAL: Constructor-based pollution detected (Browser-Verified)!{Colors.ENDC}"
                                     )
                                 return findings  # Return early on first finding
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -2993,7 +2993,7 @@ return window['{marker}'];
                         # REMOVED: Naive keyword check.
                         # Real verification requires checking if the property was actually created despite filters.
                         pass
-                except:
+                except Exception:
                     pass
 
             if not findings:
@@ -4249,7 +4249,7 @@ return window['{marker}'];
 
                 if resp.status_code < 400 and len(resp.text) > 100:
                     tested += 1
-            except:
+            except Exception:
                 pass
 
         print(f"{Colors.GREEN}[✓] Tested {tested} endpoints{Colors.ENDC}")
@@ -4273,7 +4273,7 @@ return window['{marker}'];
                     logger.debug("Existing browser session stale, re-initializing")
                     try:
                         self.driver.quit()
-                    except:
+                    except Exception:
                         pass
                     self.driver = None
 
@@ -4298,7 +4298,7 @@ return window['{marker}'];
             match = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
             if match:
                 return match.group(1).strip()[:50]
-        except:
+        except Exception:
             pass
         return "Unknown"
 
@@ -4389,7 +4389,7 @@ return window['{marker}'];
                         timeout=self.timeout,
                         verify=self.session.verify,
                     )
-                except:
+                except Exception:
                     pass
 
             print(f"{Colors.BLUE}[*] Waiting for OOB interactions...{Colors.ENDC}")
