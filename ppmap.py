@@ -723,6 +723,11 @@ ADVANCED OPTIONS:
                             from ppmap.utils import is_static_file
                             
                             for ep in discovered_eps:
+                                # Strip URL fragments (#...) to avoid scanning the same page multiple times
+                                from urllib.parse import urldefrag
+                                ep_defrag, _ = urldefrag(ep)
+                                ep = ep_defrag if ep_defrag else ep
+                                
                                 if ep not in targets_to_scan:
                                     # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
                                     if is_static_file(ep):

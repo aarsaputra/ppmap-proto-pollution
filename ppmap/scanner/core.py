@@ -1641,29 +1641,30 @@ return window['{marker}'];
                             pass
 
                         # If no alert was triggered, check for DOM sinks. If no sink and no alert, skip.
+                        found_sinks = []
                         if not alerts_detected:
                             page_source = self.driver.page_source
                             sinks = ["innerHTML", "document.write", "eval(", "setTimeout(", "location.href"]
                             found_sinks = [sink for sink in sinks if sink in page_source]
                             if not found_sinks:
-                                continue # Skip finding if no execution and no known sink
-                                
-                        if alerts_detected or found_sinks:
-                            findings.append(
-                                Finding(
-                                    type=VulnerabilityType.DOM_XSS_PP,
-                                    name=f"DOM-based XSS via Prototype Pollution (data: URL)",
-                                    severity=Severity.CRITICAL,
-                                    description=f"DOM XSS was {'verified execution' if alerts_detected else 'potentially found via sinks (' + ','.join(found_sinks) + ')'}.",
-                                    payload=payload,
-                                    url=target_url,
-                                    verified=alerts_detected,
-                                    metadata={"alert_triggered": alerts_detected, "test_url": test_url, "key": key}
-                                )
+                                continue  # Skip finding if no execution and no known sink
+
+                        # Report finding: alert was triggered OR dangerous sinks were found
+                        findings.append(
+                            Finding(
+                                type=VulnerabilityType.DOM_XSS_PP,
+                                name=f"DOM-based XSS via Prototype Pollution (data: URL)",
+                                severity=Severity.CRITICAL,
+                                description=f"DOM XSS was {'verified execution' if alerts_detected else 'potentially found via sinks (' + ','.join(found_sinks) + ')'}.",
+                                payload=payload,
+                                url=target_url,
+                                verified=alerts_detected,
+                                metadata={"alert_triggered": alerts_detected, "test_url": test_url, "key": key}
                             )
-                            print(
-                                f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}"
-                            )
+                        )
+                        print(
+                            f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}"
+                        )
 
                     except Exception:
                         # Fallback: Check HTTP response for indicators
