@@ -63,7 +63,7 @@
 
 ---
 
-## �� PPMAP Roadmap (v4.2.0+ & Beyond) (DeepSeek & AI Enhanced)
+## �� PPMAP Roadmap (v4.2.1+ & Beyond) (DeepSeek & AI Enhanced)
 
 Based on recent comprehensive reviews and AI analysis, the roadmap follows a **Phased Approach** to ensure stability before expansion.
 
