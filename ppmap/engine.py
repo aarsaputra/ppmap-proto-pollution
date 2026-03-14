@@ -512,7 +512,15 @@ class EndpointDiscovery:
 
                     for link in soup.find_all("a", href=True):
                         href = link["href"]
-                        absolute_url = urljoin(current_url, href)
+                        # Strip fragments before joining
+                        clean_href = href.split('#')[0]
+                        if not clean_href:
+                            continue
+                        
+                        absolute_url = urljoin(current_url, clean_href)
+                        # Ensure any stray fragments are removed from absolute url as well
+                        absolute_url = urlparse(absolute_url)._replace(fragment="").geturl()
+
                         base_netloc = urlparse(base_url).netloc
                         current_netloc = urlparse(absolute_url).netloc
 
@@ -536,6 +544,7 @@ class EndpointDiscovery:
                         for pattern in regex_patterns:
                             for match in re.findall(pattern, content):
                                 abs_js_url = urljoin(current_url, match)
+                                abs_js_url = urlparse(abs_js_url)._replace(fragment="").geturl()
                                 if urlparse(abs_js_url).netloc == urlparse(base_url).netloc:
                                     discovered.add(abs_js_url)
                                     if current_depth < depth:
@@ -549,6 +558,7 @@ class EndpointDiscovery:
                                 for pattern in regex_patterns:
                                     for match in re.findall(pattern, content):
                                         abs_inline_url = urljoin(current_url, match)
+                                        abs_inline_url = urlparse(abs_inline_url)._replace(fragment="").geturl()
                                         if urlparse(abs_inline_url).netloc == urlparse(base_url).netloc:
                                             discovered.add(abs_inline_url)
                                             if current_depth < depth:
