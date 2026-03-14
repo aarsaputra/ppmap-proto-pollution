@@ -3418,7 +3418,10 @@ return window['{marker}'];
                 desc="Gadget Tests",
             ):
                 try:
-                    test_url = target_url + test["payload"]
+                    # Fix URL separator: use & if target already has ?
+                    payload_qs = test["payload"].lstrip("?")
+                    separator = "&" if "?" in target_url else "?"
+                    test_url = f"{target_url}{separator}{payload_qs}"
                     resp = self.session.get(test_url, timeout=5, verify=False)
 
                     # Check for reflection or execution indicators
@@ -3994,7 +3997,10 @@ return window['{marker}'];
 
             for test in progress_iter(elastic_payloads, desc="Elastic XSS"):
                 try:
-                    test_url = target_url + test["payload"]
+                    # Fix URL separator: use & if target already has ?
+                    payload_qs = test["payload"].lstrip("?")
+                    separator = "&" if "?" in target_url else "?"
+                    test_url = f"{target_url}{separator}{payload_qs}"
                     resp = self.session.get(test_url, timeout=5, verify=False)
 
                     test_marker = "PPMAP_ELASTIC_XSS"
