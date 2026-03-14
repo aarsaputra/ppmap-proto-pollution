@@ -374,7 +374,7 @@ class EnhancedReportGenerator:
             lines.append(f"|-------|-------|")
             lines.append(f"| **Target** | `{target}` |")
             lines.append(f"| **Date** | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} |")
-            lines.append(f"| **Scanner** | PPMAP v4.2.0 Enterprise |")
+            lines.append(f"| **Scanner** | PPMAP v4.2.1 Enterprise |")
             lines.append(f"| **Total Findings** | {len(findings)} |")
             lines.append(f"")
 

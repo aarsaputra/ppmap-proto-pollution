@@ -798,64 +798,40 @@ return window['{marker}'];
                         self.metrics.total_requests += 1
                         time.sleep(1 + attempt)  # Increase wait on retry
 
-                        # Execute JavaScript to verify XSS
+                        # Instead of just relying on JS injection via innerHTML containing payload,
+                        # properly check if the initial get() triggered an alert.
+                        from selenium.webdriver.support.ui import WebDriverWait
+                        from selenium.webdriver.support import expected_conditions as EC
                         try:
-                            # Escape payload for JavaScript (extract outside f-string)
-                            escaped_payload = payload.replace('"', '\\"')
-                            js_exploit = f"""
-                            try {{
-                                window.xss_test = false;
-                                var container = document.createElement('div');
-                                container.style.display = 'none';
-                                document.body.appendChild(container);
-                                container.innerHTML = "{escaped_payload}";
-                                var result = window.xss_test === true;
-                                container.remove();
-                                return result;
-                            }} catch(e) {{ return false; }}
-                            """
-
-                            if self.driver.execute_script(js_exploit):
-                                print(
-                                    f"{Colors.FAIL}[!] XSS FOUND: {param}={payload[:40]}{Colors.ENDC}"
-                                )
-                                findings.append(
-                                    Finding(
-                                        type=VulnerabilityType.XSS,
-                                        name=f"Reflected XSS in '{param}' parameter",
-                                        severity=Severity.HIGH,
-                                        description=f"The parameter '{param}' is vulnerable to reflected XSS.",
-                                        payload=payload,
-                                        url=test_url,
-                                    )
-                                )
-                                break  # Found, no need to retry or continue with this payload? Actually continue to find more?
-                                # If found, we break the retry loop, but continue the loop over payloads?
-                                # No, if found we can stop testing this param with this payload.
-
-                            # If we get here, execution successful but no XSS, or XSS not triggered.
-                            # Break retry loop as page loaded fine.
-                            break
-
-                        except UnexpectedAlertPresentException:
+                            WebDriverWait(self.driver, 1.5).until(EC.alert_is_present())
+                            alert_text = self.driver.switch_to.alert.text
+                            self.driver.switch_to.alert.accept()
+                            
                             print(
                                 f"{Colors.FAIL}[!] XSS FOUND (Alert Triggered): {param}={payload[:40]}{Colors.ENDC}"
                             )
                             findings.append(
                                 Finding(
                                     type=VulnerabilityType.XSS,
-                                    name=f"Reflected XSS in '{param}' parameter (Alert Triggered)",
+                                    name=f"Reflected XSS in '{param}' parameter",
                                     severity=Severity.HIGH,
-                                    description=f"The parameter '{param}' is vulnerable to reflected XSS.",
+                                    description=f"The parameter '{param}' is vulnerable to reflected XSS. Alert triggered successfully.",
                                     payload=payload,
                                     url=test_url,
+                                    verified=True,
+                                    metadata={"alert_triggered": True, "alert_text": alert_text}
                                 )
                             )
-                            # Handle alert cleanup via Selenium if possible, or just break
-                            try:
-                                self.driver.switch_to.alert.accept()
-                            except Exception:
-                                pass
+                            break
+                        except Exception:
+                            # No alert triggered directly. Check if it's reflected as text
+                            page_source = self.driver.page_source
+                            if payload in page_source:
+                                # It's only reflected as text. NOT executable XSS.
+                                print(f"{Colors.GREEN}[✓] Payload reflected as text, but no XSS execution: {param}{Colors.ENDC}")
+                                break
+                            
+                            # Break retry loop as page loaded fine and no alert was found.
                             break
                         except Exception as exec_e:
                             # Fallback: check if payload appears to be reflected in DOM
@@ -1179,7 +1155,8 @@ return window['{marker}'];
                 try:
                     # Test dengan marker yang unik
                     test_payload_str = json.dumps({"__proto__": {marker: "polluted"}})
-                    test_url = f"{base_url}?{param_name}={urllib.parse.quote(test_payload_str)}"
+                    separator = "&" if "?" in base_url else "?"
+                    test_url = f"{base_url}{separator}{param_name}={urllib.parse.quote(test_payload_str)}"
 
                     # Baca response
                     response = self.session.get(test_url, timeout=5, verify=False)
@@ -1376,7 +1353,8 @@ return window['{marker}'];
             for agent in random_agents:
                 try:
                     # Test sebagai URL-encoded query string
-                    test_url = f"{base_url}?{agent}"
+                    separator = "&" if "?" in base_url else "?"
+                    test_url = f"{base_url}{separator}{agent}"
                     response = self.session.get(test_url, timeout=5, verify=False)
 
                     if response.status_code < 400 and (
@@ -1600,12 +1578,13 @@ return window['{marker}'];
             for key, payload in dom_xss_payloads:
                 try:
                     # Create test URL - IMPORTANT: Don't use quote() for data: URLs
+                    separator = "&" if "?" in target_url else "?"
                     if payload.startswith("data:"):
                         # Keep data: URL as-is, only encode the key
-                        test_url = f"{target_url}?{key}={payload}"
+                        test_url = f"{target_url}{separator}{key}={payload}"
                     else:
                         test_url = (
-                            f"{target_url}?{key}={urllib.parse.quote(payload, safe='')}"
+                            f"{target_url}{separator}{key}={urllib.parse.quote(payload, safe='')}"
                         )
 
                     print(
@@ -1661,21 +1640,26 @@ return window['{marker}'];
                         except Exception:
                             pass
 
-                        # Add finding if alert detected
-                        if alerts_detected:
+                        # If no alert was triggered, check for DOM sinks. If no sink and no alert, skip.
+                        if not alerts_detected:
+                            page_source = self.driver.page_source
+                            sinks = ["innerHTML", "document.write", "eval(", "setTimeout(", "location.href"]
+                            found_sinks = [sink for sink in sinks if sink in page_source]
+                            if not found_sinks:
+                                continue # Skip finding if no execution and no known sink
+                                
+                        if alerts_detected or found_sinks:
                             findings.append(
-                                {
-                                    "type": "dom_xss_pp",
-                                    "method": "DOM-based XSS via Prototype Pollution (data: URL)",
-                                    "key": key,
-                                    "payload": payload,
-                                    "severity": "CRITICAL",
-                                    "verified": True,
-                                    "alert_triggered": True,
-                                    "test_url": test_url,
-                                    "curl_command": f'curl "{test_url}" -v',
-                                    "manual_test": f"Visit {test_url} in browser and check for alert box",
-                                }
+                                Finding(
+                                    type=VulnerabilityType.DOM_XSS_PP,
+                                    name=f"DOM-based XSS via Prototype Pollution (data: URL)",
+                                    severity=Severity.CRITICAL,
+                                    description=f"DOM XSS was {'verified execution' if alerts_detected else 'potentially found via sinks (' + ','.join(found_sinks) + ')'}.",
+                                    payload=payload,
+                                    url=target_url,
+                                    verified=alerts_detected,
+                                    metadata={"alert_triggered": alerts_detected, "test_url": test_url, "key": key}
+                                )
                             )
                             print(
                                 f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}"
@@ -5431,14 +5415,14 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         
         <div class="section">
             <h2>⚖️ Disclaimer</h2>
-            <p>This report was generated by PPMAP v4.2.0 for authorized security testing only.
+            <p>This report was generated by PPMAP v4.2.1 for authorized security testing only.
             The findings should be validated and addressed by qualified security professionals.
             Always obtain proper authorization before performing security assessments on any target.
             Unauthorized access to computer systems is illegal.</p>
         </div>
         
         <footer>
-            <p>PPMAP v4.2.0 | Prototype Pollution Multi-Purpose Assessment Platform</p>
+            <p>PPMAP v4.2.1 | Prototype Pollution Multi-Purpose Assessment Platform</p>
             <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>
