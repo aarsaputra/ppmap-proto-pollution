@@ -50,6 +50,8 @@ class VulnerabilityType(str, Enum):
     KIBANA_RCE = "kibana_telemetry_rce"
     BLITZJS_RCE = "blitzjs_rce_chain"
     ELASTIC_XSS = "elastic_xss"
+    PROTOTYPE_POLLUTION = "prototype_pollution"
+    DOM_XSS_PP = "dom_xss_pp"
 
 
 @dataclass
