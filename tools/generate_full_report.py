@@ -108,7 +108,7 @@ def generate_markdown_report(
     md_content = f"""# Full Vulnerability Scan Report - {safe_title}
 
 **Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-**Scan Tool:** PPMAP v4.2.0 (Enterprise)
+**Scan Tool:** PPMAP v4.2.1 (Enterprise)
 
 ## Executive Summary
 
@@ -196,7 +196,7 @@ A comprehensive automated scan was conducted on `{safe_title}` targets to detect
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.2.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     print(f"✅ Report successfully generated at: {os.path.abspath(output_file)}")
 
