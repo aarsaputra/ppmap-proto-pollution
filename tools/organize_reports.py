@@ -19,7 +19,7 @@ def organize_reports(source_dir: str, dest_base: str, match_string: str = None):
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.2.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     print(f"Scanning {source_dir}...")
 
