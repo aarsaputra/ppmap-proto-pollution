@@ -1640,31 +1640,50 @@ return window['{marker}'];
                         except Exception:
                             pass
 
-                        # If no alert was triggered, check for DOM sinks. If no sink and no alert, skip.
+                        is_polluted = False
                         found_sinks = []
+                        
                         if not alerts_detected:
+                            # Verify if the prototype was ACTUALLY polluted before checking for sinks
+                            try:
+                                # Extract property name, e.g., '__proto__[src]' -> 'src'
+                                test_prop = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
+                                pollution_check = self.driver.execute_script(f"return Object.prototype['{test_prop}'] !== undefined;")
+                                if pollution_check:
+                                    is_polluted = True
+                            except Exception as e:
+                                logger.debug(f"Error checking JS prototype: {e}")
+                                
+                            if not is_polluted:
+                                continue  # Skip finding if no execution and no prototype pollution
+
+                            # If polluted but no alert, check if dangerous sinks exist that COULD trigger it
                             page_source = self.driver.page_source
                             sinks = ["innerHTML", "document.write", "eval(", "setTimeout(", "location.href"]
                             found_sinks = [sink for sink in sinks if sink in page_source]
-                            if not found_sinks:
-                                continue  # Skip finding if no execution and no known sink
 
-                        # Report finding: alert was triggered OR dangerous sinks were found
+                        # Report finding: alert was triggered OR (prototype was actually polluted + sinks exist)
+                        severity_level = Severity.CRITICAL if alerts_detected else Severity.HIGH
+                        verified_status = alerts_detected
+                        status_msg = 'EXECUTED (ALERT)' if alerts_detected else f'POLLUTED (Sinks: {",".join(found_sinks)})'
+                        
                         findings.append(
                             Finding(
                                 type=VulnerabilityType.DOM_XSS_PP,
                                 name=f"DOM-based XSS via Prototype Pollution (data: URL)",
-                                severity=Severity.CRITICAL,
-                                description=f"DOM XSS was {'verified execution' if alerts_detected else 'potentially found via sinks (' + ','.join(found_sinks) + ')'}.",
+                                severity=severity_level,
+                                description=f"DOM XSS was {status_msg}.",
                                 payload=payload,
                                 url=target_url,
-                                verified=alerts_detected,
+                                verified=verified_status,
                                 metadata={"alert_triggered": alerts_detected, "test_url": test_url, "key": key}
                             )
                         )
-                        print(
-                            f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP CONFIRMED: {key}{Colors.ENDC}"
-                        )
+                        
+                        if alerts_detected:
+                            print(f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP EXECUTED: {key}{Colors.ENDC}")
+                        else:
+                            print(f"{Colors.YELLOW}[!] HIGH DOM XSS+PP POLLUTED (No Execution): {key}{Colors.ENDC}")
 
                     except Exception:
                         # Fallback: Check HTTP response for indicators
