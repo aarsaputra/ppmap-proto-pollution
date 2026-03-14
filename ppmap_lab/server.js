@@ -698,37 +698,207 @@ app.get('/jquery-350', (req, res) => {
 });
 
 // ============================================
+// v4.3 — NEW PP ATTACK SURFACE ENDPOINTS
+// ============================================
+
+// Object.assign() PP — modern JS pattern
+app.get('/object-assign', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Object.assign PP Lab</title>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+<body>
+  <h2>Object.assign() Prototype Pollution Lab</h2>
+  <p>This page uses Object.assign() to merge query parameters.</p>
+  <div id="result"></div>
+  <script>
+    // Parse query parameters
+    var params = new URLSearchParams(window.location.search);
+    var data = {};
+    params.forEach(function(value, key) {
+        // Vulnerable: naive key parsing allows __proto__ pollution
+        var keys = key.replace(/\\]/g, '').split('[');
+        var obj = data;
+        for (var i = 0; i < keys.length - 1; i++) {
+            if (!obj[keys[i]]) obj[keys[i]] = {};
+            obj = obj[keys[i]];
+        }
+        obj[keys[keys.length - 1]] = value;
+    });
+    // Vulnerable: Object.assign with parsed user data
+    Object.assign({}, data);
+    document.getElementById('result').textContent =
+      'Prototype polluted: ' + (Object.prototype.hasOwnProperty('POLLUTED') || 'no');
+  </script>
+</body>
+</html>`);
+});
+
+// Hash-based PP — client-side PP via URL fragment
+app.get('/hash-pp', (req, res) => {
+    res.render('hash-pp', { query: req.query });
+});
+
+// JSON.parse Reviver PP — server-side
+app.post('/api/json-reviver', (req, res) => {
+    try {
+        const raw = JSON.stringify(req.body);
+
+        // Vulnerable: reviver function processes __proto__ keys
+        const parsed = JSON.parse(raw, function (key, value) {
+            // No filtering of __proto__ keys!
+            return value;
+        });
+
+        // Vulnerable: merge parsed result
+        const config = {};
+        _.merge(config, parsed);
+
+        res.json({
+            success: true,
+            parsed: config,
+            prototype: Object.prototype
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Enhanced child_process RCE with env/shell override
+app.post('/api/child-rce-env', (req, res) => {
+    try {
+        const options = {};
+        _.merge(options, req.body);
+
+        // Vulnerable: polluted env/shell leaks into child_process
+        const child = spawn('echo', ['ppmap_test'], {
+            ...options,
+            timeout: 5000
+        });
+
+        let stdout = '';
+        child.stdout.on('data', (data) => { stdout += data; });
+
+        child.on('error', (err) => {
+            res.status(500).json({
+                error: err.message,
+                options: options,
+                env_polluted: !!Object.prototype.env,
+                shell_polluted: !!Object.prototype.shell
+            });
+        });
+
+        child.on('close', (code) => {
+            res.json({
+                success: true,
+                exitCode: code,
+                stdout: stdout.trim(),
+                env_polluted: !!Object.prototype.env,
+                shell_polluted: !!Object.prototype.shell,
+                prototype: Object.prototype
+            });
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Legacy accessor PP — __defineGetter__ / __lookupGetter__
+app.get('/legacy-accessor', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Legacy Accessor PP Lab</title>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+<body>
+  <h2>Legacy Accessor Prototype Pollution Lab</h2>
+  <p>Tests __defineGetter__ / __lookupGetter__ based pollution.</p>
+  <div id="result"></div>
+  <script>
+    var query = ${JSON.stringify(req.query)};
+    try { $.extend(true, {}, query); } catch(e) {}
+    var hasDefineGetter = typeof Object.prototype.__defineGetter__ === 'function';
+    var hasLookupGetter = typeof Object.prototype.__lookupGetter__ === 'function';
+    document.getElementById('result').textContent =
+      '__defineGetter__: ' + hasDefineGetter + ', __lookupGetter__: ' + hasLookupGetter;
+  </script>
+</body>
+</html>`);
+});
+
+// PP Confidence Test — varying pollution depths
+app.get('/pp-confidence', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PP Confidence Scoring Lab</title>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+<body>
+  <h2>Prototype Pollution Confidence Scoring Lab</h2>
+  <p>This page merges query params via $.extend and exposes sinks for confidence testing.</p>
+  <div id="result"></div>
+  <script>
+    var query = ${JSON.stringify(req.query)};
+    try { $.extend(true, {}, query); } catch(e) {}
+
+    // Sinks: innerHTML, setTimeout, document.write
+    var el = document.getElementById('result');
+    if (Object.prototype.innerHTML) {
+        el.innerHTML = Object.prototype.innerHTML;
+    }
+    if (Object.prototype.timeout) {
+        setTimeout(Object.prototype.timeout, 0);
+    }
+  </script>
+</body>
+</html>`);
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '2.3.0',
-        endpoints: 26,
-        tiers: 9,
-        detectionMethods: 34,
+        version: '3.0.0',
+        endpoints: 32,
+        tiers: 10,
+        detectionMethods: 40,
         newFeatures: {
+            objectAssign: '/object-assign - Object.assign() PP',
+            hashPP: '/hash-pp - Hash-based PP (WAF bypass)',
+            jsonReviver: '/api/json-reviver - JSON.parse reviver PP',
+            childRceEnv: '/api/child-rce-env - Enhanced child_process RCE',
+            legacyAccessor: '/legacy-accessor - __defineGetter__/__lookupGetter__ PP',
+            ppConfidence: '/pp-confidence - Confidence scoring test page',
             ssti: '/api/template - Server-Side Template Injection',
             domXss: '/dom-xss - DOM-based XSS + Prototype Pollution',
-            coverage: '26 endpoints covering 34 detection methods (up from 32)'
+            coverage: '32 endpoints covering 40 detection methods'
         },
         cvePages: {
             'CVE-2012-6708': '/jquery-old (jQuery 1.11.1) — affected: < 1.9.0',
-            'CVE-2015-9251': '/jquery-old (jQuery 1.11.1) — affected: < 3.0.0 [BUG FIXED: was < 2.2.0]',
-            'CVE-2019-11358': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.4.0 [BUG FIXED: was < 3.5.0]',
+            'CVE-2015-9251': '/jquery-old (jQuery 1.11.1) — affected: < 3.0.0',
+            'CVE-2019-11358': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.4.0',
             'CVE-2020-11022': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0',
-            'CVE-2020-11023': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0 [BUG FIXED: was == 3.5.0]',
-            'CVE-2020-23064': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0 [NEW: was missing]',
+            'CVE-2020-11023': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0',
+            'CVE-2020-23064': '/jquery-1124 (jQuery 1.12.4) — affected: < 3.5.0',
             'CVE-2020-11022+11023+23064 PATCHED': '/jquery-350 (jQuery 3.5.0) — negative test'
         },
-        bugFixes: [
-            'CVE-2020-11023: range was == 3.5.0, now correctly < 3.5.0',
-            'CVE-2015-9251: range was < 2.2.0, now correctly < 3.0.0',
-            'CVE-2019-11358: range was < 3.5.0, now correctly < 3.4.0',
-            'CVE-2020-23064: was completely missing, now added',
-            'Added /jquery-1124 page for primary pentest target (jQuery 1.12.4)',
-            'v2.3.0: Added SSTI + DOM-XSS endpoints for enhanced coverage'
+        v3Changes: [
+            'NEW: /object-assign — Object.assign() PP endpoint',
+            'NEW: /hash-pp — Hash-based PP for WAF bypass testing',
+            'NEW: /api/json-reviver — JSON.parse reviver PP',
+            'NEW: /api/child-rce-env — Enhanced child_process with env/shell pollution',
+            'NEW: /legacy-accessor — __defineGetter__/__lookupGetter__ PP',
+            'NEW: /pp-confidence — Confidence scoring test page'
         ],
         features: {
             graphql: '/graphql',
@@ -765,7 +935,7 @@ async function startServer() {
         console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║           PPMAP VULNERABLE LAB - v2.3.0                   ║
+║           PPMAP VULNERABLE LAB - v3.0.0                   ║
 ║                                                           ║
 ║  ⚠️  INTENTIONALLY VULNERABLE APPLICATION ⚠️               ║
 ║                                                           ║
@@ -776,14 +946,20 @@ async function startServer() {
 ║  ├── WebSocket: ws://localhost:${PORT}/ws                 ║
 ║  ├── Socket.IO: http://localhost:${PORT}                  ║
 ║  ├── SSTI: POST http://localhost:${PORT}/api/template     ║
-║  └── DOM-XSS: http://localhost:${PORT}/dom-xss            ║
+║  ├── DOM-XSS: http://localhost:${PORT}/dom-xss            ║
+║  ├── Object.assign: http://localhost:${PORT}/object-assign║
+║  ├── Hash PP: http://localhost:${PORT}/hash-pp            ║
+║  └── Legacy Accessor: http://localhost:${PORT}/legacy-accessor║
 ║                                                           ║
-║  Endpoints: 26  |  Tiers: 9  |  Methods: 34               ║
+║  Endpoints: 32  |  Tiers: 10  |  Methods: 40              ║
 ║                                                           ║
-║  NEW IN v2.3.0:                                           ║
-║  ✅ Server-Side Template Injection (SSTI) testing         ║
-║  ✅ DOM-based XSS with PP chains                          ║
-║  ✅ Coverage improved from 32 to 34 detection methods     ║
+║  NEW IN v3.0.0:                                           ║
+║  ✅ Object.assign() PP endpoint                           ║
+║  ✅ Hash-based PP (WAF bypass) page                       ║
+║  ✅ JSON.parse reviver PP endpoint                        ║
+║  ✅ Enhanced child_process RCE (env/shell)                ║
+║  ✅ Legacy accessor PP (__defineGetter__)                  ║
+║  ✅ PP Confidence scoring test page                       ║
 ║                                                           ║
 ║  Test with PPMAP:                                         ║
 ║  python3 ppmap.py --scan http://localhost:${PORT}         ║
