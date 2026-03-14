@@ -131,6 +131,12 @@ Bypass WAFs and rate limiting in restricted environments.
 python3 ppmap.py --scan "https://target.com" --stealth --delay 2 --proxy "http://127.0.0.1:8080"
 ```
 
+### **3. Fast Targeted Single-Page Scan**
+Disable the endpoint crawler to only scan the exact URL provided (much faster).
+```bash
+python3 ppmap.py --scan "https://target.com" --no-crawl
+```
+
 ### **3. Deep Forensic Audit (SAST + DAST)**
 Combine static analysis with dynamic execution for 100% coverage.
 ```bash
@@ -399,6 +405,8 @@ open reports/example_com_20260206/report_20260206_120000.html
 | `--disable-xss` | Disable XSS tests | `--disable-xss` |
 | `--disable-waf-bypass` | Disable WAF bypass tests | `--disable-waf-bypass` |
 | `--disable-discovery` | Disable endpoint discovery | `--disable-discovery` |
+| `--no-crawl` | Disable internal URL fuzzer (scan exactly 1 target) | `--no-crawl` |
+| `--max-endpoints N` | Cap crawler endpoints to N items (default: 30) | `--max-endpoints 10` |
 
 ### **Reporting & Utility**
 | Flag | Description |
