@@ -1,4 +1,4 @@
-# 🚀 PPMAP v4.2.0 - Prototype Pollution Scanner
+# 🚀 PPMAP v4.2.1 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.0 Enterprise (Scanner | SAST | GraphQL | WebSocket)
+   v4.2.1 Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -145,7 +145,7 @@ python3 ppmap.py --scan "https://staging.target.com" --oob --async-scan
 
 ## ⚡ Performance Benchmarks
 
-| Metric | PPFuzz | ProtoScan | **PPMAP v4.2.0** |
+| Metric | PPFuzz | ProtoScan | **PPMAP v4.2.1** |
 |--------|--------|-----------|-------------------|
 | Detection Tiers | 1 | 2 | **9 (Enterprise)** |
 | Payloads | ~40 | ~100 | **266+** |
@@ -518,16 +518,16 @@ Locate these in the `tools/` directory:
 
 | Tool | Purpose | Usage | Version |
 |------|---------|-------|---------|
-| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py --dir report` | ✅ v4.2.0 |
-| **analyze_scan_results.py** | Deep analysis & diff of scan findings | `python3 tools/analyze_scan_results.py --diff file1.json file2.json` | ✅ v4.2.0 |
-| **generate_full_report.py** | Merge JSON reports into Markdown summary | `python3 tools/generate_full_report.py --dir report --title "Title"` | ✅ v4.2.0 |
-| **find_library_issues.py** | Scan reports for library vulnerabilities | `python3 tools/find_library_issues.py --report-dir report` | ✅ v4.2.0 |
-| **quickpoc_local.py** | Local Quick PoC runner (Playwright/Selenium) | `python3 tools/quickpoc_local.py --target https://example.com` | ✅ v4.2.0 |
-| **manual_testing_interactive.py** | Interactive CLI for manual testing | `python3 tools/manual_testing_interactive.py` | ✅ v4.2.0 |
+| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py --dir report` | ✅ v4.2.1 |
+| **analyze_scan_results.py** | Deep analysis & diff of scan findings | `python3 tools/analyze_scan_results.py --diff file1.json file2.json` | ✅ v4.2.1 |
+| **generate_full_report.py** | Merge JSON reports into Markdown summary | `python3 tools/generate_full_report.py --dir report --title "Title"` | ✅ v4.2.1 |
+| **find_library_issues.py** | Scan reports for library vulnerabilities | `python3 tools/find_library_issues.py --report-dir report` | ✅ v4.2.1 |
+| **quickpoc_local.py** | Local Quick PoC runner (Playwright/Selenium) | `python3 tools/quickpoc_local.py --target https://example.com` | ✅ v4.2.1 |
+| **manual_testing_interactive.py** | Interactive CLI for manual testing | `python3 tools/manual_testing_interactive.py` | ✅ v4.2.1 |
 | **organize_reports.py** | Clean and organize the report directory | `python3 tools/organize_reports.py` | - |
 | **tool_template.py** | Reusable template for building new tools | Reference implementation | ✅ NEW |
 
-### 🔐 Security & Quality Updates (v4.2.0 Phase 6)
+### 🔐 Security & Quality Updates (v4.2.1 Phase 6)
 
 **All tools hardened with:**
 - ✅ **Path Traversal Protection** - `analyze_scan_results.py` validates all file paths
