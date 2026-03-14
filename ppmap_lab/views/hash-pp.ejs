@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hash-based PP Lab — WAF Bypass</title>
+    <!-- jQuery 1.12.4: vulnerable to CVE-2019-11358 (PP via $.extend) -->
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+
+<body>
+    <h2>Hash-based Prototype Pollution Lab (WAF Bypass)</h2>
+    <p>This page reads <code>location.hash</code> and feeds it into <code>$.extend(true, {}, parsed)</code>.</p>
+    <p>Many WAFs only inspect query parameters (<code>?__proto__</code>) but ignore URL fragment
+        (<code>#__proto__</code>).</p>
+
+    <h3>Current Hash: <span id="hash-display"></span></h3>
+    <h3>Pollution Status: <span id="pp-status">Clean</span></h3>
+    <div id="result"></div>
+
+    <h4>Test URLs:</h4>
+    <ul>
+        <li><code>/hash-pp#__proto__[ppmap_test]=POLLUTED</code></li>
+        <li><code>/hash-pp#constructor[prototype][ppmap_test]=POLLUTED</code></li>
+        <li><code>/hash-pp#__proto__[url]=javascript:alert(1)</code></li>
+    </ul>
+
+    <script>
+        // Display current hash
+        document.getElementById('hash-display').textContent = location.hash || '(none)';
+
+        // Parse hash fragment into object
+        function parseHash(hash) {
+            if (!hash || hash.length < 2) return {};
+            var params = hash.substring(1); // remove #
+            var result = {};
+
+            params.split('&').forEach(function (param) {
+                var eqIdx = param.indexOf('=');
+                if (eqIdx === -1) return;
+                var key = decodeURIComponent(param.substring(0, eqIdx));
+                var value = decodeURIComponent(param.substring(eqIdx + 1));
+
+                // Naive key parsing (VULNERABLE: allows __proto__ pollution)
+                var keys = key.replace(/\]/g, '').split('[');
+                var obj = result;
+                for (var i = 0; i < keys.length - 1; i++) {
+                    if (!obj[keys[i]]) obj[keys[i]] = {};
+                    obj = obj[keys[i]];
+                }
+                obj[keys[keys.length - 1]] = value;
+            });
+
+            return result;
+        }
+
+        // VULNERABLE: Parse hash and merge into empty object via $.extend
+        var hashData = parseHash(location.hash);
+        try {
+            $.extend(true, {}, hashData);
+        } catch (e) {
+            console.error('PP Error:', e);
+        }
+
+        // Check pollution status
+        var pollutedProps = Object.getOwnPropertyNames(Object.prototype).filter(function (prop) {
+            return !['constructor', 'hasOwnProperty', 'isPrototypeOf',
+                'propertyIsEnumerable', 'toString', 'valueOf',
+                'toLocaleString', '__defineGetter__', '__defineSetter__',
+                '__lookupGetter__', '__lookupSetter__', '__proto__'].includes(prop);
+        });
+
+        if (pollutedProps.length > 0) {
+            document.getElementById('pp-status').textContent =
+                'POLLUTED! Properties: ' + pollutedProps.join(', ');
+            document.getElementById('pp-status').style.color = 'red';
+        }
+
+        // Listen for hash changes (live testing)
+        window.addEventListener('hashchange', function () {
+            location.reload();
+        });
+    </script>
+</body>
+
+</html>
