@@ -363,8 +363,24 @@ ADVANCED OPTIONS:
     )
     parser.add_argument("--disable-xss", action="store_true", help="Disable XSS tests")
     parser.add_argument(
-        "--disable-waf-bypass", action="store_true", help="Disable WAF bypass tests"
+        "--disable-waf-bypass",
+        action="store_true",
+        help="Disable WAF bypass tests",
     )
+    
+    # --- PHASE 8 CRAWLER OPTIONS ---
+    parser.add_argument(
+        "--no-crawl", 
+        action="store_true", 
+        help="Disable endpoint crawler (scan main target only)"
+    )
+    parser.add_argument(
+        "--max-endpoints", 
+        type=int, 
+        default=30, 
+        help="Max hidden endpoints to discover per target (default: 30)"
+    )
+
     parser.add_argument(
         "--disable-discovery", action="store_true", help="Disable endpoint discovery"
     )
@@ -715,30 +731,32 @@ ADVANCED OPTIONS:
                         
                         # Phase 8: Advanced Endpoint Discovery (JS & Regex integration)
                         targets_to_scan = [target]
-                        try:
-                            discovery = EndpointDiscovery(session=scanner.session)
-                            # We use depth 1 so we don't accidentally crawl the internet.
-                            discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=30)
-                            
-                            from ppmap.utils import is_static_file
-                            
-                            for ep in discovered_eps:
-                                # Strip URL fragments (#...) to avoid scanning the same page multiple times
-                                from urllib.parse import urldefrag
-                                ep_defrag, _ = urldefrag(ep)
-                                ep = ep_defrag if ep_defrag else ep
+                        
+                        if not args.no_crawl:
+                            try:
+                                discovery = EndpointDiscovery(session=scanner.session)
+                                # We use depth 1 so we don't accidentally crawl the internet.
+                                discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=args.max_endpoints)
                                 
-                                if ep not in targets_to_scan:
-                                    # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
-                                    if is_static_file(ep):
-                                        logger.debug(f"Skipping static asset: {ep}")
-                                        continue
-                                    targets_to_scan.append(ep)
+                                from ppmap.utils import is_static_file
+                                
+                                for ep in discovered_eps:
+                                    # Strip URL fragments (#...) to avoid scanning the same page multiple times
+                                    from urllib.parse import urldefrag
+                                    ep_defrag, _ = urldefrag(ep)
+                                    ep = ep_defrag if ep_defrag else ep
                                     
-                            if len(targets_to_scan) > 1:
-                                print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
-                        except Exception as dis_err:
-                            logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
+                                    if ep not in targets_to_scan:
+                                        # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
+                                        if is_static_file(ep):
+                                            logger.debug(f"Skipping static asset: {ep}")
+                                            continue
+                                        targets_to_scan.append(ep)
+                                        
+                                if len(targets_to_scan) > 1:
+                                    print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
+                            except Exception as dis_err:
+                                logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
 
                         for sub_target in targets_to_scan:
                             logger.info(f" -> Testing endpoint: {sub_target}")
