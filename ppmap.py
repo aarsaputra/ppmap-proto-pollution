@@ -50,6 +50,8 @@ from ppmap.scanner.core import (
     progress_iter,
     Colors,
 )
+from ppmap.utils.update_checker import check_for_updates
+from ppmap.__init__ import __version__
 
 # Progress bar
 try:
@@ -241,6 +243,9 @@ def main():
 
     print_banner()
     logger.info("PPMAP started")
+
+    # Check for updates in a non-blocking way
+    check_for_updates(__version__)
 
     parser = argparse.ArgumentParser(
         description="PPMAP v4.3.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
