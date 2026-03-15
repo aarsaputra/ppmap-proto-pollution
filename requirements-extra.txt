@@ -7,7 +7,7 @@
 -r requirements.txt
 
 # PDF Report Generation
-reportlab>=4.3.1
+reportlab>=4.0.0
 
 # DOCX Report Generation
 python-docx>=0.8.11

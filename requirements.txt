@@ -4,7 +4,7 @@
 selenium>=4.15.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
-webdriver-manager>=4.3.1
+webdriver-manager>=4.0.0
 lxml>=4.9.0
 
 # Async & Performance
