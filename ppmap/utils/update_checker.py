@@ -16,7 +16,7 @@ def check_for_updates(current_version: str) -> None:
     try:
         # 3 second timeout for DNS and connect so it's unobtrusive
         req = urllib.request.Request(repo_url, headers={'User-Agent': 'PPMAP-Update-Checker'})
-        with urllib.request.urlopen(req, timeout=3.0) as response:
+        with urllib.request.urlopen(req, timeout=3.0) as response:  # nosec B310
             if response.status == 200:
                 data = json.loads(response.read().decode())
                 latest_tag = data.get("tag_name", "")
@@ -44,4 +44,5 @@ def check_for_updates(current_version: str) -> None:
         pass
     except Exception:
         # Broad catch-all for any other unanticipated errors
-        pass
+        import logging
+        logging.getLogger(__name__).debug("Auto-update check failed", exc_info=True)
