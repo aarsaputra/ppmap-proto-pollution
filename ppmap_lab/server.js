@@ -862,16 +862,108 @@ app.get('/pp-confidence', (req, res) => {
 });
 
 // ============================================
+// v4.3.1 — PP GAP CLOSURE ENDPOINTS
+// ============================================
+
+// postMessage Web Message PP
+app.get('/postmessage-pp', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>postMessage PP Lab</title>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+</head>
+<body>
+  <h2>postMessage Prototype Pollution Lab</h2>
+  <p>Listens for cross-origin messages and merges them unsafely.</p>
+  <div id="result"></div>
+  <script>
+    window.addEventListener('message', function(event) {
+        // VULNERABLE: Unsafely merging incoming message data
+        try {
+            var data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            $.extend(true, {}, data);
+            
+            document.getElementById('result').textContent =
+              'Prototype polluted: ' + (Object.prototype.hasOwnProperty('pmpp_test') || 
+                                      Object.prototype.hasOwnProperty('POLLUTED') || 'no');
+        } catch(e) {
+            console.error('PP Error:', e);
+        }
+    }, false);
+  </script>
+</body>
+</html>`);
+});
+
+// EJS escapeFunction RCE gadget simulation
+app.post('/api/ejs-rce', (req, res) => {
+    try {
+        const _ = require('lodash');
+        const ejs = require('ejs');
+
+        const config = {};
+        // Vulnerable merge
+        _.merge(config, req.body);
+
+        // VULNERABLE: EJS render uses polluted escapeFunction
+        const rendered = ejs.render('Hello <%= name %>', { name: 'World' }, {
+            filename: 'template.ejs'
+        });
+
+        res.json({
+            success: true,
+            rendered: rendered,
+            polluted: !!Object.prototype.escapeFunction
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Express parameterLimit / allowDots DoS
+app.post('/express-dos', (req, res) => {
+    try {
+        const _ = require('lodash');
+
+        const config = {};
+        // Vulnerable merge
+        _.merge(config, req.body);
+
+        res.json({
+            success: true,
+            message: 'Config merged. Send a GET to /express-dos?a=1&b=2 to test DoS if parameterLimit is polluted.',
+            parameterLimit: Object.prototype.parameterLimit || 'default'
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/express-dos', (req, res) => {
+    // Simulate Express query parser behavior change based on polluted Object.prototype
+    const paramLimit = Object.prototype.parameterLimit !== undefined ? Object.prototype.parameterLimit : 1000;
+
+    // Simulate DoS crash
+    if (Object.keys(req.query).length > paramLimit) {
+        return res.status(500).json({ error: 'PayloadTooLargeError: too many parameters' });
+    }
+
+    res.json({ success: true, query: req.query });
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 
 app.get('/health', (req, res) => {
     res.json({
         status: 'vulnerable',
-        version: '3.0.0',
-        endpoints: 32,
-        tiers: 10,
-        detectionMethods: 40,
+        version: '3.1.0',
+        endpoints: 35,
+        tiers: 11,
+        detectionMethods: 45,
         newFeatures: {
             objectAssign: '/object-assign - Object.assign() PP',
             hashPP: '/hash-pp - Hash-based PP (WAF bypass)',
@@ -879,9 +971,9 @@ app.get('/health', (req, res) => {
             childRceEnv: '/api/child-rce-env - Enhanced child_process RCE',
             legacyAccessor: '/legacy-accessor - __defineGetter__/__lookupGetter__ PP',
             ppConfidence: '/pp-confidence - Confidence scoring test page',
-            ssti: '/api/template - Server-Side Template Injection',
-            domXss: '/dom-xss - DOM-based XSS + Prototype Pollution',
-            coverage: '32 endpoints covering 40 detection methods'
+            postmessage: '/postmessage-pp - Web Message PP bypass',
+            ejsRce: '/api/ejs-rce - EJS escapeFunction RCE',
+            expressDos: '/express-dos - Express framework PP DoS',
         },
         cvePages: {
             'CVE-2012-6708': '/jquery-old (jQuery 1.11.1) — affected: < 1.9.0',
@@ -898,7 +990,10 @@ app.get('/health', (req, res) => {
             'NEW: /api/json-reviver — JSON.parse reviver PP',
             'NEW: /api/child-rce-env — Enhanced child_process with env/shell pollution',
             'NEW: /legacy-accessor — __defineGetter__/__lookupGetter__ PP',
-            'NEW: /pp-confidence — Confidence scoring test page'
+            'NEW: /pp-confidence — Confidence scoring test page',
+            'NEW: /postmessage-pp — Web Message PP testing',
+            'NEW: /api/ejs-rce — EJS gadget RCE testing',
+            'NEW: /express-dos — Express framework DoS testing'
         ],
         features: {
             graphql: '/graphql',
