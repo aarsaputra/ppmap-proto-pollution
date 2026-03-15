@@ -1,4 +1,4 @@
-# PPMAP v4.2.1 - Optional Heavy Reporting Dependencies
+# PPMAP v4.3.1 - Optional Heavy Reporting Dependencies
 # Install: pip install -r requirements-extra.txt
 #
 # These are large packages (100MB+) used for advanced report
@@ -7,7 +7,7 @@
 -r requirements.txt
 
 # PDF Report Generation
-reportlab>=4.0.0
+reportlab>=4.3.1
 
 # DOCX Report Generation
 python-docx>=0.8.11

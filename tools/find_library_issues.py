@@ -114,7 +114,7 @@ def main():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.3.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
 
     logger.info(f"Searching for library issues with domain pattern: {args.domain}")
