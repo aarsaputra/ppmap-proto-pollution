@@ -117,7 +117,7 @@ pip install -r requirements.txt
 
 ### Dependencies List
 ```
-selenium>=4.0.0
+selenium>=4.3.1
 requests>=2.28.0
 beautifulsoup4>=4.11.0
 pyyaml>=6.0

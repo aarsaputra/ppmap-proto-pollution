@@ -1,4 +1,4 @@
 GET /my-account?id=wiener HTTP/2
 Host: YOUR-LAB-ID.web-security-academy.net
 Cookie: session=YOUR_SESSION_HERE
-User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.3.1.0 Safari/537.36
