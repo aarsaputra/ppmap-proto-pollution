@@ -1,10 +1,10 @@
-# PPMAP v4.2.1 - Production Dependencies
+# PPMAP v4.3.1 - Production Dependencies
 
 # Core Scanner
 selenium>=4.15.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
-webdriver-manager>=4.0.0
+webdriver-manager>=4.3.1
 lxml>=4.9.0
 
 # Async & Performance
