@@ -8,7 +8,7 @@ r"""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.3.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -113,7 +113,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.2.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.3.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """
         + Colors.ENDC
         + f"""
@@ -243,7 +243,7 @@ def main():
     logger.info("PPMAP started")
 
     parser = argparse.ArgumentParser(
-        description="PPMAP v4.2.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.3.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
@@ -454,7 +454,7 @@ ADVANCED OPTIONS:
         default=0,
         help="Verbose output (-v, -vv, -vvv)",
     )
-    parser.add_argument("--version", action="version", version="PPMAP v4.2.1")
+    parser.add_argument("--version", action="version", version="PPMAP v4.3.1")
 
     # Argument completion
     try:

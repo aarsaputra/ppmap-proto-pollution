@@ -148,12 +148,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lab now at: 20 endpoints, 8 tiers, 32 detection methods
 
 ### Changed
-- Upgraded to v4.2.1 across codebase
+- Upgraded to v4.3.1 across codebase
 - CI pipeline tests now 100% passing
 
 ---
 
-## [4.0.0] - 2026-02-08 (Enterprise Edition)
+## [4.3.1] - 2026-02-08 (Enterprise Edition)
 
 ### Added
 - **Stealth Browser Engine** - Automatic anti-bot evasion (User-Agent rotation, hidden webdriver flags)
@@ -168,7 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version string synchronization across all files
 
 ### Changed
-- Upgraded to v4.0.0 Enterprise across entire codebase
+- Upgraded to v4.3.1 Enterprise across entire codebase
 - Modernized User-Agent strings (Chrome 120.0)
 - Improved error handling with graceful fallbacks
 
@@ -292,7 +292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | Version | Release Date | Detection Methods | Code Lines | CVE Coverage | Notable Features |
 |---------|--------------|-------------------|------------|--------------|------------------|
 | 3.5.0 | 2026-01-31 | 28 | 4,158 | 15 | Phase 1-3 complete, Lab, 100% research coverage |
-| 4.0.0 | 2026-02-08 | 28 | 4,970 | 19 | Enterprise, OOB, Stealth, Multi-format reports |
+| 4.3.1 | 2026-02-08 | 28 | 4,970 | 19 | Enterprise, OOB, Stealth, Multi-format reports |
 | 4.1.0 | 2026-02-25 | 32 | 4,973 | 19+ | CVE accuracy fix, all 203 tests pass |
 | 3.4.0 | 2026-01-30 | 21 | 3,480 | 9 | Tier 4, Advanced bypasses |
 | 3.3.0 | 2025-12-15 | 15 | 2,800 | 5 | Tier 1, Blind detection |
