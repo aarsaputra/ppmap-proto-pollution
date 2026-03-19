@@ -67,8 +67,8 @@ head -100 DOCUMENTATION.md
 **Best for:** Understanding what's implemented, version history, future plans
 
 **What you'll learn:**
-- What's in v3.5
-- Version comparison (v3.0 → v3.5)
+- What's in v4.3.2+
+- Version comparison (v3.0 → v4.3.2+)
 - Future enhancements (v3.6)
 - Project statistics
 
@@ -87,7 +87,7 @@ grep -A 50 "What's Implemented" ROADMAP.md
 **Best for:** Understanding what changed in each version
 
 **What you'll learn:**
-- v3.5.0 new features (Phase 1, 2, 3)
+- v4.3.2+.0 new features (Phase 1, 2, 3)
 - v3.4.0 features (Tier 4)
 - Version comparison table
 - Upgrade guide
@@ -96,7 +96,7 @@ grep -A 50 "What's Implemented" ROADMAP.md
 # Read it
 cat CHANGELOG.md
 
-# Or view v3.5 changes only
+# Or view v4.3.2+ changes only
 grep -A 100 "\[3.5.0\]" CHANGELOG.md
 ```
 
@@ -196,7 +196,7 @@ cat /home/lota1337/.gemini/antigravity/brain/409f7aff-eac3-4763-a80f-20c9354fee0
 
 ---
 
-### **Tier 5 - Research Gap (3 methods)** ⭐ **NEW in v3.5**
+### **Tier 5 - Research Gap (3 methods)** ⭐ **NEW in v4.3.2+**
 
 | # | Method | Description | File Reference |
 |---|--------|-------------|----------------|
@@ -206,7 +206,7 @@ cat /home/lota1337/.gemini/antigravity/brain/409f7aff-eac3-4763-a80f-20c9354fee0
 
 ---
 
-### **Tier 6 - Real-World Exploits (4 methods)** ⭐ **NEW in v3.5**
+### **Tier 6 - Real-World Exploits (4 methods)** ⭐ **NEW in v4.3.2+**
 
 | # | Method | Description | File Reference |
 |---|--------|-------------|----------------|
@@ -261,7 +261,7 @@ python3 ppmap.py --scan http://localhost:3000
 | **QUICKSTART.md** | 7.7KB | Getting started, basic usage | 5 min |
 | **DOCUMENTATION.md** | 13KB | Complete technical docs | 30 min |
 | **ROADMAP.md** | 7KB | Features, version history | 10 min |
-| **CHANGELOG.md** ⭐ | 6.1KB | Version changes (v3.0-v3.5) | 15 min |
+| **CHANGELOG.md** ⭐ | 6.1KB | Version changes (v3.0-v4.3.2+) | 15 min |
 | **CONTRIBUTING.md** ⭐ | 8.1KB | How to contribute | 10 min |
 | **MANUAL_TESTING_GUIDE.md** | 12KB | Manual testing techniques | 20 min |
 | **ppmap_lab/README.md** | - | Lab setup & endpoints | 10 min |
@@ -298,7 +298,7 @@ python3 ppmap.py --scan http://localhost:3000
 ### **Essential Reading (Start Here)**
 1. 📄 `README.md` - Project overview
 2. 📄 `QUICKSTART.md` - Quick start guide
-3. 📄 `CHANGELOG.md` - What's new in v3.5
+3. 📄 `CHANGELOG.md` - What's new in v4.3.2+
 
 ### **Deep Dive**
 4. 📄 `DOCUMENTATION.md` - All features explained
@@ -314,7 +314,7 @@ python3 ppmap.py --scan http://localhost:3000
 
 ## 🎯 Feature Highlights
 
-### **What's New in v3.5**
+### **What's New in v4.3.2+**
 
 #### **Phase 1: Research Gap Features**
 - ✅ CORS Header Pollution
@@ -343,7 +343,7 @@ python3 ppmap.py --scan http://localhost:3000
 
 ## 📊 Statistics Comparison
 
-| Metric | v3.4 | v3.5 | Change |
+| Metric | v3.4 | v4.3.2+ | Change |
 |--------|------|------|--------|
 | Detection Methods | 21 | 28 | +33% |
 | Code Lines | 3,480 | 4,158 | +19% |

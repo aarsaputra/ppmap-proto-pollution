@@ -1,7 +1,7 @@
-# PPMAP v3.5 - Complete Documentation
+# PPMAP v4.3.2+ - Complete Documentation
 
 > **Prototype Pollution Multi-Purpose Assessment Platform**  
-> The most comprehensive PP scanner with 100% PortSwigger coverage + 2024/2025 bug bounty research
+> The most comprehensive PP scanner with 100% PortSwigger coverage + 2026 Enterprise refactor
 
 ---
 
@@ -9,7 +9,7 @@
 
 1. [Quick Start](#quick-start)
 2. [Features Overview](#features-overview)
-3. [Detection Methods (19 Total)](#detection-methods)
+3. [Detection Methods (32 Total)](#detection-methods)
 4. [Installation](#installation)
 5. [Usage Examples](#usage-examples)
 6. [Configuration](#configuration)
@@ -27,29 +27,29 @@
 ```bash
 cd /home/lota1337/python/pentest_proto
 pip install -r requirements.txt
-python3 ppmap.py --scan "https://target.com"
+python3 ppmap.py --scan-full "https://target.com"
 ```
 
 ### Basic Commands
 ```bash
-# Quick PoC (jQuery only)
-python3 ppmap.py --poc http://target.com
+# Full Assessment (Discovery + Scan)
+python3 ppmap.py --scan-full http://target.com
 
-# Full Scan (All 19 methods)
+# Targeted Scan (Only the provided URL)
 python3 ppmap.py --scan http://target.com
+
+# Discovery Only (Recon)
+python3 ppmap.py --discover http://target.com --max-depth 2
 
 # Multiple targets
 python3 ppmap.py --scan http://target1.com http://target2.com
-
-# Stealth mode
-python3 ppmap.py --scan http://target.com --stealth --delay 2
 ```
 
 ---
 
 ## ✨ Features Overview
 
-### **Detection Methods (28 Total)**
+### **Detection Methods (32 Total)**
 
 #### **Tier 0 - Standard Detection (7 methods)**
 - ✅ jQuery Prototype Pollution (CVE-2019-11358)
@@ -57,7 +57,7 @@ python3 ppmap.py --scan http://target.com --stealth --delay 2
 - ✅ POST parameter XSS
 - ✅ **Smart WAF Detection** (Baseline Check + Signature Identification)
 - ✅ WAF Bypass (50+ variations)
-- ✅ Endpoint discovery
+- ✅ **Endpoint discovery & Deduplication**
 - ✅ Confidence scoring
 
 #### **Tier 1 - Blind Detection (4 methods)**
@@ -129,7 +129,7 @@ playwright>=1.30.0
 ### Verify Installation
 ```bash
 python3 ppmap.py --version
-# Output: PPMAP v3.5 (2024/2025 Research Enhanced)
+# Output: PPMAP v4.3.2+ (2024/2025 Research Enhanced)
 ```
 
 ---
@@ -374,10 +374,10 @@ python3 ppmap.py --scan http://target.com --workers 3
 
 ## 📊 Project Statistics
 
-- **Version:** 3.5 (2026 Research Integration - COMPLETE)
+- **Version:** 4.3.2+ (2026 Architecture Refactor - COMPLETE)
 - **Code Lines:** 4,140+ (Modularized)
-- **Payloads:** 218+
-- **Detection Methods:** 28
+- **Payloads:** 266+
+- **Detection Methods:** 32
 - **Gadget Properties:** 40
 - **CVE Coverage:** 15 (9 tracked + 6 new)
 - **Bug Bounty Cases:** 3 (Kibana $10k, Elastic, Blitz.js)
@@ -391,13 +391,13 @@ python3 ppmap.py --scan http://target.com --workers 3
 ## 🎓 CLI Reference
 
 ```
-usage: ppmap.py [-h] [--poc URL] [--scan URL [URL ...]]
+usage: ppmap.py [-h] [--discover URL] [--scan URL [URL ...]] [--scan-full URL]
                 [--config CONFIG] [--timeout TIMEOUT] [--workers WORKERS]
                 [--headless] [--no-headless] [--stealth] [--delay DELAY]
-                [--rate-limit N] [--user-agent USER_AGENT]
+                [--max-depth DEPTH] [--max-urls LIMIT]
                 [--disable-jquery-pp] [--disable-xss] [--disable-waf-bypass]
                 [--output OUTPUT] [--format FORMAT] [--verbose] [--version]
-
+```
 SCANNING OPTIONS:
   --poc URL                 Quick PoC mode (jQuery only)
   --scan URL [URL ...]      Full scan mode (all 28 methods)
@@ -440,7 +440,7 @@ REPORTING:
 
 ---
 
-## 🏆 What Makes PPMAP v3.5 Special?
+## 🏆 What Makes PPMAP v4.3.2+ Special?
 
 1. **100% PortSwigger Coverage** - Only scanner with complete coverage
 2. **2024/2025 Research** - Includes latest bug bounty techniques
@@ -461,5 +461,5 @@ For issues or questions:
 
 ---
 
-**PPMAP v3.5** - The Most Comprehensive Prototype Pollution Scanner  
-*Last Updated: January 30, 2026*
+**PPMAP v4.3.2+** - The Most Comprehensive Prototype Pollution Scanner  
+*Last Updated: March 18, 2026*
