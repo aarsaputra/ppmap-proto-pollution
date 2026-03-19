@@ -1,4 +1,4 @@
-# 🚀 PPMAP v4.3.2+ - Prototype Pollution Scanner
+# 🚀 PPMAP v4.4.0 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.3.2+ Enterprise (Scanner | SAST | GraphQL | WebSocket)
+   v4.4.0 Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -294,7 +294,7 @@ if frida.connect():
 
 ## 📊 Project Statistics
 
-- **Version:** 4.3.2+ (Enterprise - Full CVE Detection & jQuery Audit)
+- **Version:** 4.4.0 (Enterprise - Advanced WAF/CSP Evasions)
 - **Code Lines:** 4,140+
 - **Detection Methods:** 32
 - **Gadget Properties:** 40

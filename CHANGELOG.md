@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.4.0] - 2026-03-19 (Advanced Evasion Edition) ✅
+
+### Added - Advanced WAF & CSP Bypasses
+- **CSP Script Gadgets**
+  - Vue.js template compiler hijacking (`__proto__[template]`)
+  - Lodash template execution context via `sourceURL`
+  - GitLab / Generic framework `data-path` attribute injection
+- **Advanced WAF Evasions (2024-2025)**
+  - Akamai ASE dynamic inspection limit bypass via 128KB Garbage Padding (CVE-2025-30143 concept)
+  - AWS WAF regex filter evasion via rare DOM event (`onbeforetoggle` on `<button popover>`)
+  - Cloudflare strict `eval` filter evasion via `Function(atob(...))`
+  - Encoding Bertingkat (Double-encoded HTML Hex Entity bypass)
+- **False Positive Reduction**
+  - Fixed DOM XSS+PP false positives caused by unrelated site modals (e.g., cookie consents) catching `driver.switch_to.alert`.
+
+### Changed
+- Global version bump to **v4.4.0 Enterprise**.
+
+---
+
 ## [4.3.2] - 2026-03-18 (Architecture Refactor Edition) ✅
 
 ### Added - Scanner Architecture Refactor
