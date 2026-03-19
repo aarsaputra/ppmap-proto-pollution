@@ -63,7 +63,7 @@
 
 ---
 
-## �� PPMAP Roadmap (v4.3.1+ & Beyond) (DeepSeek & AI Enhanced)
+## �� PPMAP Roadmap (v4.3.2+ & Beyond) (DeepSeek & AI Enhanced)
 
 Based on recent comprehensive reviews and AI analysis, the roadmap follows a **Phased Approach** to ensure stability before expansion.
 
@@ -100,7 +100,7 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 
 ## 📈 Version History
 
-**v4.3.1** (Feb 05, 2026)
+**v4.3.2** (Feb 05, 2026)
 - ✅ Final Polish: Comprehensive Code Cleanup
 - ✅ Open Source Release (MIT License)
 - ✅ Complete PortSwigger Workflow Integration
