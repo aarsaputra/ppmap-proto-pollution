@@ -162,10 +162,11 @@ python3 ppmap.py --scan "https://staging.target.com" --oob --async-scan
 ---
 
 ## 📖 Documentation Hub
-Visit our [Interactive Documentation](https://aarsaputra.github.io/ppmap-proto-pollution/docs/installation.html) for:
-- [Installation Guide](https://aarsaputra.github.io/ppmap-proto-pollution/docs/installation.html)
-- [Advanced Usage & Flags](https://aarsaputra.github.io/ppmap-proto-pollution/docs/usage.html)
-- [Payload Technical Specs](https://aarsaputra.github.io/ppmap-proto-pollution/docs/payloads.html)
+Visit our documentation guides for:
+- [🚀 Installation Guide](docs/guides/QUICKSTART.md)
+- [⚙️ Advanced Usage & Flags](docs/guides/FEATURES.md)
+- [🧪 Payload Technical Specs](docs/guides/EXPLOITATION_GUIDE.md)
+- [📕 Complete Documentation](docs/guides/DOCUMENTATION.md)
 
 ---
 
