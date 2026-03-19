@@ -58,15 +58,15 @@ async function initTerminal() {
     if (!terminal) return;
 
     const lines = [
-        { type: 'command', text: 'python3 ppmap.py --scan http://localhost:3000' },
-        { type: 'output', text: '[INFO] Starting PPMAP v4.3.2 Enterprise Engine...' },
+        { type: 'command', text: 'python3 ppmap.py --scan-full http://localhost:3000' },
+        { type: 'output', text: '[INFO] Starting PPMAP v4.3.2+ Enterprise Engine...' },
         { type: 'output', text: '[INFO] Target: http://localhost:3000 (Lab Environment)' },
-        { type: 'output', text: '[*] Scanning 9 Security Tiers...' },
+        { type: 'output', text: '[*] Scanning 9 Security Tiers / 32 Methods...' },
         { type: 'output', text: '[→] Tier 1: jQuery Prototype Pollution... [VULNERABLE]' },
         { type: 'output', text: '[→] Tier 4: DOM XSS Gadgets... [EXPLOIT CONFIRMED]' },
         { type: 'output', text: '[→] Tier 7: GraphQL Injection Specialists... [CLEAN]' },
-        { type: 'output', text: '[✓] Scan Complete! Found 19 Vulnerabilities.' },
-        { type: 'output', text: '[!] jQuery PP: 4 | Server-Side: 6 | DOM XSS: 9' }
+        { type: 'output', text: '[✓] Scan Complete! Found 32 Vulnerabilities.' },
+        { type: 'output', text: '[!] jQuery PP: 4 | Server-Side: 9 | DOM XSS: 19' }
     ];
 
     terminal.innerHTML = '';
