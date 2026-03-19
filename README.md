@@ -1,4 +1,4 @@
-# 🚀 PPMAP v4.3.1 - Prototype Pollution Scanner
+# 🚀 PPMAP v4.3.2+ - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.3.1 Enterprise (Scanner | SAST | GraphQL | WebSocket)
+   v4.3.2+ Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -151,7 +151,7 @@ python3 ppmap.py --scan "https://staging.target.com" --oob --async-scan
 
 ## ⚡ Performance Benchmarks
 
-| Metric | PPFuzz | ProtoScan | **PPMAP v4.3.1** |
+| Metric | PPFuzz | ProtoScan | **PPMAP v4.3.2+** |
 |--------|--------|-----------|-------------------|
 | Detection Tiers | 1 | 2 | **9 (Enterprise)** |
 | Payloads | ~40 | ~100 | **266+** |
@@ -293,7 +293,7 @@ if frida.connect():
 
 ## 📊 Project Statistics
 
-- **Version:** 4.1.0 (Enterprise - Full CVE Detection & jQuery Audit)
+- **Version:** 4.3.2+ (Enterprise - Full CVE Detection & jQuery Audit)
 - **Code Lines:** 4,140+
 - **Detection Methods:** 32
 - **Gadget Properties:** 40
@@ -343,19 +343,26 @@ pentest_proto/
 
 ## 🚀 Usage Examples
 
-### Basic Scan
+### 🔍 Scanning Modes (v4.3.2+)
+| Flag | Mode | Description |
+| :--- | :--- | :--- |
+| `--discover` | **Recon Only** | Crawls target for endpoints & parameters. No attacks. |
+| `--scan` | **Targeted** | Scans ONLY provided URLs. Skips discovery phase. |
+| `--scan-full` | **Full** | Discovery + Deduplication + Deep Scan (Default behavior). |
+
+**1. Full Assessment (Discovery + Scan):**
 ```bash
-python3 ppmap.py --scan "https://example.com"
+python3 ppmap.py --scan-full https://example.com/
 ```
 
-### With Options
+**2. Discovery Only (Recon):**
 ```bash
-python3 ppmap.py --scan "https://example.com" --headless
+python3 ppmap.py --discover https://example.com/ --max-depth 2
 ```
 
-### With OOB Detection
+**3. Targeted Scan (No Crawl):**
 ```bash
-python3 ppmap.py --scan "https://example.com" --oob --headless
+python3 ppmap.py --scan https://example.com/api/v1/user?id=1
 ```
 
 ### View HTML Report
@@ -526,16 +533,16 @@ Locate these in the `tools/` directory:
 
 | Tool | Purpose | Usage | Version |
 |------|---------|-------|---------|
-| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py --dir report` | ✅ v4.3.1 |
-| **analyze_scan_results.py** | Deep analysis & diff of scan findings | `python3 tools/analyze_scan_results.py --diff file1.json file2.json` | ✅ v4.3.1 |
-| **generate_full_report.py** | Merge JSON reports into Markdown summary | `python3 tools/generate_full_report.py --dir report --title "Title"` | ✅ v4.3.1 |
-| **find_library_issues.py** | Scan reports for library vulnerabilities | `python3 tools/find_library_issues.py --report-dir report` | ✅ v4.3.1 |
-| **quickpoc_local.py** | Local Quick PoC runner (Playwright/Selenium) | `python3 tools/quickpoc_local.py --target https://example.com` | ✅ v4.3.1 |
-| **manual_testing_interactive.py** | Interactive CLI for manual testing | `python3 tools/manual_testing_interactive.py` | ✅ v4.3.1 |
+| **analyze_reports.py** | Statistical analysis of scan results | `python3 tools/analyze_reports.py --dir report` | ✅ v4.3.2 |
+| **analyze_scan_results.py** | Deep analysis & diff of scan findings | `python3 tools/analyze_scan_results.py --diff file1.json file2.json` | ✅ v4.3.2 |
+| **generate_full_report.py** | Merge JSON reports into Markdown summary | `python3 tools/generate_full_report.py --dir report --title "Title"` | ✅ v4.3.2 |
+| **find_library_issues.py** | Scan reports for library vulnerabilities | `python3 tools/find_library_issues.py --report-dir report` | ✅ v4.3.2 |
+| **quickpoc_local.py** | Local Quick PoC runner (Playwright/Selenium) | `python3 tools/quickpoc_local.py --target https://example.com` | ✅ v4.3.2 |
+| **manual_testing_interactive.py** | Interactive CLI for manual testing | `python3 tools/manual_testing_interactive.py` | ✅ v4.3.2 |
 | **organize_reports.py** | Clean and organize the report directory | `python3 tools/organize_reports.py` | - |
 | **tool_template.py** | Reusable template for building new tools | Reference implementation | ✅ NEW |
 
-### 🔐 Security & Quality Updates (v4.3.1 Phase 6)
+### 🔐 Security & Quality Updates (v4.3.2 Phase 6)
 
 **All tools hardened with:**
 - ✅ **Path Traversal Protection** - `analyze_scan_results.py` validates all file paths
