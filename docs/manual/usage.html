@@ -52,15 +52,23 @@
 
             <section id="basics">
                 <h2>Basic Scanning</h2>
-                <p>Run a full scan with all 32 detection methods against a single target.</p>
+                <p>Run a full automated assessment using the 32 detection methods.</p>
                 <div class="terminal">
                     <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt"># 1. Full Assessment (Discovery + Scan)</span>
+                        </div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
-                                --scan "https://example.com"</span></div>
-                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># Quick PoC Mode
-                                (Testing jQuery only)</span></div>
+                                --scan-full "https://example.com"</span></div>
+
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Targeted Scan
+                                (Provided URL only)</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
-                                --poc "https://example.com"</span></div>
+                                --scan "https://example.com/api/v1"</span></div>
+
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 3. Discovery Only
+                                (Recon Mode)</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --discover "https://example.com" --max-depth 2</span></div>
                     </div>
                 </div>
             </section>
@@ -116,28 +124,20 @@
                     </thead>
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--stealth</code></td>
-                            <td>Enable advanced WAF evasion, request jitter, and custom headers.</td>
+                            <td style="padding: 1rem;"><code>--scan-full URL</code></td>
+                            <td>Run Discovery + Deduplication + Deep Scan (Standard behavior).</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--preset {quick,stealth,thorough}</code></td>
-                            <td>Instantly override config files with tuned scan presets.</td>
+                            <td style="padding: 1rem;"><code>--discover URL</code></td>
+                            <td>Crawl target for endpoints & parameters without launching attacks.</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--async-scan</code></td>
-                            <td>Enable the EXPERIMENTAL asynchronous engine for massive speedup.</td>
+                            <td style="padding: 1rem;"><code>--scan URL</code></td>
+                            <td>Perform targeted scan on provided URLs. Skips discovery phase.</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--proxy URL</code></td>
-                            <td>Route traffic through a corporate proxy or local Burp instance.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--diff FILE1 FILE2</code></td>
-                            <td>Compare two JSON reports to track regressions over time.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--format FMT</code></td>
-                            <td>Output formats: <code>json, html, markdown, csv, pdf</code>.</td>
+                            <td style="padding: 1rem;"><code>--max-depth N</code></td>
+                            <td>Set maximum crawling depth (default: 3).</td>
                         </tr>
                     </tbody>
                 </table>
@@ -150,9 +150,11 @@
                     <li>🎯 <strong>Targeting:</strong> Always use <code>--poc</code> first to check for basic jQuery
                         vulnerabilities before running a deep <code>--scan</code>.</li>
                     <li>🕵️ <strong>Stealth:</strong> When scanning strict WAFs, combine <code>--stealth</code> with
-                        <code>--delay 2</code> to lower noise.</li>
+                        <code>--delay 2</code> to lower noise.
+                    </li>
                     <li>📊 <strong>Reporting:</strong> Use <code>--format json,html</code> and
-                        <code>--template modern</code> for executive-ready deliverables.</li>
+                        <code>--template modern</code> for executive-ready deliverables.
+                    </li>
                 </ul>
             </section>
         </article>
