@@ -862,7 +862,7 @@ app.get('/pp-confidence', (req, res) => {
 });
 
 // ============================================
-// v4.3.1 — PP GAP CLOSURE ENDPOINTS
+// v4.3.2 — PP GAP CLOSURE ENDPOINTS
 // ============================================
 
 // postMessage Web Message PP

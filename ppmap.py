@@ -8,7 +8,7 @@ r"""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.3.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.3.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -115,7 +115,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.3.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.3.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 """
         + Colors.ENDC
         + f"""
@@ -248,18 +248,24 @@ def main():
     check_for_updates(__version__)
 
     parser = argparse.ArgumentParser(
-        description="PPMAP v4.3.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.3.2 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
   Quick PoC:
     python ppmap.py --poc http://target.com
   
-  Full Scan:
-    python ppmap.py --scan http://target.com
+  Full Scan (Discovery + Attack):
+    python ppmap.py --scan-full http://target.com
+
+  Scan Specific URLs (No Crawl):
+    python ppmap.py --scan http://target.com/page1 http://target.com/page2
   
   Multiple targets:
-    python ppmap.py --scan http://target1.com http://target2.com http://target3.com
+    python ppmap.py --scan http://target1.com http://target2.com
+  
+  Discovery Only (Recon):
+    python ppmap.py --discover http://target.com --max-depth 2
   
   With stealth mode:
     python ppmap.py --scan http://target.com --stealth --delay 1
@@ -290,7 +296,13 @@ ADVANCED OPTIONS:
         help="Run local QuickPoC (uses Playwright/Selenium fallback)",
     )
     parser.add_argument(
-        "--scan", nargs="*", metavar="URL", help="Run Full Scan mode on target(s)"
+        "--scan", nargs="*", metavar="URL", help="Scan provided URL(s) without automatic discovery"
+    )
+    parser.add_argument(
+        "--scan-full", nargs="*", metavar="URL", help="Full Scan mode (Discovery + Attack) on target(s)"
+    )
+    parser.add_argument(
+        "--discover", nargs="*", metavar="URL", help="Recon only: discover endpoints and parameters without attacking"
     )
     parser.add_argument(
         "-ls",
@@ -377,13 +389,25 @@ ADVANCED OPTIONS:
     parser.add_argument(
         "--no-crawl", 
         action="store_true", 
-        help="Disable endpoint crawler (scan main target only)"
+        help="Disable endpoint crawler (when using --scan-full)"
     )
     parser.add_argument(
         "--max-endpoints", 
         type=int, 
         default=30, 
         help="Max hidden endpoints to discover per target (default: 30)"
+    )
+    parser.add_argument(
+        "--max-depth", 
+        type=int, 
+        default=1, 
+        help="Crawl depth for discovery (default: 1)"
+    )
+    parser.add_argument(
+        "--max-urls", 
+        type=int, 
+        default=100, 
+        help="Max unique URLs to scan in total (default: 100)"
     )
 
     parser.add_argument(
@@ -459,7 +483,7 @@ ADVANCED OPTIONS:
         default=0,
         help="Verbose output (-v, -vv, -vvv)",
     )
-    parser.add_argument("--version", action="version", version="PPMAP v4.3.1")
+    parser.add_argument("--version", action="version", version="PPMAP v4.3.2")
 
     # Argument completion
     try:
@@ -619,67 +643,115 @@ ADVANCED OPTIONS:
             traceback.print_exc()
         return
 
-    if args.poc or getattr(args, "quickpoc_local", None):
-        target_poc_raw = args.poc or args.quickpoc_local
-        target_poc = normalize_url(target_poc_raw)
-        logger.info(f"Starting Quick PoC mode on {target_poc}")
-        run_quick_poc(target_poc, headless=args.headless)
-    elif args.scan or args.list or args.stdin:
-        # Load targets from -ls file if provided
-        targets = list(args.scan) if args.scan else []
-
-        if args.list:
-            try:
-                with open(args.list, "r") as f:
-                    file_targets = [
-                        line.strip()
-                        for line in f
-                        if line.strip() and not line.startswith("#")
-                    ]
-                    targets.extend(file_targets)
-                    logger.info(
-                        f"Loaded {len(file_targets)} target(s) from {args.list}"
-                    )
-            except FileNotFoundError:
-                print(
-                    f"{Colors.FAIL}[!] Error: File '{args.list}' not found{Colors.ENDC}"
-                )
-                sys.exit(1)
-            except Exception as e:
-                print(f"{Colors.FAIL}[!] Error reading file: {e}{Colors.ENDC}")
-                sys.exit(1)
-
-        # Read from stdin if --stdin flag is set
-        if args.stdin:
-            # If stdin is not a terminal, it means data is piped in
-            if not sys.stdin.isatty():
-                stdin_targets = [
+    # --- TARGET LOADING & DISCOVERY PHASE ---
+    targets = []
+    if args.scan:
+        targets.extend(args.scan)
+    if args.scan_full:
+        targets.extend(args.scan_full)
+    if args.discover:
+        targets.extend(args.discover)
+    
+    if args.list:
+        try:
+            with open(args.list, "r") as f:
+                file_targets = [
                     line.strip()
-                    for line in sys.stdin
+                    for line in f
                     if line.strip() and not line.startswith("#")
                 ]
-                targets.extend(stdin_targets)
-                logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
-            else:
-                print(
-                    f"{Colors.WARNING}[!] No pipe detected. Enter URLs (one per line, Ctrl+D to finish):{Colors.ENDC}"
-                )
-                stdin_targets = [
-                    line.strip()
-                    for line in sys.stdin
-                    if line.strip() and not line.startswith("#")
-                ]
-                targets.extend(stdin_targets)
-                if stdin_targets:
-                    logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
-
-        if not targets:
-            print(f"{Colors.FAIL}[!] No targets to scan{Colors.ENDC}")
+                targets.extend(file_targets)
+                logger.info(f"Loaded {len(file_targets)} target(s) from {args.list}")
+        except FileNotFoundError:
+            print(f"{Colors.FAIL}[!] Error: File '{args.list}' not found{Colors.ENDC}")
+            sys.exit(1)
+        except Exception as e:
+            print(f"{Colors.FAIL}[!] Error reading file: {e}{Colors.ENDC}")
             sys.exit(1)
 
-        logger.info(f"Starting Full Scan mode on {len(targets)} target(s)")
+    if args.stdin:
+        if not sys.stdin.isatty():
+            stdin_targets = [
+                line.strip()
+                for line in sys.stdin
+                if line.strip() and not line.startswith("#")
+            ]
+            targets.extend(stdin_targets)
+            logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
+        else:
+            print(f"{Colors.WARNING}[!] No pipe detected. Enter URLs (one per line, Ctrl+D to finish):{Colors.ENDC}")
+            stdin_targets = [
+                line.strip()
+                for line in sys.stdin
+                if line.strip() and not line.startswith("#")
+            ]
+            targets.extend(stdin_targets)
+            if stdin_targets:
+                logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
 
-        normalized_targets = [normalize_url(t) for t in targets]
+    if not targets and not args.request:
+        parser.print_help()
+        sys.exit(1)
+
+    normalized_initial_targets = [normalize_url(t) for t in targets]
+    final_scan_queue = []
+    visited_urls = set()
+
+    # Phase 1: Discovery (only if --discover or --scan-full is used)
+    running_discovery = bool(args.discover or (args.scan_full and not args.no_crawl))
+    
+    if running_discovery:
+        from ppmap.engine import EndpointDiscovery
+        discovery_session = requests.Session()
+        # Apply stealth if needed
+        if args.stealth:
+            discovery_session.headers.update(STEALTH_HEADERS)
+            
+        discovery = EndpointDiscovery(session=discovery_session)
+        
+        for target in normalized_initial_targets:
+            if target in visited_urls:
+                continue
+            
+            print(f"{Colors.BLUE}[*] Discovering endpoints for: {target} (depth={args.max_depth or 1}){Colors.ENDC}")
+            try:
+                discovered = discovery.discover_endpoints(
+                    target, 
+                    depth=args.max_depth or 1, 
+                    max_endpoints=args.max_endpoints or 30
+                )
+                for d_url in [target] + discovered:
+                    d_url_normalized = normalize_url(d_url)
+                    if d_url_normalized not in visited_urls:
+                        final_scan_queue.append(d_url_normalized)
+                        visited_urls.add(d_url_normalized)
+                        if len(final_scan_queue) >= (args.max_urls or 100):
+                            break
+            except Exception as e:
+                logger.error(f"Discovery error for {target}: {e}")
+                final_scan_queue.append(target)
+                visited_urls.add(target)
+            
+            if len(final_scan_queue) >= (args.max_urls or 100):
+                print(f"{Colors.WARNING}[!] Max URLs ({args.max_urls}) reached during discovery.{Colors.ENDC}")
+                break
+    else:
+        # Just use the initial targets directly if no discovery is requested
+        for target in normalized_initial_targets:
+            if target not in visited_urls:
+                final_scan_queue.append(target)
+                visited_urls.add(target)
+
+    # If --discover only, we print and exit
+    if args.discover and not (args.scan or args.scan_full):
+        print(f"\n{Colors.GREEN}[✓] Discovery complete! Found {len(final_scan_queue)} endpoints:{Colors.ENDC}")
+        for url in final_scan_queue:
+            print(f"  -> {url}")
+        sys.exit(0)
+
+    # --- SCANNING PHASE ---
+    if final_scan_queue:
+        logger.info(f"Starting Scan phase on {len(final_scan_queue)} unique URL(s)")
 
         # Use async engine if enabled
         if args.async_scan:
@@ -689,7 +761,7 @@ ADVANCED OPTIONS:
             async_scanner = AsyncScanner(
                 max_concurrent=args.async_workers, timeout=args.timeout or 30
             )
-            results = async_scanner.run_async_scan(normalized_targets)
+            results = async_scanner.run_async_scan(final_scan_queue)
 
             logger.info(f"Async scan completed: {len(results)} results")
 
@@ -698,7 +770,7 @@ ADVANCED OPTIONS:
             report_gen = EnhancedReportGenerator(args.output)
             generated_reports = report_gen.generate_all_formats(
                 findings=findings,
-                target=", ".join(normalized_targets),
+                target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),
                 formats=PPMAP_CONFIG["reporting"]["format"],
             )
 
@@ -710,10 +782,10 @@ ADVANCED OPTIONS:
                 )
         else:
             # Use traditional scanner
-            target_iterator = normalized_targets
+            target_iterator = final_scan_queue
             if tqdm is not None:
                 target_iterator = tqdm(
-                    normalized_targets, desc="Scanning targets", unit="target"
+                    final_scan_queue, desc="Scanning targets", unit="target"
                 )
 
             scanner = CompleteSecurityScanner(
@@ -726,54 +798,19 @@ ADVANCED OPTIONS:
                 stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
             )
 
-            from ppmap.engine import EndpointDiscovery
-            
             all_findings = []
             try:
                 for target in target_iterator:
                     try:
-                        logger.info(f"Scanning base target: {target}")
+                        logger.info(f"Scanning target: {target}")
+                        print(f"{Colors.BLUE}[→] Scanning Endpoint: {target}{Colors.ENDC}")
                         
-                        # Phase 8: Advanced Endpoint Discovery (JS & Regex integration)
-                        targets_to_scan = [target]
+                        # NO MORE DISCOVERY INSIDE THE SCAN LOOP
+                        # We already did it in Phase 1
+                        findings = scanner.scan_target(target, run_discovery=False)
                         
-                        if not args.no_crawl:
-                            try:
-                                discovery = EndpointDiscovery(session=scanner.session)
-                                # We use depth 1 so we don't accidentally crawl the internet.
-                                discovered_eps = discovery.discover_endpoints(target, depth=1, max_endpoints=args.max_endpoints)
-                                
-                                from ppmap.utils import is_static_file
-                                
-                                for ep in discovered_eps:
-                                    # Strip URL fragments (#...) to avoid scanning the same page multiple times
-                                    from urllib.parse import urldefrag
-                                    ep_defrag, _ = urldefrag(ep)
-                                    ep = ep_defrag if ep_defrag else ep
-                                    
-                                    if ep not in targets_to_scan:
-                                        # OPTIMIZATION: Skip static files (PDF, JPG, etc.) to save time
-                                        if is_static_file(ep):
-                                            logger.debug(f"Skipping static asset: {ep}")
-                                            continue
-                                        targets_to_scan.append(ep)
-                                        
-                                if len(targets_to_scan) > 1:
-                                    print(f"\n{Colors.CYAN}[*] Discovered {len(targets_to_scan)-1} hidden endpoints via Regex/Crawler! Injecting into scanner queue...{Colors.ENDC}")
-                            except Exception as dis_err:
-                                logger.warning(f"Endpoint discovery failed for {target}: {dis_err}")
-
-                        for sub_target in targets_to_scan:
-                            logger.info(f" -> Testing endpoint: {sub_target}")
-                            if len(targets_to_scan) > 1:
-                                print(f"{Colors.BLUE}[→] Scanning Endpoint: {sub_target}{Colors.ENDC}")
-                            
-                            # OPTIMIZATION: Disable recursive discovery for sub-targets (prevent scan explosion)
-                            is_base = (sub_target == target)
-                            findings = scanner.scan_target(sub_target, run_discovery=is_base)
-                            
-                            if findings:
-                                all_findings.extend(findings)
+                        if findings:
+                            all_findings.extend(findings)
                     except Exception as e:
                         logger.error(f"Error scanning {target}: {e}", exc_info=True)
                         continue
@@ -785,7 +822,7 @@ ADVANCED OPTIONS:
             report_gen = EnhancedReportGenerator(args.output)
             generated_reports = report_gen.generate_all_formats(
                 findings=all_findings,
-                target=", ".join(normalized_targets),
+                target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),
                 formats=PPMAP_CONFIG["reporting"]["format"],
             )
 
@@ -796,7 +833,12 @@ ADVANCED OPTIONS:
                     f"{Colors.GREEN}[✓] {fmt.upper()} report: {filepath}{Colors.ENDC}"
                 )
     else:
-        parser.print_help()
+        # This part handles if final_scan_queue is empty but we have a request file
+        if args.request:
+            # The parse_burp_request logic is already handled above in the script
+            pass
+        else:
+            parser.print_help()
 
     logger.info("PPMAP completed")
 
