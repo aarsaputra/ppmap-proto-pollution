@@ -1,4 +1,4 @@
-# PPMAP v4.3.1 - Production Dependencies
+# PPMAP v4.3.2 - Production Dependencies
 
 # Core Scanner
 selenium>=4.15.0

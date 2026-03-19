@@ -1,5 +1,5 @@
 """
-PPMAP v4.3.1 — Payload Permutation Engine
+PPMAP v4.3.2 — Payload Permutation Engine
 
 Systematically generates PP payloads across 10+ notation/encoding
 variations for comprehensive coverage. Used by scanner test methods
