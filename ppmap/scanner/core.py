@@ -1655,6 +1655,29 @@ return window['{marker}'];
                 ("__proto__[onclick]", "alert(1)"),
             ]
 
+        # FIX: Dismiss any pre-existing site alerts/modals before testing
+        # Some sites (e.g., Samsung Community) show cookie consent or region
+        # selector popups that trigger driver.switch_to.alert, causing false positives.
+        baseline_has_alert = False
+        try:
+            self.driver.get(target_url)
+            time.sleep(3)
+            for _ in range(5):
+                try:
+                    pre_alert = self.driver.switch_to.alert
+                    pre_text = pre_alert.text
+                    pre_alert.accept()
+                    baseline_has_alert = True
+                    logger.info(f"Dismissed pre-existing site alert: '{pre_text}'")
+                except Exception:
+                    break
+            if baseline_has_alert:
+                print(
+                    f"{Colors.YELLOW}[!] Site has native popups/modals - will filter during testing{Colors.ENDC}"
+                )
+        except Exception:
+            pass
+
         try:
             for key, payload in dom_xss_payloads:
                 try:
@@ -1688,14 +1711,60 @@ return window['{marker}'];
 
                         # Try to detect alert dialog
                         try:
-                            alert_text = self.driver.switch_to.alert.text
-                            self.driver.switch_to.alert.accept()
-                            alerts_detected = True
-                            print(
-                                f"{Colors.FAIL}[✓] ALERT DETECTED: '{alert_text}'{Colors.ENDC}"
-                            )
+                            alert_obj = self.driver.switch_to.alert
+                            alert_text = alert_obj.text
+                            alert_obj.accept()
+
+                            # FIX: Validate alert text matches expected payload output
+                            # Build set of expected alert values from the payload
+                            expected_alerts = {'1', 'XSS', ''}
+                            if 'alert(' in payload:
+                                match = re.search(r'alert\(([^)]*)\)', payload)
+                                if match:
+                                    expected_val = match.group(1).strip('"').strip("'")
+                                    expected_alerts.add(expected_val)
+                            # Also accept the target domain as valid (from alert(document.domain))
+                            try:
+                                target_domain = target_url.split('//')[1].split('/')[0]
+                                expected_alerts.add(target_domain)
+                            except Exception:
+                                pass
+
+                            alert_str = str(alert_text) if alert_text is not None else 'None'
+
+                            if alert_str in expected_alerts or alert_str == target_domain:
+                                # FIX: Confirmation re-test — navigate again to verify
+                                # the alert fires a second time (filters one-time modals)
+                                confirmed = False
+                                try:
+                                    self.driver.get(test_url)
+                                    time.sleep(2)
+                                    confirm_alert = self.driver.switch_to.alert
+                                    confirm_text = str(confirm_alert.text) if confirm_alert.text is not None else 'None'
+                                    confirm_alert.accept()
+                                    if confirm_text in expected_alerts or confirm_text == target_domain:
+                                        confirmed = True
+                                except Exception:
+                                    pass
+
+                                if confirmed:
+                                    alerts_detected = True
+                                    print(
+                                        f"{Colors.FAIL}[✓] ALERT DETECTED (confirmed): '{alert_str}'{Colors.ENDC}"
+                                    )
+                                else:
+                                    logger.info(f"Alert '{alert_str}' did not reproduce on re-test, likely a site modal")
+                                    print(
+                                        f"{Colors.YELLOW}[!] Alert '{alert_str}' not reproduced on re-test (site modal?){Colors.ENDC}"
+                                    )
+                            else:
+                                # Alert text doesn't match any expected payload value
+                                logger.info(f"Dismissed unrelated site alert: '{alert_str}' (expected one of: {expected_alerts})")
+                                print(
+                                    f"{Colors.YELLOW}[!] Dismissed unrelated alert: '{alert_str}' (not from payload){Colors.ENDC}"
+                                )
                         except Exception as e:
-                            logger.debug(f"Ignored error: {type(e).__name__} - {e}")
+                            logger.debug(f"No alert present: {type(e).__name__}")
 
                         # Check page source for payload traces
                         page_source = self.driver.page_source
@@ -1723,31 +1792,44 @@ return window['{marker}'];
 
                         is_polluted = False
                         found_sinks = []
-                        
-                        if not alerts_detected:
-                            # Verify if the prototype was ACTUALLY polluted before checking for sinks
-                            try:
-                                # Extract property name, e.g., '__proto__[src]' -> 'src'
-                                test_prop = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
-                                pollution_check = self.driver.execute_script(f"return Object.prototype['{test_prop}'] !== undefined;")
-                                if pollution_check:
-                                    is_polluted = True
-                            except Exception as e:
-                                logger.debug(f"Error checking JS prototype: {e}")
-                                
-                            if not is_polluted:
-                                continue  # Skip finding if no execution and no prototype pollution
 
-                            # If polluted but no alert, check if dangerous sinks exist that COULD trigger it
+                        # FIX: ALWAYS verify prototype pollution, even when alert detected.
+                        # A real DOM XSS+PP requires BOTH pollution AND execution.
+                        try:
+                            test_prop = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
+                            pollution_check = self.driver.execute_script(f"return Object.prototype['{test_prop}'] !== undefined;")
+                            if pollution_check:
+                                is_polluted = True
+                        except Exception as e:
+                            logger.debug(f"Error checking JS prototype: {e}")
+
+                        # Decision matrix:
+                        # - alert + polluted = CRITICAL (confirmed)
+                        # - alert + NOT polluted = FALSE POSITIVE (dismiss)
+                        # - no alert + polluted = HIGH (potential)
+                        # - no alert + NOT polluted = skip
+                        if not alerts_detected and not is_polluted:
+                            continue
+
+                        if alerts_detected and not is_polluted:
+                            # Alert fired but prototype NOT polluted = false positive
+                            logger.info(f"Alert detected but Object.prototype.{test_prop} is undefined — false positive")
+                            print(
+                                f"{Colors.YELLOW}[!] Alert detected but pollution NOT confirmed for {key} — skipping (false positive){Colors.ENDC}"
+                            )
+                            continue
+
+                        # If polluted but no alert, check if dangerous sinks exist
+                        if not alerts_detected:
                             page_source = self.driver.page_source
                             sinks = ["innerHTML", "document.write", "eval(", "setTimeout(", "location.href"]
                             found_sinks = [sink for sink in sinks if sink in page_source]
 
-                        # Report finding: alert was triggered OR (prototype was actually polluted + sinks exist)
-                        severity_level = Severity.CRITICAL if alerts_detected else Severity.HIGH
-                        verified_status = alerts_detected
-                        status_msg = 'EXECUTED (ALERT)' if alerts_detected else f'POLLUTED (Sinks: {",".join(found_sinks)})'
-                        
+                        # Report finding
+                        severity_level = Severity.CRITICAL if (alerts_detected and is_polluted) else Severity.HIGH
+                        verified_status = alerts_detected and is_polluted
+                        status_msg = 'EXECUTED (ALERT + POLLUTION CONFIRMED)' if verified_status else f'POLLUTED (Sinks: {",".join(found_sinks)})'
+
                         findings.append(
                             Finding(
                                 type=VulnerabilityType.DOM_XSS_PP,
@@ -1757,11 +1839,11 @@ return window['{marker}'];
                                 payload=payload,
                                 url=target_url,
                                 verified=verified_status,
-                                metadata={"alert_triggered": alerts_detected, "test_url": test_url, "key": key}
+                                metadata={"alert_triggered": alerts_detected, "is_polluted": is_polluted, "test_url": test_url, "key": key}
                             )
                         )
-                        
-                        if alerts_detected:
+
+                        if verified_status:
                             print(f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP EXECUTED: {key}{Colors.ENDC}")
                         else:
                             print(f"{Colors.YELLOW}[!] HIGH DOM XSS+PP POLLUTED (No Execution): {key}{Colors.ENDC}")
