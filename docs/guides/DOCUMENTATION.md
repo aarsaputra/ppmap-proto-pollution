@@ -1,4 +1,4 @@
-# PPMAP v4.4.0 - Complete Documentation
+# PPMAP v4.4.1 - Complete Documentation
 
 > **Prototype Pollution Multi-Purpose Assessment Platform**  
 > The most comprehensive PP scanner with 100% PortSwigger coverage + 2026 Enterprise refactor
@@ -129,7 +129,7 @@ playwright>=1.30.0
 ### Verify Installation
 ```bash
 python3 ppmap.py --version
-# Output: PPMAP v4.4.0 (Advanced Evasion Edition)
+# Output: PPMAP v4.4.1 (Advanced Evasion Edition)
 ```
 
 ---
@@ -374,7 +374,7 @@ python3 ppmap.py --scan http://target.com --workers 3
 
 ## 📊 Project Statistics
 
-- **Version:** 4.4.0 (Advanced Evasion Edition - COMPLETE)
+- **Version:** 4.4.1 (Advanced Evasion Edition - COMPLETE)
 - **Code Lines:** 4,140+ (Modularized)
 - **Payloads:** 266+
 - **Detection Methods:** 32
@@ -440,7 +440,7 @@ REPORTING:
 
 ---
 
-## 🏆 What Makes PPMAP v4.4.0 Special?
+## 🏆 What Makes PPMAP v4.4.1 Special?
 
 1. **100% PortSwigger Coverage** - Only scanner with complete coverage
 2. **2024/2025 Research** - Includes latest bug bounty techniques
@@ -461,5 +461,5 @@ For issues or questions:
 
 ---
 
-**PPMAP v4.4.0** - The Most Comprehensive Prototype Pollution Scanner  
+**PPMAP v4.4.1** - The Most Comprehensive Prototype Pollution Scanner  
 *Last Updated: March 24, 2026*

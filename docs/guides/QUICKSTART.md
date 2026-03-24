@@ -1,4 +1,4 @@
-# PPMAP v4.4.0 - Quick Start Guide (Advanced Evasion Edition)
+# PPMAP v4.4.1 - Quick Start Guide (Advanced Evasion Edition)
 
 ## 🚀 Installation
 
@@ -103,7 +103,7 @@ reports/
 
 ## 🎯 Key Features
 
-### ✅ Implemented in v4.4.0 (Enterprise)
+### ✅ Implemented in v4.4.1 (Enterprise)
 - ✓ **32 detection methods** (100% PortSwigger + Research coverage)
 - ✓ **High Performance**: Static asset filtering & Browser session reuse
 - ✓ **Smart Discovery**: Endpoint extraction with recursive loop prevention
@@ -314,4 +314,4 @@ For issues or questions:
 
 ---
 
-**PPMAP v4.4.0** - The Most Comprehensive PP Scanner (100% PortSwigger Coverage) ✅
+**PPMAP v4.4.1** - The Most Comprehensive PP Scanner (100% PortSwigger Coverage) ✅

@@ -875,6 +875,27 @@ return window['{marker}'];
                 # Retry loop to handle navigation errors
                 for attempt in range(3):
                     try:
+                        # --- FIX BUG-1: Flush any pre-existing PP-triggered alerts ---
+                        # PP tests run earlier may have polluted Object.prototype so
+                        # navigating any URL can trigger alert(1). Load clean URL first.
+                        try:
+                            self.driver.get(base_url)
+                            time.sleep(0.8)
+                            for _ in range(5):
+                                try:
+                                    self.driver.switch_to.alert.accept()
+                                except Exception:
+                                    break
+                        except Exception:
+                            pass
+
+                        # PP artifact alert values — never count as real XSS
+                        _pp_artifacts = {'1', '', 'null', 'undefined', 'true', 'false'}
+                        try:
+                            _pp_artifacts.add(base_url.split('//')[1].split('/')[0])
+                        except Exception:
+                            pass
+
                         self.driver.get(test_url)
                         self.metrics.total_requests += 1
                         time.sleep(1 + attempt)  # Increase wait on retry
@@ -887,7 +908,31 @@ return window['{marker}'];
                             WebDriverWait(self.driver, 1.5).until(EC.alert_is_present())
                             alert_text = self.driver.switch_to.alert.text
                             self.driver.switch_to.alert.accept()
-                            
+
+                            # --- FIX BUG-1: Filter PP artifact alerts ---
+                            # If alert text is '1' or the domain, it came from PP pollution
+                            # triggered in background — not from the XSS payload.
+                            alert_str = str(alert_text) if alert_text is not None else ''
+                            if alert_str in _pp_artifacts:
+                                logger.info(
+                                    f"XSS alert '{alert_str}' is a PP artifact, not reflected XSS — skipping"
+                                )
+                                break
+
+                            # Additionally verify payload is actually reflected in page source
+                            try:
+                                pg_src = self.driver.page_source
+                                if not (
+                                    payload[:15] in pg_src
+                                    or urllib.parse.quote(payload[:15], safe='') in pg_src
+                                ):
+                                    logger.info(
+                                        f"XSS alert fired but payload not reflected in DOM — PP side-effect, skipping"
+                                    )
+                                    break
+                            except Exception:
+                                pass
+
                             print(
                                 f"{Colors.FAIL}[!] XSS FOUND (Alert Triggered): {param}={payload[:40]}{Colors.ENDC}"
                             )
@@ -1757,10 +1802,33 @@ return window['{marker}'];
                                         f"{Colors.FAIL}[✓] ALERT DETECTED (confirmed): '{alert_str}'{Colors.ENDC}"
                                     )
                                 else:
-                                    logger.info(f"Alert '{alert_str}' did not reproduce on re-test, likely a site modal")
-                                    print(
-                                        f"{Colors.YELLOW}[!] Alert '{alert_str}' not reproduced on re-test (site modal?){Colors.ENDC}"
+                                    # --- FIX BUG-2: Alert didn't reproduce = FP, skip this payload ---
+                                    # data: URL alerts appear only once per navigation in Chrome —
+                                    # so we fall back to JS Object.prototype verification instead.
+                                    logger.info(
+                                        f"Alert '{alert_str}' not reproduced — verifying via JS Object.prototype check"
                                     )
+                                    # Extract property name from key (e.g., "__proto__[value]" -> "value")
+                                    prop_name = key.split('[')[-1].strip(']')
+                                    try:
+                                        fallback_polluted = self.driver.execute_script(
+                                            f"return Object.prototype['{prop_name}'] !== undefined;"
+                                        )
+                                        if fallback_polluted:
+                                            alerts_detected = True
+                                            logger.info(
+                                                f"Alert confirmed via JS Object.prototype['{prop_name}'] instead of re-nav"
+                                            )
+                                        else:
+                                            print(
+                                                f"{Colors.YELLOW}[!] Alert '{alert_str}' not reproduced and no prototype pollution — skipping (FP){Colors.ENDC}"
+                                            )
+                                            continue  # skip this payload, it's a FP
+                                    except Exception:
+                                        print(
+                                            f"{Colors.YELLOW}[!] Alert '{alert_str}' not reproduced on re-test (site modal?) — skipping{Colors.ENDC}"
+                                        )
+                                        continue  # skip
                             else:
                                 # Alert text doesn't match any expected payload value
                                 logger.info(f"Dismissed unrelated site alert: '{alert_str}' (expected one of: {expected_alerts})")
@@ -1830,7 +1898,7 @@ return window['{marker}'];
                             found_sinks = [sink for sink in sinks if sink in page_source]
 
                         # Report finding
-                        severity_level = Severity.CRITICAL if (alerts_detected and is_polluted) else Severity.HIGH
+                        severity_level = Severity.HIGH if (alerts_detected and is_polluted) else Severity.MEDIUM
                         verified_status = alerts_detected and is_polluted
                         status_msg = 'EXECUTED (ALERT + POLLUTION CONFIRMED)' if verified_status else f'POLLUTED (Sinks: {",".join(found_sinks)})'
 
@@ -1848,9 +1916,9 @@ return window['{marker}'];
                         )
 
                         if verified_status:
-                            print(f"{Colors.FAIL}[✓✓✓] CRITICAL DOM XSS+PP EXECUTED: {key}{Colors.ENDC}")
+                            print(f"{Colors.FAIL}[✓✓✓] HIGH DOM XSS+PP EXECUTED: {key}{Colors.ENDC}")
                         else:
-                            print(f"{Colors.YELLOW}[!] HIGH DOM XSS+PP POLLUTED (No Execution): {key}{Colors.ENDC}")
+                            print(f"{Colors.YELLOW}[!] MEDIUM DOM XSS+PP POLLUTED (No Execution): {key}{Colors.ENDC}")
 
                     except Exception:
                         # Fallback: Check HTTP response for indicators
@@ -3043,7 +3111,7 @@ return window['{marker}'];
                                     {
                                         "type": "constructor_pollution",
                                         "method": "CONSTRUCTOR_BYPASS",
-                                        "severity": "CRITICAL",
+                                        "severity": "HIGH",
                                         "description": "Constructor-based prototype pollution detected (Modern bypass for __proto__ filters)",
                                         "payload": payload,
                                         "reference": "PortSwigger + HackerOne/Bugcrowd 2024/2025",
@@ -3091,7 +3159,7 @@ return window['{marker}'];
                                             findings[-1]["verified"] = False
                                         else:
                                             print(
-                                                f"{Colors.FAIL}[!] CRITICAL: Browser Confirmed Object.prototype pollution!{Colors.ENDC}"
+                                                f"{Colors.FAIL}[!] HIGH: Browser Confirmed Object.prototype pollution!{Colors.ENDC}"
                                             )
                                             findings[-1]["verified"] = True
                                             return findings
@@ -3106,7 +3174,7 @@ return window['{marker}'];
                                         findings[-1]["verified"] = False
 
                                 actual_severity = findings[-1].get(
-                                    "severity", "CRITICAL"
+                                    "severity", "HIGH"
                                 )
                                 if "LOW" in actual_severity:
                                     print(
@@ -3114,7 +3182,7 @@ return window['{marker}'];
                                     )
                                 else:
                                     print(
-                                        f"{Colors.FAIL}[!] CRITICAL: Constructor-based pollution detected (Browser-Verified)!{Colors.ENDC}"
+                                        f"{Colors.FAIL}[!] HIGH: Constructor-based pollution detected (Browser-Verified)!{Colors.ENDC}"
                                     )
                                 return findings  # Return early on first finding
                 except Exception:
@@ -3378,7 +3446,7 @@ return window['{marker}'];
                                         {
                                             "type": "descriptor_pollution_verified",
                                             "method": f"DEFINEPROPERTYBYPASS_{pollution_type.upper()}",
-                                            "severity": "CRITICAL",
+                                            "severity": "HIGH",
                                             "description": f"Verified XSS via descriptor pollution: {description}",
                                             "payload": payload,
                                             "alert_content": alert_text,
@@ -3388,7 +3456,7 @@ return window['{marker}'];
                                         }
                                     )
                                     print(
-                                        f"{Colors.FAIL}[!] CRITICAL: Verified XSS via descriptor pollution!{Colors.ENDC}"
+                                        f"{Colors.FAIL}[!] HIGH: Verified XSS via descriptor pollution!{Colors.ENDC}"
                                     )
                                     print(f"    Payload: {payload}")
                                     print(f"    Alert: {alert_text}")
@@ -3576,22 +3644,43 @@ return window['{marker}'];
                 print(
                     f"{Colors.CYAN}[*] Detected {len(detected_libraries)} third-party libraries{Colors.ENDC}"
                 )
+            else:
+                # --- FIX BUG-3: Do NOT fall back to testing all gadgets ---
+                # If no library indicators were found in the page, there is no
+                # gadget to exploit — reporting would be a false positive.
+                print(
+                    f"{Colors.GREEN}[✓] No known third-party gadget libraries detected in page source{Colors.ENDC}"
+                )
+                return findings
 
-            # Test detected libraries
-            for test in progress_iter(
-                detected_libraries if detected_libraries else gadget_tests,
-                desc="Gadget Tests",
-            ):
+            # Test ONLY detected libraries
+            for test in progress_iter(detected_libraries, desc="Gadget Tests"):
                 try:
                     # Fix URL separator: use & if target already has ?
                     payload_qs = test["payload"].lstrip("?")
                     separator = "&" if "?" in target_url else "?"
                     test_url = f"{target_url}{separator}{payload_qs}"
 
-                    # Step 1: Navigate with browser and check if prototype is actually polluted
+                    # --- FIX BUG-3: Two-step verification ---
+                    # Step 1: Check baseline — property must NOT exist on Object.prototype
+                    # before we inject anything (to rule out pre-existing properties)
                     is_polluted = False
                     if hasattr(self, "driver") and self.driver:
                         try:
+                            # Baseline: load clean URL, check if property already set
+                            self.driver.get(target_url)
+                            time.sleep(1)
+                            baseline_set = self.driver.execute_script(
+                                f"return Object.prototype['{test['property']}'] !== undefined;"
+                            )
+                            if baseline_set:
+                                # Property already exists — cannot attribute to this gadget
+                                logger.debug(
+                                    f"Gadget skip: Object.prototype['{test['property']}'] already defined in baseline"
+                                )
+                                continue
+
+                            # Step 2: Inject payload and verify pollution was CAUSED by it
                             self.driver.get(test_url)
                             time.sleep(2)
                             is_polluted = self.verify_prototype_pollution(test["property"])
@@ -5996,14 +6085,14 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         
         <div class="section">
             <h2>⚖️ Disclaimer</h2>
-            <p>This report was generated by PPMAP v4.4.0 for authorized security testing only.
+            <p>This report was generated by PPMAP v4.4.1 for authorized security testing only.
             The findings should be validated and addressed by qualified security professionals.
             Always obtain proper authorization before performing security assessments on any target.
             Unauthorized access to computer systems is illegal.</p>
         </div>
         
         <footer>
-            <p>PPMAP v4.4.0 | Prototype Pollution Multi-Purpose Assessment Platform</p>
+            <p>PPMAP v4.4.1 | Prototype Pollution Multi-Purpose Assessment Platform</p>
             <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>

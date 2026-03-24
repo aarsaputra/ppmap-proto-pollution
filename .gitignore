@@ -130,3 +130,4 @@ targets.txt
 # ppmap_lab runtime artifacts (never commit these)
 ppmap_lab/*.log
 ppmap_lab/test_results/
+node_modules/
