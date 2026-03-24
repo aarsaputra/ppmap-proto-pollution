@@ -375,6 +375,6 @@ Author assumes NO liability for misuse or damages.
 
 ---
 
-**Current Version**: 4.3.2  
-**Last Updated**: March 18, 2026  
+**Current Version**: 4.4.0  
+**Last Updated**: March 24, 2026  
 **Next Release**: v5.0.0 (Planned - AI-powered detection, ML gadget discovery)
