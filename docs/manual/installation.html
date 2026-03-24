@@ -87,16 +87,24 @@
                 <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Debian-based (Kali/Ubuntu)</h3>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
-                                && sudo apt install git python3-venv chromium-browser -y</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
-                                https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
-                                ppmap-proto-pollution && python3 -m venv venv</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">source
-                                venv/bin/activate</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install -r
-                                requirements.txt</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
+                                --scan-full http://localhost:3000</span></div>
+                        <div class="terminal-line"><span>[INFO] Starting PPMAP v4.4.1 Enterprise Engine...</span></div>
+                        <div class="terminal-line"><span>[INFO] Target: http://localhost:3000 (Lab Environment)</span>
+                        </div>
+                        <div class="terminal-line"><span>[*] Scanning 9 Security Tiers / 32 Methods...</span></div>
+                        <div class="terminal-line"><span style="color: #ffbd2e;">[→] Tier 1: jQuery Prototype
+                                Pollution... </span><span style="color: #ff5f56; font-weight: bold;">[VULNERABLE]</span>
+                        </div>
+                        <div class="terminal-line"><span style="color: #ffbd2e;">[→] Tier 4: DOM XSS Gadgets...
+                            </span><span style="color: #ff5f56; font-weight: bold;">[EXPLOIT CONFIRMED]</span></div>
+                        <div class="terminal-line"><span style="color: #ffbd2e;">[→] Tier 7: GraphQL Injection
+                                Specialists... </span><span style="color: #00ff88; font-weight: bold;">[CLEAN]</span>
+                        </div>
+                        <div class="terminal-line"><span style="color: #00ff88; font-weight: bold;">[✓] Scan Complete!
+                                Found 32 Vulnerabilities.</span></div>
+                        <div class="terminal-line"><span style="color: #ff5f56; font-weight: bold;">[!] jQuery PP: 4 |
+                                Server-Side: 9 | DOM XSS: 19</span></div>
                     </div>
                 </div>
 
