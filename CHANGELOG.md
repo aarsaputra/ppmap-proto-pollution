@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.4.1] - 2026-03-24 (Precision & False Positive Fixes) ✅
+
+- **Fixed Bug 1:** Resolved false positive XSS reports caused by lingering prototype pollution side-effects from prior tests by adding a pre-navigation "flush" routine and validating alert text artifacts.
+- **Fixed Bug 2:** Patched a logic flaw in `test_dom_xss_with_pp` where unconfirmed alerts were downgraded to HIGH instead of skipped, and fixed the JavaScript Object.prototype fallback check to correctly extract property names.
+- **Fixed Bug 3:** Refactored `test_third_party_gadgets` to strictly verify third-party library presence (Google Analytics, Vue, DOMPurify, etc.) in the page source before testing gadget properties, eliminating false positive detections on globally vulnerable pages.
+- **CVSS v3.1 Metric Alignment:** Updated scanner core reporting logic to downgrade Client-Side Execution (e.g., XSS, DOM XSS, Protocol Pollution) from `CRITICAL` to `HIGH` / `MEDIUM`, complying with formal qualitative severity rating standards.
+
 ## [4.4.0] - 2026-03-19 (Advanced Evasion Edition) ✅
 
 ### Added - Advanced WAF & CSP Bypasses

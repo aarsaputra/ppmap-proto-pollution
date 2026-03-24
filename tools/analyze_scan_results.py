@@ -69,7 +69,7 @@ def summarize_vulnerabilities(report_dir: str):
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.0 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.4.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
     logger.info(f"{'Target':<40} | {'Type':<30} | {'Severity':<10}")
     logger.info("-" * 80)
