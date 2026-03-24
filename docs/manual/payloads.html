@@ -50,55 +50,145 @@
 
     <main class="container" style="padding-top: 8rem;">
         <article class="content">
-            <h1>Payload Ecosystem</h1>
+            <h1>Payload Ecosystem & Security Tiers</h1>
             <p class="lead">PPMAP uses a sophisticated engine to deliver 266+ specialized payloads across 9 security
-                tiers.</p>
+                tiers, achieving 98%+ coverage of known Prototype Pollution vectors.</p>
 
-            <section id="tiers">
-                <h2>Security Tiers</h2>
-                <div class="features-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
+            <section id="tiers" style="margin-top: 3rem;">
+                <h2>The 9 Security Tiers</h2>
+                <div class="features-grid" style="grid-template-columns: 1fr; gap: 1.5rem; margin-top: 2rem;">
                     <div class="feature-card">
-                        <h3>Tier 0-2: Standard Detection</h3>
-                        <p>Baseline checks for jQuery (CVE-2019-11358), Lodash, and basic bracket notation. Includes WAF
-                            fingerprinting to identify potential blocking layers.</p>
+                        <h3>Tier 0 - Standard Detection</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>jQuery Prototype Pollution (CVE-2019-11358)</li>
+                            <li>Server-side PP (Lodash, Node.js)</li>
+                            <li>POST parameter XSS</li>
+                            <li>Smart WAF Detection (Baseline Check + Signature Identification)</li>
+                        </ul>
                     </div>
+
                     <div class="feature-card">
-                        <h3>Tier 3-5: Advanced Gadgets</h3>
-                        <p>Focuses on DOM execution sinks like <code>innerHTML</code>, <code>eval()</code>, and
-                            <code>setTimeout()</code>. Also tests server-side Node.js environments and Template Engine
-                            (EJS/Handlebars) pollution.
-                        </p>
+                        <h3>Tier 1 - Blind Detection</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>JSON spaces overflow (Express.js side-channel)</li>
+                            <li>HTTP status code override</li>
+                            <li>Function.prototype chain pollution</li>
+                            <li>Out-of-Band (OOB) Detection (Interact.sh integration)</li>
+                        </ul>
                     </div>
+
                     <div class="feature-card">
-                        <h3>Tier 6-8: API & Protocol Specialists</h3>
-                        <p>Modern attacks targeting GraphQL nested objects, WebSocket Frame injection, and Reach/Next.js
-                            Flight Protocol pollution.</p>
+                        <h3>Tier 2 - Modern Frameworks</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>React 19 / Next.js Flight Protocol (RESEARCH-2024-REACT-FLIGHT)</li>
+                            <li>SvelteKit / Superforms (RESEARCH-2024-SVELTEKIT-RCE)</li>
+                            <li>Charset/Encoding bypasses (UTF-7, ISO-2022)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 3 - PortSwigger Advanced Techniques</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li><code>fetch()</code> API header pollution</li>
+                            <li><code>Object.defineProperty()</code> bypass strategies</li>
+                            <li><code>child_process</code> RCE detection (Safe mode payload execution)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 4 - Modern Evasions (2024/2026)</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>Constructor-based pollution (Primary modern bypass technique)</li>
+                            <li>Sanitization bypasses (Recursive filter evasion loops)</li>
+                            <li>Descriptor pollution (Accessors bridging)</li>
+                            <li>Deep Chain Fuzzing (e.g., <code>__proto__.config.request.url</code>)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 5 - Research Gap Features</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>CORS Header Pollution (Safe server-side reflection)</li>
+                            <li>Third-Party Library Gadgets (DOMPurify, Adobe DTM, Vue.js, Google Analytics)</li>
+                            <li>Storage API Pollution (localStorage / sessionStorage manipulation)</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 6 - CVE-Specific Ecosystem</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>Kibana Telemetry RCE (HackerOne #852613 - $10k bounty)</li>
+                            <li>Blitz.js RCE Chain (CVE-2022-23631)</li>
+                            <li>Elastic XSS (HackerOne #998398)</li>
+                            <li>Deep-merge & Protobufjs specific CVE exploits</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 7 - GraphQL Intrusion (v4.x)</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>GraphQL endpoint auto-discovery and introspection mapping</li>
+                            <li>Mutation and Query aliasing for PP injection attacks</li>
+                            <li>8 Custom GraphQL-specific payload structures</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>Tier 8 - WebSocket Streaming (v4.x)</h3>
+                        <ul
+                            style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
+                            <li>Native asynchronous WebSocket frame analysis</li>
+                            <li>Socket.IO specific event handler pollution overrides</li>
+                            <li>Redux action injection via WSS streams</li>
+                        </ul>
                     </div>
                 </div>
             </section>
 
             <section id="categories" style="margin-top: 4rem;">
-                <h2>Payload Categories</h2>
+                <h2>Payload Morphology Categories</h2>
                 <div
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
                     <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
-                        <strong style="color: var(--primary);">Standard</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">__proto__[x]=y</span>
+                        <strong style="color: var(--primary);">Standard Injection</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">__proto__[x]=y</span>
                     </div>
                     <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
-                        <strong style="color: var(--accent);">Constructor</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">constructor.prototype.x=y</span>
+                        <strong style="color: var(--accent);">Constructor Bypass</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">constructor.prototype.x=y</span>
                     </div>
                     <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
-                        <strong style="color: #ffbd2e;">Unicode</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">\u005f\u005fproto\u005f\u005f</span>
+                        <strong style="color: #ffbd2e;">Unicode / ISO-2022</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">\u005f\u005fproto\u005f\u005f</span>
                     </div>
                     <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
-                        <strong style="color: #ff5f56;">Nested</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">__proto__.a.b.c=y</span>
+                        <strong style="color: #ff5f56;">Deep Array Casting</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">__proto__[0][1]=y</span>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                        <strong style="color: #00d4ff;">HTTP Header Injection</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">X-Forwarded-For:
+                            __proto__[admin]=1</span>
+                    </div>
+                    <div style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                        <strong style="color: #00d4ff;">Deep Path Recursive</strong><br>
+                        <span
+                            style="font-size: 0.9rem; color: var(--text-muted); font-family: monospace;">__proto__.config.target=y</span>
                     </div>
                 </div>
-            </section>
             </section>
         </article>
     </main>

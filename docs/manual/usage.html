@@ -52,11 +52,10 @@
 
             <section id="basics">
                 <h2>Basic Scanning</h2>
-                <p>Run a full automated assessment using the 32 detection methods.</p>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt"># 1. Full Assessment (Discovery + Scan)</span>
-                        </div>
+                        <div class="terminal-line"><span class="prompt"># 1. Full Assessment (Discovery + Deep
+                                Scan)</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
                                 --scan-full "https://example.com"</span></div>
 
@@ -73,89 +72,207 @@
                 </div>
             </section>
 
+            <section id="scanning-options" style="margin-top: 4rem;">
+                <h2>Scanning Options Reference</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                                <th style="padding: 1rem;">Flag</th>
+                                <th style="padding: 1rem;">Description</th>
+                                <th style="padding: 1rem;">Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--scan URL</code></td>
+                                <td>Start a full scan (all tiers 0-6) on target(s)</td>
+                                <td><code>--scan https://target.com</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--poc URL</code></td>
+                                <td>Run Quick PoC (jQuery only)</td>
+                                <td><code>--poc https://target.com</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>-ls, --list FILE</code></td>
+                                <td>Scan targets from a file (one URL per line)</td>
+                                <td><code>-ls targets.txt</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--stdin</code></td>
+                                <td>Read targets from pipe (e.g., from subfinder)</td>
+                                <td><code>cat urls.txt | python3 ppmap.py --scan --stdin</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>-r, --request FILE</code></td>
+                                <td>Scan request from a file (Burp Suite format)</td>
+                                <td><code>-r req.txt</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="browser-performance" style="margin-top: 4rem;">
+                <h2>Browser & Performance</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                                <th style="padding: 1rem;">Flag</th>
+                                <th style="padding: 1rem;">Description</th>
+                                <th style="padding: 1rem;">Default</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--browser {chrome,firefox}</code></td>
+                                <td>Browser engine to use</td>
+                                <td><code>chrome</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--headless</code></td>
+                                <td>Run browser in background (no UI)</td>
+                                <td><code>True</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--no-headless</code></td>
+                                <td>Show browser window (good for debugging)</td>
+                                <td><code>False</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--workers N</code></td>
+                                <td>Number of concurrent workers (threads)</td>
+                                <td><code>3</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--timeout N</code></td>
+                                <td>Request timeout in seconds</td>
+                                <td><code>30</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--async-scan</code></td>
+                                <td>Enable experimental async engine</td>
+                                <td><code>False</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="stealth" style="margin-top: 4rem;">
+                <h2>Stealth & Evasion Modules</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                                <th style="padding: 1rem;">Flag</th>
+                                <th style="padding: 1rem;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--stealth</code></td>
+                                <td>Enable anti-bot/WAF evasion mode</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--delay N</code></td>
+                                <td>Delay between requests in seconds (e.g., <code>--delay 2</code>)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--user-agent STR</code></td>
+                                <td>Custom User-Agent string</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--proxy URL</code></td>
+                                <td>Use HTTP/S proxy (e.g., <code>--proxy http://127.0.0.1:8080</code>)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--oob</code></td>
+                                <td>Enable OOB/Blind detection (Interact.sh)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--disable-xss</code></td>
+                                <td>Disable XSS tests and focus only on PP object injection</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--disable-waf-bypass</code></td>
+                                <td>Disable WAF bypass tests to save time</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--insecure</code></td>
+                                <td>Disable SSL certificate verification</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="reporting" style="margin-top: 4rem;">
+                <h2>Reporting & Utility</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                                <th style="padding: 1rem;">Flag</th>
+                                <th style="padding: 1rem;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--output DIR</code></td>
+                                <td>Base directory for reports (default: <code>reports/</code>). Reports are
+                                    auto-organized.</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--format FMT</code></td>
+                                <td>Output formats: <code>json</code>, <code>html</code>, <code>markdown</code>,
+                                    <code>csv</code>, <code>xml</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--template TPL</code></td>
+                                <td>HTML template styles: <code>modern</code> (default), <code>minimal</code>, or
+                                    <code>detailed</code></td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--diff FILE1 FILE2</code></td>
+                                <td>Compare two scan result files (delta reporting)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 1rem;"><code>--no-poc</code></td>
+                                <td>Exclude Proof-of-Concept HTML/Code strings from report (safe mode)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <section id="enterprise" style="margin-top: 4rem;">
                 <h2>Enterprise Scenarios</h2>
                 <p>PPMAP is built for scale. Here are real-world deployment examples.</p>
-
-                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">1. CI/CD Pipeline Integration (Mass Scanning)</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Pipe targets directly from
-                    your recon tools (e.g., Subfinder + Httpx) into PPMAP using <code>--stdin</code>.</p>
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">1. Bulk Bug Bounty Hunting (Mass Scanning)</h3>
                 <div class="terminal">
                     <div class="terminal-body">
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">subfinder -d
-                                example.com | httpx | python3 ppmap.py --scan --stdin</span></div>
-                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># Alternatively, read
-                                from a file</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
-                                --scan -ls targets.txt --workers 10</span></div>
+                                example.com -silent | httpx | python3 ppmap.py --scan --stdin --headless --workers
+                                10</span></div>
                     </div>
                 </div>
 
-                <h3 style="margin: 2.5rem 0 1rem; font-size: 1.1rem;">2. Authenticated Scans (Burp Suite Integration)
-                </h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Export a raw HTTP request
-                    from Burp Suite ensuring all Cookies and Auth Headers are included.</p>
+                <h3 style="margin: 2.5rem 0 1rem; font-size: 1.1rem;">2. Deep Forensic Audit (SAST + DAST)</h3>
                 <div class="terminal">
                     <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt"># 1. First, scan the source code (SAST)</span>
+                        </div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 -m
+                                ppmap.sast --dir ./src --output sast_findings.json</span></div>
+                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Then, verify with
+                                browser automation (DAST)</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
-                                --request req.txt --stealth</span></div>
+                                --scan "https://staging.target.com" --oob --async-scan</span></div>
                     </div>
                 </div>
-
-                <h3 style="margin: 2.5rem 0 1rem; font-size: 1.1rem;">3. Out-of-Band (OOB) Blind Detection</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Automatically deploy and
-                    monitor an Interact.sh payload for asynchronous/blind vulnerabilities.</p>
-                <div class="terminal">
-                    <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">python3 ppmap.py
-                                --scan "https://api.example.com" --oob</span></div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="advanced" style="margin-top: 4rem;">
-                <h2>Advanced Flags Reference</h2>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 2rem;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border); text-align: left;">
-                            <th style="padding: 1rem;">Flag</th>
-                            <th style="padding: 1rem;">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--scan-full URL</code></td>
-                            <td>Run Discovery + Deduplication + Deep Scan (Standard behavior).</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--discover URL</code></td>
-                            <td>Crawl target for endpoints & parameters without launching attacks.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--scan URL</code></td>
-                            <td>Perform targeted scan on provided URLs. Skips discovery phase.</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 1rem;"><code>--max-depth N</code></td>
-                            <td>Set maximum crawling depth (default: 3).</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-
-            <section id="best-practices"
-                style="margin-top: 4rem; padding: 2rem; background: var(--glass-bg); border: 1px solid var(--border); border-radius: var(--radius);">
-                <h2 style="color: var(--primary);">💡 Pro Tips</h2>
-                <ul style="margin-top: 1rem; color: var(--text-muted); line-height: 1.8;">
-                    <li>🎯 <strong>Targeting:</strong> Always use <code>--poc</code> first to check for basic jQuery
-                        vulnerabilities before running a deep <code>--scan</code>.</li>
-                    <li>🕵️ <strong>Stealth:</strong> When scanning strict WAFs, combine <code>--stealth</code> with
-                        <code>--delay 2</code> to lower noise.
-                    </li>
-                    <li>📊 <strong>Reporting:</strong> Use <code>--format json,html</code> and
-                        <code>--template modern</code> for executive-ready deliverables.
-                    </li>
-                </ul>
             </section>
         </article>
         <footer style="padding: 4rem 0; text-align: center; border-top: 1px solid var(--border);">

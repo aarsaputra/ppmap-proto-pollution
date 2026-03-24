@@ -48,8 +48,22 @@
     <main class="container" style="padding-top: 8rem;">
         <article class="content">
             <h1>Installation Guide</h1>
-            <p class="lead">PPMAP is built for portability and research. We recommend using a virtual environment or
-                Docker for the best experience.</p>
+            <p class="lead">PPMAP is built for portability and research. Follow the platform-specific instructions
+                below.</p>
+
+            <!-- Table of Contents -->
+            <div
+                style="background: var(--glass-bg); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 3rem;">
+                <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-main);">Quick Jump Menu</h3>
+                <ul style="display: flex; gap: 1rem; list-style: none; padding: 0; flex-wrap: wrap;">
+                    <li><a href="#linux" class="btn btn-secondary" style="padding: 0.5rem 1rem;">🐧 Linux
+                            (Kali/Arch/Ubuntu)</a></li>
+                    <li><a href="#windows" class="btn btn-secondary" style="padding: 0.5rem 1rem;">🪟 Windows (WSL2)</a>
+                    </li>
+                    <li><a href="#macos" class="btn btn-secondary" style="padding: 0.5rem 1rem;">🍎 macOS</a></li>
+                    <li><a href="#docker" class="btn btn-secondary" style="padding: 0.5rem 1rem;">🐳 Docker</a></li>
+                </ul>
+            </div>
 
             <!-- Requirements Section -->
             <section id="requirements" style="margin-bottom: 3rem;">
@@ -59,32 +73,44 @@
                         <li>✅ <strong>Python:</strong> v3.8 or higher (v3.11+ recommended)</li>
                         <li>✅ <strong>Browser:</strong> Chrome, Chromium, or Brave installed</li>
                         <li>✅ <strong>Drivers:</strong> Handled automatically by <code>webdriver-manager</code></li>
-                        <li>✅ <strong>OS:</strong> Linux (Kali/Ubuntu), macOS, or Windows (WSL2)</li>
+                        <li>✅ <strong>OS:</strong> Linux (Kali/Ubuntu), macOS, Windows (WSL2)</li>
                     </ul>
                 </div>
             </section>
 
             <!-- Path A: Linux Setup -->
             <section id="linux" style="margin-top: 4rem;">
-                <h2>Linux (Kali / Ubuntu)</h2>
-                <p>We recommend using <code>venv</code> to keep your system clean.</p>
+                <h2>Linux (Kali / Arch / Ubuntu)</h2>
+                <p>We recommend using <code>venv</code> to keep your system clean. On modern Kali/Debian distributions,
+                    avoid global pip installations (PEP 668).</p>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Debian-based (Kali/Ubuntu)</h3>
                 <div class="terminal">
                     <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt"># 1. Install dependencies</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
                                 && sudo apt install git python3-venv chromium-browser -y</span></div>
-                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 2. Clone and Setup
-                                Environment</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
                                 https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
                                 ppmap-proto-pollution && python3 -m venv venv</span></div>
                         <div class="terminal-line"><span class="prompt">$</span> <span class="command">source
                                 venv/bin/activate</span></div>
-                        <div class="terminal-line" style="margin-top: 1rem;"><span class="prompt"># 3. Install
-                                Requirements</span></div>
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install
-                                --upgrade pip && pip install -r requirements.txt</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">pip install -r
+                                requirements.txt</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Arch Linux / BlackArch</h3>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo pacman -Sy
+                                git python chromium</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">git clone
+                                https://github.com/aarsaputra/ppmap-proto-pollution.git</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">cd
+                                ppmap-proto-pollution && python3 -m venv venv</span></div>
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">source
+                                venv/bin/activate && pip install -r requirements.txt</span></div>
                     </div>
                 </div>
             </section>
@@ -95,7 +121,17 @@
                 <p>We highly recommend using <strong>WSL2</strong> for the best experience, but native PowerShell is
                     also supported.</p>
 
-                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option A: PowerShell (Native)</h3>
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option A: WSL2 (Recommended)</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Follow the Linux
+                    instructions inside your WSL terminal.</p>
+                <div class="terminal">
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
+                                && sudo apt install git python3-venv chromium-browser -y</span></div>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option B: PowerShell (Native)</h3>
                 <div class="terminal">
                     <div class="terminal-body">
                         <div class="terminal-line"><span class="prompt">PS></span> <span class="command">git clone
@@ -106,19 +142,9 @@
                                 requirements.txt</span></div>
                     </div>
                 </div>
-
-                <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem;">Option B: WSL2 (Recommended)</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Follow the Linux
-                    instructions inside your WSL terminal.</p>
-                <div class="terminal">
-                    <div class="terminal-body">
-                        <div class="terminal-line"><span class="prompt">$</span> <span class="command">sudo apt update
-                                && sudo apt install git python3-venv chromium-browser -y</span></div>
-                    </div>
-                </div>
             </section>
 
-            <!-- Path B: macOS Setup -->
+            <!-- Path C: macOS Setup -->
             <section id="macos" style="margin-top: 4rem;">
                 <h2>macOS (Homebrew)</h2>
                 <div class="terminal">
@@ -135,7 +161,7 @@
                 </div>
             </section>
 
-            <!-- Path C: Docker Deployment -->
+            <!-- Path D: Docker Deployment -->
             <section id="docker" style="margin-top: 4rem;">
                 <h2>Docker (Sandboxed)</h2>
                 <p>Perfect for one-off scans or running in isolated environments.</p>
@@ -170,11 +196,17 @@
             <section id="troubleshooting" style="margin-top: 4rem;">
                 <h2 style="color: #ffbd2e;">⚠️ Troubleshooting</h2>
                 <div style="margin-top: 1.5rem;">
-                    <h4 style="color: #fff;">1. Chrome/Chromium not found</h4>
+                    <h4 style="color: #fff;">1. error: EXTERNALLY-MANAGED-ENVIRONMENT (Kali/Ubuntu 24+)</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Modern Debian versions
+                        block global pip installations by design. You MUST use a Python virtual environment
+                        (<code>python3 -m venv venv</code>) before running <code>pip install -r requirements.txt</code>.
+                    </p>
+
+                    <h4 style="color: #fff;">2. Chrome/Chromium not found</h4>
                     <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Ensure a browser is
                         installed and accessible in your PATH. On Linux/WSL, install <code>chromium-browser</code>.</p>
 
-                    <h4 style="color: #fff;">2. SSL: CERTIFICATE_VERIFY_FAILED</h4>
+                    <h4 style="color: #fff;">3. SSL: CERTIFICATE_VERIFY_FAILED</h4>
                     <p style="color: var(--text-muted); font-size: 0.9rem;">Run with <code>--no-verify-ssl</code> if you
                         are testing targets with self-signed certificates.</p>
                 </div>
