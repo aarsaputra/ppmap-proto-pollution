@@ -7,12 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.4.1] - 2026-03-24 (Precision & False Positive Fixes) ✅
+## [4.4.2] - 2026-04-06 (Clean Architecture & Reliability Edition) ✅
 
-- **Fixed Bug 1:** Resolved false positive XSS reports caused by lingering prototype pollution side-effects from prior tests by adding a pre-navigation "flush" routine and validating alert text artifacts.
-- **Fixed Bug 2:** Patched a logic flaw in `test_dom_xss_with_pp` where unconfirmed alerts were downgraded to HIGH instead of skipped, and fixed the JavaScript Object.prototype fallback check to correctly extract property names.
-- **Fixed Bug 3:** Refactored `test_third_party_gadgets` to strictly verify third-party library presence (Google Analytics, Vue, DOMPurify, etc.) in the page source before testing gadget properties, eliminating false positive detections on globally vulnerable pages.
-- **CVSS v3.1 Metric Alignment:** Updated scanner core reporting logic to downgrade Client-Side Execution (e.g., XSS, DOM XSS, Protocol Pollution) from `CRITICAL` to `HIGH` / `MEDIUM`, complying with formal qualitative severity rating standards.
+### Added - Clean Architecture Refactor
+- **Modular Tier System**: Decoupled the monolithic scanner into 8 independent modules (`tier0_basic` to `tier7_advanced`).
+- **Orchestration Layer**: Refactored `core.py` into a lightweight orchestrator that delegates to modular tiers.
+- **Service Layer**: Introduced `ppmap.service.scan_service` as the primary entry point for external integrations.
+- **Standardized Data Models**: Unified all findings under a robust `Finding` dataclass for consistent reporting.
+
+### Added - Reliability Enhancements (Phase 5)
+- **DOM-Aware FP Engine**: Enhanced `fp_engine.py` with `validate_dom_sanitization()` to detect WAF blocking and DOM-level sanitization (e.g., DOMPurify) during verification.
+- **Optimized Discovery**: Added URL normalization (deduplication) and regex-based JS API route extraction to `endpoint_discovery.py`.
+- **Self-Healing Orchestrator**: Implemented browser crash recovery. The system now automatically recreates the Selenium session if a `WebDriverException` occurs mid-scan.
+- **Advanced Logging**: Introduced a dedicated `--debug` flag and per-tier loggers for granular tracing.
+
+### Fixed
+- **Serialization Bug**: Resolved `Finding is not JSON serializable` errors by implementing a dict-conversion pipeline in the reporting engine.
+- **Attribute Sync**: Fixed runtime `TypeError` crashes by synchronizing all 8 tiers with the updated `Finding` model attributes.
+- **Tier 7 Logic**: Fixed a major indentation bug in `tier7_advanced.py` that caused methods to be nested incorrectly.
+
 
 ## [4.4.0] - 2026-03-19 (Advanced Evasion Edition) ✅
 

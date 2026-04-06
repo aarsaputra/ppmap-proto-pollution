@@ -1,5 +1,5 @@
 """
-Security Test Cases for PPMAP v4.4.1
+Security Test Cases for PPMAP v4.4.2
 Tests critical security fixes and vulnerability detection
 """
 

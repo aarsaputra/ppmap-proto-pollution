@@ -78,7 +78,7 @@ async function initTerminal() {
 
     const lines = [
         { type: 'command', text: 'python3 ppmap.py --scan-full http://localhost:3000' },
-        { type: 'output', text: '[INFO] Starting PPMAP v4.4.1 Enterprise Engine...' },
+        { type: 'output', text: '[INFO] Starting PPMAP v4.4.2 Enterprise Engine...' },
         { type: 'output', text: '[INFO] Target: http://localhost:3000 (Lab Environment)' },
         { type: 'output', text: '[*] Scanning 9 Security Tiers / 32 Methods...' },
         { type: 'output', text: '[→] Tier 1: jQuery Prototype Pollution... [VULNERABLE]' },

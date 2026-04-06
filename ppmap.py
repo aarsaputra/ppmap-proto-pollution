@@ -8,7 +8,7 @@ r"""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -115,7 +115,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 """
         + Colors.ENDC
         + f"""
@@ -248,7 +248,7 @@ def main():
     check_for_updates(__version__)
 
     parser = argparse.ArgumentParser(
-        description="PPMAP v4.4.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.4.2 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
@@ -384,6 +384,11 @@ ADVANCED OPTIONS:
         action="store_true",
         help="Disable WAF bypass tests",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable detailed debug logging",
+    )
     
     # --- PHASE 8 CRAWLER OPTIONS ---
     parser.add_argument(
@@ -483,7 +488,7 @@ ADVANCED OPTIONS:
         default=0,
         help="Verbose output (-v, -vv, -vvv)",
     )
-    parser.add_argument("--version", action="version", version="PPMAP v4.4.1")
+    parser.add_argument("--version", action="version", version="PPMAP v4.4.2")
 
     # Argument completion
     try:
@@ -494,6 +499,14 @@ ADVANCED OPTIONS:
         pass
 
     args = parser.parse_args()
+
+    # Apply debug logging if requested
+    if args.debug:
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.DEBUG)
+        for handler in root_logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                handler.setLevel(logging.DEBUG)
 
     # Apply presets if specified
     if args.preset:
@@ -609,24 +622,14 @@ ADVANCED OPTIONS:
             print(f"{Colors.BLUE}[*] Target URL: {target_url}{Colors.ENDC}")
             print(f"{Colors.BLUE}[*] Method: {req_data['method']}{Colors.ENDC}")
 
-            # Initialize scanner
-            ppmap = CompleteSecurityScanner(
-                timeout=args.timeout,
-                max_workers=args.workers,
-                verify_ssl=True,
-                oob_enabled=args.oob,
-                stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
-            )
+            from ppmap.service.scan_service import run_scan
+            from ppmap.models.config import ScanConfig
 
-            # Setup authenticated session
-            if req_data.get("headers"):
-                ppmap.session.headers.update(req_data["headers"])
-                # Also update separate scanner session if exists
-                if hasattr(ppmap, "scanner") and hasattr(ppmap.scanner, "session"):
-                    ppmap.scanner.session.headers.update(req_data["headers"])
-
+            # Setup auth tracking early so we can reuse
+            auth_headers = req_data.get("headers", {})
+            if auth_headers:
                 print(
-                    f"{Colors.GREEN}[✓] Loaded {len(req_data['headers'])} headers (cookies included){Colors.ENDC}"
+                    f"{Colors.GREEN}[✓] Loaded {len(auth_headers)} headers (cookies included){Colors.ENDC}"
                 )
 
             # Special handling for POST requests (often SSPP)
@@ -635,8 +638,28 @@ ADVANCED OPTIONS:
                     f"{Colors.BLUE}[*] Detected POST body - Prioritizing Server-Side PP checks{Colors.ENDC}"
                 )
 
+            # Initialize scan configuration
+            scan_config = ScanConfig(
+                timeout=args.timeout,
+                max_workers=args.workers,
+                stealth_mode=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
+                disable_ssl_verify=not args.verify_ssl,
+                rate_limit=PPMAP_CONFIG["rate_limiting"].get("enabled", False),
+                requests_per_minute=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60)
+            )
+
+            # Initialize custom headers list in config
+            if auth_headers:
+                scan_config.custom_headers = auth_headers
+
             # Continue with full scan on the URL, passing request data
-            ppmap.scan_target(target_url, request_data=req_data)
+            # Use the new scan_service
+            session = run_scan(
+                target_url=target_url,
+                config=scan_config,
+                request_data=req_data,
+                run_discovery=False
+            )
 
         except Exception as e:
             logger.error(f"Error processing request file: {e}")
@@ -701,7 +724,7 @@ ADVANCED OPTIONS:
     running_discovery = bool(args.discover or (args.scan_full and not args.no_crawl))
     
     if running_discovery:
-        from ppmap.engine import EndpointDiscovery
+        from ppmap.discovery import EndpointDiscovery
         discovery_session = requests.Session()
         # Apply stealth if needed
         if args.stealth:
@@ -788,14 +811,16 @@ ADVANCED OPTIONS:
                     final_scan_queue, desc="Scanning targets", unit="target"
                 )
 
-            scanner = CompleteSecurityScanner(
+            from ppmap.service.scan_service import run_scan
+            from ppmap.models.config import ScanConfig
+            
+            scan_config = ScanConfig(
                 timeout=PPMAP_CONFIG["scanning"]["timeout"],
                 max_workers=PPMAP_CONFIG["scanning"]["max_workers"],
-                verify_ssl=not PPMAP_CONFIG["scanning"].get(
-                    "disable_ssl_verify", False
-                ),
-                oob_enabled=args.oob,
-                stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
+                stealth_mode=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
+                disable_ssl_verify=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
+                rate_limit=PPMAP_CONFIG["rate_limiting"].get("enabled", False),
+                requests_per_minute=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60)
             )
 
             all_findings = []
@@ -807,7 +832,12 @@ ADVANCED OPTIONS:
                         
                         # NO MORE DISCOVERY INSIDE THE SCAN LOOP
                         # We already did it in Phase 1
-                        findings = scanner.scan_target(target, run_discovery=False)
+                        scan_session = run_scan(
+                            target_url=target,
+                            config=scan_config,
+                            run_discovery=False
+                        )
+                        findings = scan_session.findings
                         
                         if findings:
                             all_findings.extend(findings)

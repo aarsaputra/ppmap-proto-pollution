@@ -235,6 +235,18 @@ class FalsePositiveEngine:
                 result = driver.execute_script(check_script)
 
                 if result.get("polluted") or result.get("isAdmin"):
+                    # Check for WAF or Sanitization blocking
+                    dom_validation = self.validate_dom_sanitization(driver, str(finding.get("payload", "")))
+                    result.update(dom_validation)
+                    
+                    if dom_validation.get("waffed") or dom_validation.get("sanitized"):
+                        return VerificationResult(
+                            status=VerificationStatus.LIKELY,
+                            confidence=0.75,
+                            reason="Object.prototype polluted, but payload execution was blocked or sanitized in DOM",
+                            evidence=result,
+                        )
+                        
                     return VerificationResult(
                         status=VerificationStatus.CONFIRMED,
                         confidence=0.95,
@@ -295,12 +307,47 @@ class FalsePositiveEngine:
         if evidence.get("reflected_only"):
             score -= 0.3
 
+        # Penalty for WAF or Sanitization (since it limits exploitability)
+        if evidence.get("waffed") or evidence.get("sanitized"):
+            score -= 0.15
+
         # Penalty for no browser verification
         if evidence.get("response_only"):
             score -= 0.15
 
         # Clamp to valid range
         return max(0.0, min(1.0, score))
+
+    def validate_dom_sanitization(self, driver: Any, payload: str) -> Dict[str, Any]:
+        """
+        Check if payload sent was sanitized or blocked by WAF.
+        
+        Args:
+            driver: Selenium WebDriver instance
+            payload: The payload string that was sent
+            
+        Returns:
+            Dict containing 'sanitized' and 'waffed' boolean status.
+        """
+        try:
+            script = """
+            let isClean = true;
+            try {
+                // Determine if common XSS payload elements are missing from the DOM
+                isClean = (document.body.innerHTML.indexOf('alert') === -1 && document.body.innerHTML.indexOf('prompt') === -1);
+            } catch(e) {}
+            
+            // Very basic WAF detection based on common block titles
+            let isWaffed = document.title.includes('Blocked') || 
+                           document.title.includes('Access Denied') || 
+                           document.title.includes('Security');
+                           
+            return { "sanitized": isClean, "waffed": isWaffed };
+            """
+            return driver.execute_script(script)
+        except Exception as e:
+            logger.debug(f"DOM Sanitization validation failed: {e}")
+            return { "sanitized": False, "waffed": False }
 
     def filter_findings(
         self,

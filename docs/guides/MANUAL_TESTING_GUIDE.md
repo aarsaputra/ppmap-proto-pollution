@@ -1,4 +1,4 @@
-# PPMAP v4.4.1 - Manual Testing Guide (Panduan Testing Manual)
+# PPMAP v4.4.2 - Manual Testing Guide (Panduan Testing Manual)
 
 ## Object.defineProperty Descriptor Pollution (PortSwigger 2024)
 
@@ -284,7 +284,7 @@ img.setAttribute('src', img.src)  // Will use prototype.src
 
 ---
 
-## 🎯 BAGIAN 7: Tier 5 - Research Gap Features (NEW v4.4.1)
+## 🎯 BAGIAN 7: Tier 5 - Research Gap Features (NEW v4.4.2)
 
 ### 7.1 Testing CORS Header Pollution
 **Tools mendeteksi:** Potensi polusi header CORS via prototype.
@@ -330,7 +330,7 @@ Object.prototype.hitCallback = function(){ alert('GA GADGET POLLUTED') }
 
 ---
 
-## 🎯 BAGIAN 8: Tier 6 - CVE-Specific & Bug Bounty (NEW v4.4.1)
+## 🎯 BAGIAN 8: Tier 6 - CVE-Specific & Bug Bounty (NEW v4.4.2)
 
 ### 8.1 Testing Lodash CVE (CVE-2020-8203)
 **Tools mendeteksi:** Vulnerable Lodash version.

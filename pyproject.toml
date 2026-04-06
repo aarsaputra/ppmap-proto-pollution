@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ppmap-proto"
-version = "4.4.1"
+version = "4.4.2"
 authors = [
   { name="Aar Saputra", email="aarsaputra@example.com" },
 ]

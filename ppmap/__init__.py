@@ -6,7 +6,7 @@ __all__ = [
     "get_fp_engine",
 ]
 
-__version__ = "4.4.1"
+__version__ = "4.4.2"
 
 
 # Lazy imports for core functionality
