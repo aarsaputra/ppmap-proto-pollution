@@ -41,3 +41,4 @@ python-json-logger>=2.0.7
 
 # Optional browser automation
 playwright>=1.40.0
+websockets>=14.0
