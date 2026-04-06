@@ -1,4 +1,4 @@
-# 🚀 PPMAP v4.4.1 - Prototype Pollution Scanner
+# 🚀 PPMAP v4.4.2 - Prototype Pollution Scanner
 
 ```text
     ____  ____  __  __    _    ____  
@@ -8,7 +8,7 @@
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.1 Enterprise (Scanner | SAST | GraphQL | WebSocket)
+   v4.4.2 Enterprise (Scanner | SAST | GraphQL | WebSocket)
 ```
 
 **Comprehensive JavaScript Prototype Pollution & XSS vulnerability scanner** with browser automation, advanced detection methods, and complete exploitation guides.
@@ -21,6 +21,13 @@
 ---
 
 ## ✨ Features
+
+### **Architecture & Reliability (NEW in v4.4.2)**
+- **Clean Architecture**: Modular tier-based design (SOLID compliant) for easier maintenance.
+- **Self-Healing Engine**: Automatic browser crash recovery and session re-initialization.
+- **Smart FP Engine**: DOM-based validation for WAF & Sanitization bypass confirmation.
+- **Deduplicated Discovery**: Optimized crawler with URL normalization and JS API link extraction.
+- **Granular Logging**: Per-tier debug logging and `--debug` flag for deep tracing.
 
 ### **Detection Methods (32 Total)**
 
@@ -186,14 +193,17 @@ Visit our documentation guides for:
 
 ## 🏆 Key Capabilities
 
-✅ **Modular Architecture** - Easy to maintain and extend  
+✅ **Clean Architecture** - Modular, SOLID-compliant engine design  
+✅ **Self-Healing Orchestrator** - Automatic recovery from browser crashes  
+✅ **Smart FP Engine** - DOM-aware validation for WAF/Sanitizer presence  
+✅ **Deduplicated Discovery** - Faster scanning with URL normalization  
+✅ **Granular Debug Mode** - Detailed tracing per scanner tier  
 ✅ **Selenium WebDriver** - Real browser console automation  
 ✅ **32 Detection Methods** - Comprehensive vulnerability detection  
 ✅ **266+ Payloads** - 98%+ vector coverage  
 ✅ **HTML/JSON Reports** - Professional reporting  
 ✅ **Blind Detection** - Works with opaque backends  
 ✅ **Modern Frameworks** - React 19, Next.js 15, SvelteKit  
-✅ **Smart WAF Detection** - Identifies WAFs and skips bypasses if not needed  
 ✅ **PortSwigger Techniques** - fetch(), defineProperty, child_process RCE  
 ✅ **Async Scanning** - Fast concurrent testing  
 ✅ **High Performance** - Static asset filtering & Browser session reuse  
@@ -261,6 +271,8 @@ if frida.connect():
 ```
 
 ### v4.x Feature Summary
+- ✅ **Clean Architecture (v4.4.2)**: 8 modular tiers, central orchestrator, standardized models.
+- ✅ **Reliability Engine (v4.4.2)**: DOM-validation, auto-recovery, and deduplicated discovery.
 - ✅ **GraphQL PP Scanner**: Auto-detect endpoints, schema introspection, mutation/query testing
 - ✅ **WebSocket PP Scanner**: Native WS and Socket.IO support
 - ✅ **SAST Mode**: Static JS analysis, 15+ dangerous sinks, CVE mapping
@@ -295,7 +307,7 @@ if frida.connect():
 
 ## 📊 Project Statistics
 
-- **Version:** 4.4.1 (Enterprise - Advanced WAF/CSP Evasions)
+- **Version:** 4.4.2 (Enterprise - Advanced WAF/CSP Evasions)
 - **Code Lines:** 4,140+
 - **Detection Methods:** 32
 - **Gadget Properties:** 40
@@ -316,14 +328,26 @@ pentest_proto/
 │   ├── config/                   # Configuration
 │   │   └── settings.py           # Global CONFIG and WAF signatures
 │   ├── models/                   # Data Models
-│   │   ├── findings.py           # Vulnerability types and rules
+│   │   ├── findings.py           # Standardized Finding dataclass
 │   │   └── reports.py            # Metrics and telemetry
-│   ├── scanner/                  # Main Engine
-│   │   └── core.py               # CompleteSecurityScanner orchestrator
-│   ├── engine.py                 # Core modules (formerly scanner.py)
+│   ├── service/                  # Service Layer
+│   │   └── scan_service.py       # Primary orchestrator for CLI/API
+│   ├── scanner/                  # Detection Engine (Modular Tiers)
+│   │   ├── core.py               # Orchestrator
+│   │   ├── base.py               # Abstract Base Classes
+│   │   ├── tier0_basic.py        # jQuery, XSS, POST PP
+│   │   ├── tier1_blind.py        # JSON Spaces, Status Override
+│   │   ├── tier2_framework.py    # React Flight, SvelteKit, Charset
+│   │   ├── tier3_portswigger.py  # fetch(), defineProperty, RCE
+│   │   ├── tier4_evasion.py      # Constructor, Sanitization bypass
+│   │   ├── tier5_research.py     # CORS, Gadgets, Storage
+│   │   ├── tier6_cve.py          # CVE-specific payloads
+│   │   └── tier7_advanced.py     # Deep Chain & Header Fuzzing
+│   ├── engine.py                 # Core modules (legacy compat)
 │   ├── browser.py                # Browser Automation
 │   ├── log_setup.py              # Logging middleware
-│   ├── utils/                    # Common utilities directory
+│   ├── fp_engine.py              # False Positive Engine
+│   └── utils/                    # Common utilities directory
 │   │   ├── __init__.py           # is_static_file, print_section, etc.
 │   │   ├── rate_limit.py         # Rate limiting logic
 │   │   └── retry.py              # Retry decorators

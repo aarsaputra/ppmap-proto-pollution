@@ -3,7 +3,7 @@
 from enum import Enum
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 
 
 class Severity(str, Enum):
@@ -62,8 +62,9 @@ class Finding:
     severity: Severity
     name: str
     description: Optional[str] = None
-    payload: Optional[Dict[str, Any]] = None
+    payload: Optional[Union[str, Dict[str, Any]]] = None
     url: Optional[str] = None
+    method: Optional[str] = None
     parameter: Optional[str] = None
     evidence: Optional[str] = None
     confidence: float = 1.0  # 0.0 - 1.0

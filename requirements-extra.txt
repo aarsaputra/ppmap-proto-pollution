@@ -1,4 +1,4 @@
-# PPMAP v4.4.1 - Optional Heavy Reporting Dependencies
+# PPMAP v4.4.2 - Optional Heavy Reporting Dependencies
 # Install: pip install -r requirements-extra.txt
 #
 # These are large packages (100MB+) used for advanced report

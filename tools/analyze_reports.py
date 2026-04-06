@@ -94,7 +94,7 @@ def export_summary(summary: list, output_format: str, output_file: str):
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.1 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
         print(f"{'Target':<40} | {'Type':<30} | {'Severity':<10}")
         print("-" * 125)
