@@ -11,9 +11,9 @@
 PPMAP adalah **Prototype Pollution Multi-Purpose Assessment Platform** - scanner paling komprehensif untuk mendeteksi prototype pollution vulnerabilities.
 
 **Key Statistics:**
-- ✅ **32 Detection Methods** (6 Tiers + GraphQL/WebSocket/SAST)
+- ✅ **34+ Detection Methods** (8 Modular Tiers + GraphQL/WebSocket/SAST)
 - ✅ **40 Gadget Properties** (Third-party libraries)
-- ✅ **15 CVE Coverage** (Real vulnerabilities)
+- ✅ **19+ CVE Coverage** (Real vulnerabilities)
 - ✅ **3 Bug Bounty Cases** ($10k+ exploits)
 - ✅ **100% PortSwigger Coverage** (20 techniques)
 
@@ -140,80 +140,16 @@ cat /home/lota1337/.gemini/antigravity/brain/409f7aff-eac3-4763-a80f-20c9354fee0
 
 ## 🔍 Detection Methods (All 28)
 
-### **Tier 0 - Classic Detection (7 methods)**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 1 | jQuery PP | CVE-2019-11358, CVE-2020-11022 | DOCUMENTATION.md:L60 |
-| 2 | Server-Side PP | Lodash merge, Node.js object spread | DOCUMENTATION.md:L65 |
-| 3 | POST XSS | XSS via POST parameters | DOCUMENTATION.md:L70 |
-| 4 | DOM XSS + PP | Combined DOM XSS with PP | DOCUMENTATION.md:L75 |
-| 5 | WAF Bypass | 50+ bypass variations | DOCUMENTATION.md:L80 |
-| 6 | Confidence Scoring | Probabilistic assessment | DOCUMENTATION.md:L85 |
-| 7 | Endpoint Discovery | Automatic endpoint crawling | DOCUMENTATION.md:L90 |
-
----
-
-### **Tier 1 - Blind Detection (4 methods)**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 8 | JSON Spaces | JSON.stringify overflow | DOCUMENTATION.md:L100 |
-| 9 | Status Code Override | HTTP status manipulation | DOCUMENTATION.md:L105 |
-| 10 | Function.prototype | Prototype chain pollution | DOCUMENTATION.md:L110 |
-| 11 | Persistence | Cross-request pollution | DOCUMENTATION.md:L115 |
-
----
-
-### **Tier 2 - Modern Frameworks (3 methods)**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 12 | React Flight | React 19/Next.js serialization | DOCUMENTATION.md:L125 |
-| 13 | SvelteKit | Superforms handling | DOCUMENTATION.md:L130 |
-| 14 | Charset Override | UTF-7/ISO-2022 manipulation | DOCUMENTATION.md:L135 |
-
----
-
-### **Tier 3 - PortSwigger Techniques (3 methods)**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 15 | fetch() API | Browser fetch pollution | DOCUMENTATION.md:L145 |
-| 16 | defineProperty() | Property descriptor bypass | DOCUMENTATION.md:L150 |
-| 17 | child_process RCE | Node.js RCE detection | DOCUMENTATION.md:L155 |
-
----
-
-### **Tier 4 - Advanced Bypass (4 methods)**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 18 | Constructor PP | `constructor.prototype` bypass | DOCUMENTATION.md:L165 |
-| 19 | Sanitization Bypass | Recursive filter evasion | DOCUMENTATION.md:L170 |
-| 20 | Descriptor Pollution | Object.defineProperty exploit | DOCUMENTATION.md:L175 |
-| 21 | Blind Gadget Fuzzer | 64 property brute-force | DOCUMENTATION.md:L180 |
-
----
-
-### **Tier 5 - Research Gap (3 methods)** ⭐ **NEW in v4.4.2**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 22 | CORS Pollution | CORS header manipulation | DOCUMENTATION.md:L190 |
-| 23 | Third-Party Gadgets | GA, GTM, Adobe DTM, Vue.js, DOMPurify | DOCUMENTATION.md:L195 |
-| 24 | Storage API | localStorage/sessionStorage | DOCUMENTATION.md:L200 |
-
----
-
-### **Tier 6 - Real-World Exploits (4 methods)** ⭐ **NEW in v4.4.2**
-
-| # | Method | Description | File Reference |
-|---|--------|-------------|----------------|
-| 25 | CVE-Specific | 6 CVEs (Lodash, deep-merge, etc.) | DOCUMENTATION.md:L210 |
-| 26 | Kibana RCE | HackerOne #852613 ($10k) | DOCUMENTATION.md:L215 |
-| 27 | Blitz.js RCE | CVE-2022-23631 (superjson) | DOCUMENTATION.md:L220 |
-| 28 | Elastic XSS | HackerOne #998398 | DOCUMENTATION.md:L225 |
+| # | Tier | Module | Key Features |
+|---|------|--------|--------------|
+| 0 | **Basic** | `tier0_basic` | jQuery, XSS, POST PP, WAF Detect |
+| 1 | **Blind** | `tier1_blind` | JSON Spaces, Status Override, persistence |
+| 2 | **Framework** | `tier2_framework` | React Flight, SvelteKit, Charset Bypass |
+| 3 | **PortSwigger**| `tier3_portswigger`| fetch() API, defineProperty, child_process RCE |
+| 4 | **Evasion** | `tier4_evasion` | Constructor PP, Sanitization Bypass, Descriptor |
+| 5 | **Research** | `tier5_research` | CORS, 3rd Party Gadgets (GA, Vue), Storage API|
+| 6 | **CVE Scan** | `tier6_cve` | 19+ CVEs (Lodash, deep-merge, Protobufjs) |
+| 7 | **Advanced** | `tier7_advanced` | Deep Chain Fuzzing & HTTP Header Injection |
 
 ---
 
@@ -345,12 +281,11 @@ python3 ppmap.py --scan http://localhost:3000
 
 | Metric | v3.4 | v4.4.2 | Change |
 |--------|------|------|--------|
-| Detection Methods | 21 | 28 | +33% |
-| Code Lines | 3,480 | 4,158 | +19% |
-| Gadget Properties | 23 | 40 | +74% |
-| CVE Coverage | 9 | 15 | +67% |
-| Bug Bounty Cases | 0 | 3 | NEW |
-| Tiers | 4 | 6 | +50% |
+| Detection Methods | 21 | 34 | +61% |
+| Code Lines | 3,480 | 5,500+ | +58% |
+| Tiers | 4 | 8 Core + 2 API | +150% |
+| Reliability Engine | ❌ | ✅ | NEW |
+| Clean Architecture | ❌ | ✅ | NEW |
 
 ---
 

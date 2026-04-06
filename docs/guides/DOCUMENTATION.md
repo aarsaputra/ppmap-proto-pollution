@@ -49,57 +49,29 @@ python3 ppmap.py --scan http://target1.com http://target2.com
 
 ## ✨ Features Overview
 
-### **Detection Methods (32 Total)**
+### **Detection Methods (34+ Total)**
 
-#### **Tier 0 - Standard Detection (7 methods)**
-- ✅ jQuery Prototype Pollution (CVE-2019-11358)
-- ✅ Server-side PP (Lodash, Node.js)
-- ✅ POST parameter XSS
-- ✅ **Smart WAF Detection** (Baseline Check + Signature Identification)
-- ✅ WAF Bypass (50+ variations)
-- ✅ **Endpoint discovery & Deduplication**
-- ✅ Confidence scoring
+#### **Modular Tiers (0-7 Core Engine)**
+- **Tier 0: Basic Scanning** (`tier0_basic`) - jQuery (CVE-2019-11358), POST parameters, and Smart WAF Detection.
+- **Tier 1: Blind Detection** (`tier1_blind`) - side-channel analysis (JSON spaces), status code overrides, and persistence checks.
+- **Tier 2: Framework Specialists** (`tier2_framework`) - React 19/Next.js Flight Protocol and SvelteKit/Superforms.
+- **Tier 3: PortSwigger Advanced** (`tier3_portswigger`) - fetch() API pollution, Object.defineProperty() bypasses, and child_process RCE.
+- **Tier 4: Evasion Suite** (`tier4_evasion`) - Constructor-based pollution, recursive sanitization bypass, and descriptor pollution.
+- **Tier 5: Research Gap** (`tier5_research`) - CORS Header pollution and Third-Party Library gadgets (GA, Vue, etc.).
+- **Tier 6: CVE Specific** (`tier6_cve`) - 19+ CVE-specific payloads (Lodash, deep-merge, Protobufjs, etc.).
+- **Tier 7: Advanced Fuzzing** (`tier7_advanced`) - Deep nested path fuzzing and active HTTP Header injection.
 
-#### **Tier 1 - Blind Detection (4 methods)**
-- ✅ JSON spaces overflow (Express.js side-channel)
-- ✅ HTTP status code override
-- ✅ Function.prototype chain
-- ✅ Persistence verification
-
-#### **Tier 2 - Modern Frameworks (3 methods)**
-- ✅ React 19/Next.js Flight Protocol (RESEARCH-2024-REACT-FLIGHT)
-- ✅ SvelteKit/Superforms (RESEARCH-2024-SVELTEKIT-RCE)
-- ✅ Charset/Encoding bypass (UTF-7, ISO-2022)
-
-#### **Tier 3 - PortSwigger Advanced Techniques (3 methods)**
-- ✅ fetch() API header pollution
-- ✅ Object.defineProperty() bypass
-- ✅ child_process RCE detection (Safe mode)
-
-#### **Tier 4 - Modern Bypass Techniques (4 methods) - 2024/2025 Research**
-- ✅ **Constructor-based pollution** (Primary modern bypass for `__proto__` filters)
-- ✅ **Sanitization bypass** (Recursive filter evasion)
-- ✅ **Descriptor pollution** (Object.defineProperty gadget exploitation)
-- ✅ **Blind Gadget Fuzzer** (Property brute-force from pp-finder/BlackFan/Yuske research)
-
-#### **Tier 5 - Research Gap Features (3 methods) - refrensi.md Integration**
-- ✅ **CORS Header Pollution** (Access-Control-Expose-Headers manipulation)
-- ✅ **Third-Party Library Gadgets** (Google Analytics, GTM, Adobe DTM, Vue.js, DOMPurify)
-- ✅ **Storage API Pollution** (localStorage/sessionStorage direct access)
-
-#### **Tier 6 - CVE-Specific & Real-World Exploits (4 methods) - Bug Bounty Research**
-- ✅ **CVE-Specific Payloads** (6 CVEs: Lodash, deep-merge, Protobufjs, Safe-eval, Dset)
-- ✅ **Kibana Telemetry RCE** (HackerOne #852613 - $10,000 bounty)
-- ✅ **Blitz.js RCE Chain** (CVE-2022-23631 - superjson deserialization)
-- ✅ **Elastic XSS** (HackerOne #998398 - Prototype pollution to XSS)
+#### **Specialized Modules**
+- ✅ **GraphQL Scanner**: Auto-detection, introspection, and mutation pollution.
+- ✅ **WebSocket Scanner**: Persistent frame interception for native WS and Socket.IO.
+- ✅ **SAST Mode**: Static analysis of JS source code targeting 15+ dangerous sinks.
 
 ### **Key Capabilities**
-- 🎯 **100% PortSwigger Coverage** - All 16 attack techniques implemented
-- 🔬 **Research-Backed** - Includes 2024/2025 bug bounty techniques
-- 🛡️ **Safe RCE Detection** - Detects without executing dangerous commands
-- 🚀 **Async Scanning** - Fast concurrent testing
-- 📊 **Professional Reports** - HTML, JSON, Markdown, PDF
-- 🧩 **Modular Architecture** - Easy to extend and maintain
+- 🏗️ **Clean Architecture** - Modular tier system for superior maintainability and performance.
+- 🛡️ **Reliability Engine** - DOM-aware validation and self-healing orchestrator (auto-recovery).
+- 🎯 **100% PortSwigger Coverage** - All 16 academy techniques implemented.
+- 🚀 **Self-Healing Browser** - Automatic session re-initialization if Selenium crashes.
+- 📊 **Professional Reports** - Interactive HTML, JSON, Markdown, and PDF output.
 
 ---
 
@@ -374,17 +346,16 @@ python3 ppmap.py --scan http://target.com --workers 3
 
 ## 📊 Project Statistics
 
-- **Version:** 4.4.2 (Advanced Evasion Edition - COMPLETE)
-- **Code Lines:** 4,140+ (Modularized)
+- **Version:** 4.4.2 (Clean Architecture & Reliability Edition)
+- **Code Lines:** 5,500+ (Modularized)
 - **Payloads:** 266+
-- **Detection Methods:** 32
-- **Gadget Properties:** 40
-- **CVE Coverage:** 15 (9 tracked + 6 new)
+- **Detection Methods:** 34+
+- **Tiers:** 8 Core + GraphQL/WS/SAST
+- **CVE Coverage:** 19+
 - **Bug Bounty Cases:** 3 (Kibana $10k, Elastic, Blitz.js)
-- **Frameworks:** 6+ (jQuery, React, Next.js, SvelteKit, Vue, Angular)
+- **Frameworks:** 10+ (jQuery, React, Next.js, SvelteKit, Vue, Angular, Lodash, etc.)
 - **PortSwigger Coverage:** 100% (16/16 attack techniques)
-- **External Research:** pp-finder, BlackFan, Yuske, refrensi.md (23 references)
-- **Research Coverage:** 100% (Phase 1, 2, 3 complete)
+- **Research Coverage:** 100% (Phase 1-5 complete)
 
 ---
 

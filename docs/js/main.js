@@ -77,13 +77,13 @@ async function initTerminal() {
     if (!terminal) return;
 
     const lines = [
-        { type: 'command', text: 'python3 ppmap.py --scan-full http://localhost:3000' },
-        { type: 'output', text: '[INFO] Starting PPMAP v4.4.2 Enterprise Engine...' },
-        { type: 'output', text: '[INFO] Target: http://localhost:3000 (Lab Environment)' },
-        { type: 'output', text: '[*] Scanning 9 Security Tiers / 32 Methods...' },
-        { type: 'output', text: '[→] Tier 1: jQuery Prototype Pollution... [VULNERABLE]' },
-        { type: 'output', text: '[→] Tier 4: DOM XSS Gadgets... [EXPLOIT CONFIRMED]' },
-        { type: 'output', text: '[→] Tier 7: GraphQL Injection Specialists... [CLEAN]' },
+        { type: 'command', text: 'python3 ppmap.py --scan-full http://localhost:3000 --debug' },
+        { type: 'output', text: '[INFO] Starting PPMAP v4.4.2 Enterprise Hub...' },
+        { type: 'output', text: '[INFO] Initializing Modular Clean Architecture...' },
+        { type: 'output', text: '[*] Scanning 10 Security Tiers / 32+ Methods...' },
+        { type: 'output', text: '[→] Tier 1: Blind Detection... [VERIFIED]' },
+        { type: 'output', text: '[→] Tier 5: Research Gadgets... [EXPLOIT CONFIRMED]' },
+        { type: 'output', text: '[!] Reliability Engine: Browser Recovery Active' },
         { type: 'output', text: '[✓] Scan Complete! Found 32 Vulnerabilities.' },
         { type: 'output', text: '[!] jQuery PP: 4 | Server-Side: 9 | DOM XSS: 19' }
     ];
