@@ -58,11 +58,11 @@ dmypy.json
 .env.*.local
 
 # Scan Reports (User Generated - Important!)
-report/
-reports/
+/report/
+/reports/
 *.html
 !docs/**/*.html
-logs/
+/logs/
 *.log
 
 # OS
@@ -102,12 +102,12 @@ package-lock.json
 .ruff_cache/
 
 # Archive and Reports
-archive/
-reports/
-logs/
-report/
-consolidated_report/
-report_backup_*/
+/archive/
+/reports/
+/logs/
+/report/
+/consolidated_report/
+/report_backup_*/
 
 # Media
 *.ogv
