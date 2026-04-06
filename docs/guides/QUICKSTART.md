@@ -10,7 +10,8 @@ cd /path/to/ppmap
 pip install -r requirements.txt
 
 # Verify installation
-python3 validate_ppmap_v3.py
+python3 ppmap.py --version
+# Output: PPMAP v4.4.2 (Clean Architecture & Reliability Edition)
 ```
 
 ## 💡 Basic Usage
@@ -104,16 +105,15 @@ reports/
 ## 🎯 Key Features
 
 ### ✅ Implemented in v4.4.2 (Enterprise)
-- ✓ **32 detection methods** (100% PortSwigger + Research coverage)
+- ✓ **Clean Architecture**: Modular tier-based design (0-7 Core Tiers).
+- ✓ **Reliability Engine**: DOM-aware validation & self-healing browser orchestrator.
+- ✓ **34+ detection methods** (100% PortSwigger + Research coverage)
 - ✓ **High Performance**: Static asset filtering & Browser session reuse
-- ✓ **Smart Discovery**: Endpoint extraction with recursive loop prevention
+- ✓ **Smart Discovery**: URL normalization & JS API link extraction
 - ✓ **40 gadget properties** (third-party library support)
-- ✓ **15 CVE coverage** (real vulnerability validation)
+- ✓ **19+ CVE coverage** (real vulnerability validation)
 - ✓ **3 bug bounty cases** (Kibana $10k, Blitz.js, Elastic XSS)
-- ✓ **6 detection tiers** (Tier 0-6 complete)
-- ✓ **Phase 1**: CORS, Third-Party Gadgets, Storage API
-- ✓ **Phase 2**: CVE-Specific Payloads (Lodash, deep-merge, Protobufjs, Safe-eval, Dset)
-- ✓ **Phase 3**: Real-World Exploits (HackerOne bug bounty cases)
+- ✓ **Phase 1-5 Complete**: Research, Expansion, Hardening, and Reliability.
 - ✓ Blind Gadget Fuzzer (pp-finder/BlackFan/Yuske integration)
 - ✓ Configuration management (YAML)
 - ✓ Rate limiting with jitter

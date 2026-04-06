@@ -51,20 +51,17 @@
     <main class="container" style="padding-top: 8rem;">
         <article class="content">
             <h1>Payload Ecosystem & Security Tiers</h1>
-            <p class="lead">PPMAP uses a sophisticated engine to deliver 266+ specialized payloads across 9 security
-                tiers, achieving 98%+ coverage of known Prototype Pollution vectors.</p>
+            <p class="lead">PPMAP uses a sophisticated engine to deliver 266+ specialized payloads across a **Modular
+                Clean Architecture** featuring 10+ security tiers.</p>
 
             <section id="tiers" style="margin-top: 3rem;">
                 <h2>The 9 Security Tiers</h2>
                 <div class="features-grid" style="grid-template-columns: 1fr; gap: 1.5rem; margin-top: 2rem;">
                     <div class="feature-card">
-                        <h3>Tier 0 - Standard Detection</h3>
+                        <h3>Tier 0 - Basic Scanning</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>jQuery Prototype Pollution (CVE-2019-11358)</li>
-                            <li>Server-side PP (Lodash, Node.js)</li>
-                            <li>POST parameter XSS</li>
-                            <li>Smart WAF Detection (Baseline Check + Signature Identification)</li>
+                            <li>jQuery (CVE-2019-11358), XSS via POST, and Smart WAF Detection.</li>
                         </ul>
                     </div>
 
@@ -72,82 +69,64 @@
                         <h3>Tier 1 - Blind Detection</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>JSON spaces overflow (Express.js side-channel)</li>
-                            <li>HTTP status code override</li>
-                            <li>Function.prototype chain pollution</li>
-                            <li>Out-of-Band (OOB) Detection (Interact.sh integration)</li>
+                            <li>JSON spaces overflow, HTTP status overrides, and persistence checks.</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 2 - Modern Frameworks</h3>
+                        <h3>Tier 2 - Framework Specialists</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>React 19 / Next.js Flight Protocol (RESEARCH-2024-REACT-FLIGHT)</li>
-                            <li>SvelteKit / Superforms (RESEARCH-2024-SVELTEKIT-RCE)</li>
-                            <li>Charset/Encoding bypasses (UTF-7, ISO-2022)</li>
+                            <li>React 19 / Next.js Flight and SvelteKit/Superforms.</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 3 - PortSwigger Advanced Techniques</h3>
+                        <h3>Tier 3 - PortSwigger Advanced</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li><code>fetch()</code> API header pollution</li>
-                            <li><code>Object.defineProperty()</code> bypass strategies</li>
-                            <li><code>child_process</code> RCE detection (Safe mode payload execution)</li>
+                            <li>fetch() API, Object.defineProperty() bypass, and child_process RCE.</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 4 - Modern Evasions (2024/2026)</h3>
+                        <h3>Tier 4 - Evasion Suite</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>Constructor-based pollution (Primary modern bypass technique)</li>
-                            <li>Sanitization bypasses (Recursive filter evasion loops)</li>
-                            <li>Descriptor pollution (Accessors bridging)</li>
-                            <li>Deep Chain Fuzzing (e.g., <code>__proto__.config.request.url</code>)</li>
+                            <li>Constructor-based pollution, recursive sanitization bypass, and descriptor pollution.
+                            </li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 5 - Research Gap Features</h3>
+                        <h3>Tier 5 - Research Gap</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>CORS Header Pollution (Safe server-side reflection)</li>
-                            <li>Third-Party Library Gadgets (DOMPurify, Adobe DTM, Vue.js, Google Analytics)</li>
-                            <li>Storage API Pollution (localStorage / sessionStorage manipulation)</li>
+                            <li>CORS Header pollution and Third-Party Library gadgets (GA, Vue, etc.).</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 6 - CVE-Specific Ecosystem</h3>
+                        <h3>Tier 6 - CVE Specific</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>Kibana Telemetry RCE (HackerOne #852613 - $10k bounty)</li>
-                            <li>Blitz.js RCE Chain (CVE-2022-23631)</li>
-                            <li>Elastic XSS (HackerOne #998398)</li>
-                            <li>Deep-merge & Protobufjs specific CVE exploits</li>
+                            <li>19+ CVE-specific payloads (Lodash, deep-merge, Protobufjs, etc.).</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 7 - GraphQL Intrusion (v4.x)</h3>
+                        <h3>Tier 7 - Advanced Fuzzing</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>GraphQL endpoint auto-discovery and introspection mapping</li>
-                            <li>Mutation and Query aliasing for PP injection attacks</li>
-                            <li>8 Custom GraphQL-specific payload structures</li>
+                            <li>Deep nested path fuzzing and active HTTP Header injection.</li>
                         </ul>
                     </div>
 
                     <div class="feature-card">
-                        <h3>Tier 8 - WebSocket Streaming (v4.x)</h3>
+                        <h3>API Specialists (GraphQL/WS)</h3>
                         <ul
                             style="color: var(--text-muted); margin-top: 0.5rem; padding-left: 1.5rem; line-height: 1.6;">
-                            <li>Native asynchronous WebSocket frame analysis</li>
-                            <li>Socket.IO specific event handler pollution overrides</li>
-                            <li>Redux action injection via WSS streams</li>
+                            <li>GraphQL introspection pollution and WebSocket frame interception.</li>
                         </ul>
                     </div>
                 </div>

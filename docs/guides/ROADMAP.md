@@ -7,11 +7,11 @@
 ## 📊 What's Implemented
 
 ### **Core Scanner (ppmap.py)**
-- ✅ 4,158 lines of production code
+- ✅ 5,500+ lines of production code
 - ✅ Selenium WebDriver browser automation
-- ✅ 28 detection methods (100% PortSwigger + Research coverage)
+- ✅ 34+ detection methods (100% PortSwigger + Research coverage)
 - ✅ 40 gadget properties (third-party library support)
-- ✅ 15 CVE coverage (real vulnerability validation)
+- ✅ 19+ CVE coverage (real vulnerability validation)
 - ✅ 218+ payload database
 - ✅ HTML/JSON reporting
 - ✅ Async concurrent scanning
@@ -74,11 +74,16 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 - [x] **Extended Unit Tests:** Increase code coverage >80%. ✅ (72 tests added)
 - [x] **Docker Improvement:** Multi-stage build with slimmer image. ✅
 
-### **Phase 2: Expansion (3-4 Months)** 🌍 ⏳ IN PROGRESS
+### **Phase 2: Expansion (3-4 Months)** 🌍 ✅ COMPLETE
 *Focus: Broadening Attack Surface Coverage*
 - [x] **GraphQL & WebSocket PP:** Support for modern API patterns. ✅
 - [x] **Mobile App Testing:** Support for React Native/Capacitor/Ionic apps. ✅
-- [x] **SAST Mode:** Static Code Analysis integration (scaning `.js` files without execution). ✅
+- [x] **SAST Mode:** Static Code Analysis integration. ✅
+
+### **Phase 5: Reliability & Architecture** 🛡️ ✅ COMPLETE (v4.4.2)
+- [x] **Clean Architecture Refactor:** Modular tiers (0-7) and Service Layer. ✅
+- [x] **Reliability Engine:** DOM validation, Self-healing browser recovery. ✅
+- [x] **Universal Finding Model:** Standardized vulnerability objects. ✅
 - [ ] **Burp Suite Support:** Extension for direct integration.
 
 ### **Phase 3: Intelligence (5-6 Months)** 🧠
@@ -100,11 +105,11 @@ Based on recent comprehensive reviews and AI analysis, the roadmap follows a **P
 
 ## 📈 Version History
 
-**v4.4.2** (Feb 05, 2026)
-- ✅ Final Polish: Comprehensive Code Cleanup
-- ✅ Open Source Release (MIT License)
-- ✅ Complete PortSwigger Workflow Integration
-- ✅ Full CLI Documentation
+**v4.4.2** (April 06, 2026)
+- ✅ **Clean Architecture**: 8 core modular tiers + Service Layer.
+- ✅ **Reliability Engine**: DOM-Validation & Automatic Browser Recovery.
+- ✅ **Enterprise Discovery**: JS API link extraction & URL normalization.
+- ✅ **Open Source Polish**: Standardized documentation and MIT release.
 
 **v3.7** (Jan 30, 2026)
 - ✅ Tier 1-4 complete
