@@ -455,6 +455,24 @@ ADVANCED OPTIONS:
         default="text",
         help="Format for console/file structured logging (default: text)"
     )
+    parser.add_argument(
+        "--openapi",
+        type=str,
+        metavar="FILE",
+        help="OpenAPI/Swagger spec file (JSON or YAML) to auto-generate scan targets"
+    )
+    parser.add_argument(
+        "--jitter",
+        type=float,
+        default=0.0,
+        metavar="SECONDS",
+        help="Max random jitter (seconds) added to each request delay for stealth (default: 0)"
+    )
+    parser.add_argument(
+        "--no-asset-discovery",
+        action="store_true",
+        help="Disable aggressive JS/CSS/static asset spidering in stealth mode"
+    )
 
     # Reporting
     parser.add_argument(
@@ -722,6 +740,28 @@ ADVANCED OPTIONS:
         targets.extend(args.scan_full)
     if args.discover:
         targets.extend(args.discover)
+
+    # --openapi: auto-generate targets from spec file
+    if hasattr(args, "openapi") and args.openapi:
+        try:
+            from ppmap.utils.openapi_parser import OpenAPIParser
+            print(f"{Colors.BLUE}[*] Loading API spec from: {args.openapi}{Colors.ENDC}")
+            api_parser = OpenAPIParser(args.openapi)
+            # Use first target or all provided targets as the base URL
+            base = targets[0] if targets else None
+            openapi_urls = api_parser.get_urls_only(base_url=base)
+            targets.extend(openapi_urls)
+            print(f"{Colors.GREEN}[✓] OpenAPI: {len(openapi_urls)} endpoint targets imported{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.FAIL}[!] Failed to parse OpenAPI spec: {e}{Colors.ENDC}")
+            logger.error(f"OpenAPI parsing error: {e}")
+
+    # Apply jitter to global delay if specified
+    if hasattr(args, "jitter") and args.jitter > 0:
+        import random as _rand
+        original_delay = args.delay
+        args.delay = original_delay + _rand.uniform(0, args.jitter)
+        logger.info(f"Stealth jitter applied: delay={args.delay:.2f}s (base={original_delay}s jitter={args.jitter}s)")
     
     if args.list:
         try:

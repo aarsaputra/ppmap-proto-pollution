@@ -39,6 +39,7 @@ class Tier1BlindScanner(BaseTierScanner):
         raw += self._test_function_prototype_chain(ctx)
         raw += self._test_timing_analysis(ctx)
         raw += self._test_persistence_verification(ctx)
+        raw += self._test_non_reflected_sidechannel(ctx)
 
         findings = [self._to_finding(r, ctx.target_url) for r in raw]
         if not findings:
@@ -315,3 +316,105 @@ class Tier1BlindScanner(BaseTierScanner):
             evidence=str(raw.get("indicator", raw.get("status_code", ""))),
             description=raw.get("description", ""),
         )
+
+    def _test_non_reflected_sidechannel(self, ctx: ScanContext) -> List[Dict[str, Any]]:
+        """
+        Non-Reflected Side-Channel Blind PP Detection.
+
+        Detects server-side prototype pollution WITHOUT needing Interact.sh OOB
+        or direct marker reflection. Based on PortSwigger research on behavioral
+        side-channels:
+            1. JSON Syntax Error Induction:
+               If __proto__[json replacer] is polluted, the server's JSON.stringify
+               may throw, changing the response structure or status code.
+            2. Content-Type Charset Manipulation:
+               Poisoning __proto__[charset] or __proto__[content-type] may cause
+               Express/Fastify to alter the response Content-Type header.
+        """
+        print(f"{Colors.CYAN}[→] Testing non-reflected side-channel (JSON error + Charset)...{Colors.ENDC}")
+        findings: List[Dict[str, Any]] = []
+        session = ctx.session
+        target_url = ctx.target_url
+
+        # ── Test 1: JSON Syntax Error via replacer pollution ──────────────────
+        try:
+            baseline = session.post(
+                target_url,
+                json={"probe": "baseline"},
+                timeout=5,
+                verify=False,
+            )
+            baseline_ct = baseline.headers.get("content-type", "")
+
+            # Inject replacer that causes JSON.stringify to fail/alter output
+            resp_error = session.post(
+                target_url,
+                data='{"__proto__":{"json replacer":["__proto__"]}}',
+                headers={"Content-Type": "application/json"},
+                timeout=5,
+                verify=False,
+            )
+            # A 500 or abrupt content-length drop can indicate stringify crash
+            if resp_error.status_code == 500 and baseline.status_code != 500:
+                findings.append({
+                    "type": "blind_pp_detected",
+                    "method": "NON_REFLECTED_JSON_REPLACER",
+                    "severity": "HIGH",
+                    "description": (
+                        "Non-reflected PP: JSON replacer pollution caused server 500. "
+                        "The server's JSON.stringify may be crashing due to prototype pollution."
+                    ),
+                    "payload": '{"__proto__":{"json replacer":["__proto__"]}}',
+                    "indicator": f"Baseline: {baseline.status_code} → Polluted: {resp_error.status_code}",
+                })
+                print(f"{Colors.FAIL}[!] Non-Reflected PP (JSON Replacer crash) detected!{Colors.ENDC}")
+
+        except Exception as e:
+            logger.debug(f"Non-reflected JSON replacer test error: {e}")
+
+        # ── Test 2: Charset/Content-Type header manipulation ─────────────────
+        charset_payloads = [
+            ('{"__proto__":{"charset":"ppmap-charset-probe"}}', "charset", "ppmap-charset-probe"),
+            (
+                '{"__proto__":{"content-type":"application/ppmap+json"}}',
+                "content-type",
+                "application/ppmap+json",
+            ),
+        ]
+
+        for payload_str, prop, marker in charset_payloads:
+            try:
+                resp_ct = session.post(
+                    target_url,
+                    data=payload_str,
+                    headers={"Content-Type": "application/json"},
+                    timeout=5,
+                    verify=False,
+                )
+                response_ct = resp_ct.headers.get("content-type", "").lower()
+
+                if marker.lower() in response_ct:
+                    findings.append({
+                        "type": "blind_pp_detected",
+                        "method": f"NON_REFLECTED_CHARSET_{prop.upper().replace('-', '_')}",
+                        "severity": "HIGH",
+                        "description": (
+                            f"Non-reflected PP: Content-Type header was modified by pollution of "
+                            f"__proto__[{prop}]. The server echoed '{marker}' in response headers."
+                        ),
+                        "payload": payload_str,
+                        "indicator": f"Response Content-Type: {response_ct}",
+                    })
+                    print(
+                        f"{Colors.FAIL}[!] Non-Reflected PP (Charset) detected! "
+                        f"Response CT: {response_ct}{Colors.ENDC}"
+                    )
+
+            except Exception as e:
+                logger.debug(f"Non-reflected charset test error [{prop}]: {e}")
+
+        if not findings:
+            print(f"{Colors.GREEN}[✓] Non-reflected side-channel tests complete (No vulnerability){Colors.ENDC}")
+
+        return findings
+
