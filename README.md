@@ -273,12 +273,6 @@ curl -X POST http://localhost:8000/api/v1/scan \
      -d '{"target_url": "https://target.com", "stealth": true}'
 ```
 
-# Scan directory
-scanner = SASTScanner(include_low_severity=True)
-findings = scanner.scan_directory("/path/to/project")
-report = scanner.generate_report(findings)
-```
-
 #### Mobile App Scanner
 ```python
 from ppmap.mobile import MobileAppScanner, scan_mobile_app
