@@ -30,13 +30,30 @@ def setup_logging(log_level=logging.INFO, log_file=None):
         log_dir / f"ppmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
     )
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(detailed_formatter)
+    
+    # Enable JSON formatting for the file handler if requested
+    use_json = kwargs.get("log_format") == "json"
+    if use_json:
+        try:
+            from pythonjsonlogger import jsonlogger
+            json_formatter = jsonlogger.JsonFormatter(
+                "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d %(message)s"
+            )
+            file_handler.setFormatter(json_formatter)
+            if not kwargs.get("quiet", False):
+                console_handler.setFormatter(json_formatter)
+        except ImportError:
+            print("[!] python-json-logger not installed. Fallback to standard logging.")
+            file_handler.setFormatter(detailed_formatter)
+    else:
+        file_handler.setFormatter(detailed_formatter)
+
     root_logger.addHandler(file_handler)
 
     if log_file:
         custom_handler = logging.FileHandler(log_file)
         custom_handler.setLevel(logging.DEBUG)
-        custom_handler.setFormatter(detailed_formatter)
+        custom_handler.setFormatter(json_formatter if use_json and 'json_formatter' in locals() else detailed_formatter)
         root_logger.addHandler(custom_handler)
 
     return root_logger

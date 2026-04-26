@@ -79,6 +79,15 @@ class Finding:
     @property
     def cvss_score(self) -> float:
         """Calculate an estimated CVSS v3.1 base score."""
+        # Weighted scoring based on vulnerability type (Enterprise Roadmap Feature)
+        if self.type in (VulnerabilityType.CHILD_PROCESS, VulnerabilityType.KIBANA_RCE, VulnerabilityType.BLITZJS_RCE):
+            return 10.0 if self.verified else 9.5
+        elif self.type in (VulnerabilityType.DOM_XSS_PP, VulnerabilityType.XSS, VulnerabilityType.POST_XSS, VulnerabilityType.JQUERY_PP):
+            return 8.5 if self.verified else 7.5
+        elif self.type in (VulnerabilityType.BLIND_PP, VulnerabilityType.METHOD_CLOBBERING, VulnerabilityType.BLIND_OOB, VulnerabilityType.TIMING_ANALYSIS if hasattr(VulnerabilityType, 'TIMING_ANALYSIS') else None):
+            return 6.5 if self.verified else 5.3
+            
+        # Fallback to standard severity-based scoring
         if self.severity == Severity.CRITICAL:
             return 9.8 if self.verified else 9.0
         elif self.severity == Severity.HIGH:
