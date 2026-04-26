@@ -36,6 +36,7 @@ class Tier5ResearchScanner(BaseTierScanner):
         raw_dicts += self._test_cors_header_pollution(ctx)
         raw_dicts += self._test_third_party_gadgets(ctx)
         raw_dicts += self._test_storage_api_pollution(ctx)
+        raw_dicts += self._test_2026_gadgets(ctx)
 
         findings = [self._to_finding(r, ctx.target_url) for r in raw_dicts]
         if not findings:
@@ -255,7 +256,99 @@ class Tier5ResearchScanner(BaseTierScanner):
 
     # ──────────────────────────────────────────────────────────────────────────
 
-    @staticmethod
+    def _test_2026_gadgets(self, ctx: ScanContext) -> List[Dict[str, Any]]:
+        """
+        2026 CVE-based gadget fingerprinting.
+        Targets:  Axios validateStatus (CVE-2026-42041)
+                  defu merge bypass (CVE-2026-35209)
+                  DOMPurify hook pollution (CVE-2026-41238)
+                  devalue.parse deserialization (CVE-2025-57820)
+        """
+        print(f"{Colors.BOLD}[→] Testing 2026 CVE Gadget Fingerprints...{Colors.ENDC}")
+        findings: List[Dict[str, Any]] = []
+        session = ctx.session
+        target_url = ctx.target_url
+
+        # Each entry: (payload_json, property_name, cve_ref, description)
+        gadgets_2026 = [
+            (
+                '{"__proto__":{"validateStatus":true}}',
+                "validateStatus",
+                "CVE-2026-42041",
+                "Axios validateStatus pollution: may allow any HTTP status to pass authentication checks",
+            ),
+            (
+                '{"__proto__":{"skipProto":true}}',
+                "skipProto",
+                "CVE-2026-35209",
+                "defu merge bypass: skipProto flag suppresses standard __proto__ protection",
+            ),
+            (
+                '{"__proto__":{"FORCE_BODY":"<img src=x onerror=alert(1)>"}}',
+                "FORCE_BODY",
+                "CVE-2026-41238",
+                "DOMPurify hook pollution: FORCE_BODY may cause arbitrary HTML injection post-sanitization",
+            ),
+            (
+                '{"__proto__":{"toJSON":"__PPMAP_DEVALUE__"}}',
+                "toJSON",
+                "CVE-2025-57820",
+                "devalue.parse deserialization gadget: toJSON override on Object.prototype taints serialized output",
+            ),
+        ]
+
+        try:
+            for payload_json, prop, cve, description in progress_iter(gadgets_2026, desc="2026 Gadgets"):
+                try:
+                    headers = {"Content-Type": "application/json"}
+                    resp = session.post(
+                        target_url,
+                        data=payload_json,
+                        headers=headers,
+                        timeout=8,
+                        verify=False,
+                    )
+                    body = resp.text
+
+                    # Heuristic: marker reflection or server error hints at gadget firing
+                    if "__PPMAP_DEVALUE__" in body or prop in body:
+                        severity = "HIGH"
+                        findings.append({
+                            "type": "gadget_2026",
+                            "method": f"GADGET_2026_{prop.upper()}",
+                            "severity": severity,
+                            "payload": payload_json,
+                            "reference": cve,
+                            "description": description,
+                            "evidence": f"Property '{prop}' reflected in response",
+                        })
+                        print(f"{Colors.FAIL}[!] 2026 Gadget DETECTED [{cve}]: {prop}{Colors.ENDC}")
+
+                    elif resp.status_code in (500, 502, 503):
+                        findings.append({
+                            "type": "gadget_2026",
+                            "method": f"GADGET_2026_{prop.upper()}_CRASH",
+                            "severity": "MEDIUM",
+                            "payload": payload_json,
+                            "reference": cve,
+                            "description": description,
+                            "evidence": f"HTTP {resp.status_code} triggered by 2026 gadget payload",
+                        })
+                        print(f"{Colors.WARNING}[!] 2026 Gadget crash [{cve}] HTTP {resp.status_code}: {prop}{Colors.ENDC}")
+
+                except Exception as e:
+                    logger.debug(f"2026 gadget test error [{prop}]: {e}")
+
+            if not findings:
+                print(f"{Colors.GREEN}[✓] 2026 gadget tests complete (No vulnerability){Colors.ENDC}")
+
+        except Exception as e:
+            print(f"{Colors.WARNING}[⚠] 2026 gadget test error: {str(e)[:80]}{Colors.ENDC}")
+
+        return findings
+
+    # ──────────────────────────────────────────────────────────────────────────
+
     def _to_finding(raw: Dict[str, Any], url: str) -> Finding:
         severity_map = {
             "CRITICAL": Severity.CRITICAL, "HIGH": Severity.HIGH,
