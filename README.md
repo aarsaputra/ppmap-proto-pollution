@@ -84,7 +84,12 @@
 - Mutation/Query PP injection
 - 8 GraphQL-specific payloads
 
-**Tier 8 - WebSocket PP (Added in v4.x):**
+**Tier 8 - Method Clobbering (New in Enterprise):**
+- Native JavaScript object method overrides (`toString`, `valueOf`)
+- Client-side DOM DoS via `hasOwnProperty`
+- Server-side Serialization crashes
+
+**Tier 9 - WebSocket PP (Added in v4.x):**
 - Native WebSocket scanning
 - Socket.IO event pollution
 - Redux action injection
@@ -249,6 +254,24 @@ from ppmap.sast import SASTScanner, scan_js
 
 # Scan single file
 findings = scan_js("/path/to/app.js")
+
+# Scan directory
+scanner = SASTScanner(include_low_severity=True)
+findings = scanner.scan_directory("/path/to/project")
+report = scanner.generate_report(findings)
+```
+
+#### PPMAP-as-a-Service (FastAPI)
+Run PPMAP in the background as a REST API for CI/CD integration.
+```bash
+# Start the API server
+uvicorn ppmap.api.server:app --host 0.0.0.0 --port 8000
+
+# Submit a scan job
+curl -X POST http://localhost:8000/api/v1/scan \
+     -H "Content-Type: application/json" \
+     -d '{"target_url": "https://target.com", "stealth": true}'
+```
 
 # Scan directory
 scanner = SASTScanner(include_low_severity=True)
@@ -447,6 +470,9 @@ open reports/example_com_20260206/report_20260206_120000.html
 | `--disable-discovery` | Disable endpoint discovery | `--disable-discovery` |
 | `--no-crawl` | Disable internal URL fuzzer (scan exactly 1 target) | `--no-crawl` |
 | `--max-endpoints N` | Cap crawler endpoints to N items (default: 30) | `--max-endpoints 10` |
+| `--wordlist FILE` | Custom wordlist for payload fuzzing | `--wordlist payloads.txt` |
+| `--endpoints FILE` | Force scan specific API endpoints | `--endpoints api_routes.txt` |
+| `--log-format FMT` | Structured logging format (`text`, `json`) | `--log-format json` |
 
 ### **Reporting & Utility**
 | Flag | Description |

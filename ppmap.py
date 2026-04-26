@@ -240,8 +240,16 @@ except Exception:
 
 def main():
     # Setup logging first
-    log_level = logging.DEBUG if os.getenv("PPMAP_DEBUG") else logging.INFO
-    setup_logging(log_level)
+    # Extract --log-format early if it exists before parsing args
+    log_format_val = "text"
+    if "--log-format" in sys.argv:
+        try:
+            log_format_val = sys.argv[sys.argv.index("--log-format") + 1]
+        except IndexError:
+            pass
+            
+    log_level = logging.DEBUG if os.getenv("PPMAP_DEBUG") or "-vv" in sys.argv else logging.INFO
+    setup_logging(log_level, log_format=log_format_val)
 
     print_banner()
     logger.info("PPMAP started")
@@ -425,6 +433,27 @@ ADVANCED OPTIONS:
 
     parser.add_argument(
         "--disable-discovery", action="store_true", help="Disable endpoint discovery"
+    )
+    
+    # Custom Fuzzing Options
+    parser.add_argument(
+        "--wordlist",
+        type=str,
+        metavar="FILE",
+        help="Custom wordlist for payload fuzzing (one payload per line)"
+    )
+    parser.add_argument(
+        "--endpoints",
+        type=str,
+        metavar="FILE",
+        help="List of API endpoints to force-scan (bypasses discovery)"
+    )
+    parser.add_argument(
+        "--log-format",
+        type=str,
+        choices=["text", "json"],
+        default="text",
+        help="Format for console/file structured logging (default: text)"
     )
 
     # Reporting

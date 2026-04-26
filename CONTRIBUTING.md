@@ -62,7 +62,20 @@ python -m pytest tests/
 python ppmap.py --scan http://localhost:3000
 ```
 
-#### **Code Standards**
+#### **Code Standards & Architecture**
+PPMAP v4.4.2 Enterprise uses a strict **8-Tier Scanner Architecture**:
+- **Tier 0**: Basic/Standard Detection
+- **Tier 1**: Blind/Side-Channel Detection
+- **Tier 2**: Framework-Specific (React/NextJS)
+- **Tier 3**: Advanced PortSwigger Evasions
+- **Tier 4**: Constructor & Sanitization Evasions
+- **Tier 5**: Third-Party & Storage Gadgets
+- **Tier 6**: CVE-Specific Exploit Logic
+- **Tier 7**: Deep Chain / Fuzzing
+- **Tier 8**: Method Clobbering (New in Enterprise)
+
+Please ensure that your new payloads reside in the correct tier file within the `ppmap/scanner/` directory.
+
 - Follow PEP 8 style guide
 - Add docstrings to all functions
 - Include type hints where applicable
