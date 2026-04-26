@@ -469,6 +469,7 @@ class CompleteSecurityScanner:
             from ppmap.scanner.tier5_research import Tier5ResearchScanner
             from ppmap.scanner.tier6_cve import Tier6CVEScanner
             from ppmap.scanner.tier7_advanced import Tier7AdvancedScanner
+            from ppmap.scanner.tier8_clobbering import Tier8ClobberingScanner
             from ppmap.scanner.base import ScanContext
 
             ctx = ScanContext(
@@ -488,7 +489,8 @@ class CompleteSecurityScanner:
                 Tier4EvasionScanner(),
                 Tier5ResearchScanner(),
                 Tier6CVEScanner(),
-                Tier7AdvancedScanner()
+                Tier7AdvancedScanner(),
+                Tier8ClobberingScanner()
             ]
 
             all_findings = []

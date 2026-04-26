@@ -130,4 +130,12 @@ targets.txt
 # ppmap_lab runtime artifacts (never commit these)
 ppmap_lab/*.log
 ppmap_lab/test_results/
-node_modules/
+
+# Forensic artifacts and temp scripts
+*.txt
+*.json
+!package.json
+!package-lock.json
+final_proof.py
+verify_evidence.py
+resume.cfg

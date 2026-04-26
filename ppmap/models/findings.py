@@ -52,6 +52,8 @@ class VulnerabilityType(str, Enum):
     ELASTIC_XSS = "elastic_xss"
     PROTOTYPE_POLLUTION = "prototype_pollution"
     DOM_XSS_PP = "dom_xss_pp"
+    METHOD_CLOBBERING = "method_clobbering"
+
 
 
 @dataclass
@@ -74,13 +76,35 @@ class Finding:
     metadata: Dict[str, Any] = field(default_factory=dict)
     discovered_at: datetime = field(default_factory=datetime.now)
 
+    @property
+    def cvss_score(self) -> float:
+        """Calculate an estimated CVSS v3.1 base score."""
+        if self.severity == Severity.CRITICAL:
+            return 9.8 if self.verified else 9.0
+        elif self.severity == Severity.HIGH:
+            return 8.5 if self.verified else 7.5
+        elif self.severity == Severity.MEDIUM:
+            return 6.5 if self.verified else 5.3
+        elif self.severity == Severity.LOW:
+            return 3.5 if self.verified else 2.5
+        return 0.0
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         data = asdict(self)
-        data["type"] = self.type.value
-        data["severity"] = self.severity.value
+        data["type"] = self.type.value if hasattr(self.type, "value") else str(self.type)
+        data["severity"] = self.severity.value if hasattr(self.severity, "value") else str(self.severity)
         data["discovered_at"] = self.discovered_at.isoformat()
+        data["cvss_score"] = self.cvss_score
+        
+        # Backward compatibility: flatten metadata to top-level for legacy templates
+        if self.metadata:
+            for k, v in self.metadata.items():
+                if k not in data:
+                    data[k] = v
+                    
         return data
 
     def __str__(self) -> str:
-        return f"[{self.severity.value}] {self.type.value}: {self.name}"
+        return f"[{self.severity.value}] {self.type.value}: {self.name} (CVSS: {self.cvss_score})"
+

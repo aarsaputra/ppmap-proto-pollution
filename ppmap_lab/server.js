@@ -1010,6 +1010,50 @@ app.get('/health', (req, res) => {
 });
 
 
+// PortSwigger Alternative PP Vector Mock (for v4.5.0 verification)
+app.get('/portswigger-mock', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <title>PortSwigger Alt-PP Mock</title>
+</head>
+<body>
+    <h1>PortSwigger Alternative PP Vector Mock</h1>
+    <p>This page is vulnerable to dot-notation prototype pollution: <code>/?__proto__.prop=val</code></p>
+    <script>
+        // Vulnerable parser mimicking the lab
+        function searchLogger() {
+            var params = new URLSearchParams(window.location.search);
+            var manager = {};
+            
+            // Vulnerable loop that allows dot-notation pollution
+            params.forEach((value, key) => {
+                if (key.includes('.')) {
+                    var parts = key.split('.');
+                    if (parts[0] === '__proto__') {
+                        Object.prototype[parts[1]] = value;
+                    }
+                }
+            });
+            
+            // Gadget: manager.sequence is passed to eval
+            // Note: It appends '1' to the sequence, requiring alert(1)- to work
+            if (manager.sequence) {
+                console.log("Triggering eval gadget with sequence:", manager.sequence);
+                try {
+                    eval(manager.sequence + "1");
+                } catch(e) {
+                    console.error("Eval error:", e.message);
+                }
+            }
+        }
+        
+        window.onload = searchLogger;
+    </script>
+</body>
+</html>`);
+});
+
 // ============================================
 // START SERVER WITH GRAPHQL
 // ============================================

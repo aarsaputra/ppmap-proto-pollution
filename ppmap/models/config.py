@@ -21,6 +21,12 @@ class ScanConfig(BaseModel):
         default=False,
         description="Enable stealth mode and anti-WAF detection behaviors",
     )
+    headers: Dict[str, str] = Field(
+        default_factory=dict, description="Default headers for all requests"
+    )
+    custom_headers: Dict[str, str] = Field(
+        default_factory=dict, description="Custom headers provided by the user"
+    )
 
     # Specific stealth configurations
     rate_limit: Optional[int] = Field(
