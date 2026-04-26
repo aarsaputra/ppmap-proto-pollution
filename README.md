@@ -152,6 +152,12 @@ python3 -m ppmap.sast --dir ./src --output sast_findings.json
 
 # Then, verify with browser automation
 python3 ppmap.py --scan "https://staging.target.com" --oob --async-scan
+
+### **4. Authenticated Assessment**
+Perform deep scans behind a login wall using session cookies.
+```bash
+python3 ppmap.py --scan "https://billing.target.com/profile" --cookies cookies.json --stealth
+```
 ```
 
 ---
@@ -410,6 +416,7 @@ open reports/example_com_20260206/report_20260206_120000.html
 | `-ls, --list FILE` | Scan targets from a file (one URL per line) | `-ls targets.txt` |
 | `--stdin` | Read targets from pipe (e.g., from subfinder) | `cat urls.txt \| python3 ppmap.py --scan --stdin` |
 | `-r, --request FILE` | Scan request from a file (Burp Suite format) | `-r req.txt` |
+| `--cookies FILE` | Load cookies from a JSON file (exported from browser) | `--cookies cookies.json` |
 | `--config FILE` | Config file (default: config.yaml) | `--config custom.yaml` |
 
 ### **Browser & Performance**

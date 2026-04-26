@@ -211,6 +211,37 @@ CVE_KNOWLEDGE = {
             "Implement strict CORS policy on server",
         ],
     },
+    # Storage API Pollution
+    "storage_api_pollution": {
+        "title": "Storage API Prototype Pollution (localStorage/sessionStorage)",
+        "severity": "MEDIUM",
+        "description": (
+            "The application accesses localStorage or sessionStorage items via direct property "
+            "access (e.g., storage.item) instead of the safe .getItem() method. "
+            "This allows an attacker who pollutes Object.prototype to inject values into "
+            "these storage APIs, potentially leading to XSS or logic bypasses if the app "
+            "trusts the resulting values."
+        ),
+        "manual_steps": [
+            "Open target URL in browser",
+            "Press F12 -> Console tab",
+            'Run: Object.prototype.pp_test = "POLLUTED"',
+            'Run: console.log(localStorage.pp_test)  -> should prints "POLLUTED"',
+            "Run: delete Object.prototype.pp_test",
+        ],
+        "poc_script": """// Storage API PP PoC
+(function() {
+    var key = 'ppmap_' + Date.now();
+    Object.prototype[key] = 'VULNERABLE';
+    var is_vuln = localStorage[key] === 'VULNERABLE';
+    delete Object.prototype[key];
+    console.log(is_vuln ? 'localStorage is VULNERABLE to direct property access' : 'Safe');
+})();""",
+        "remediation": [
+            "Always use .getItem(key) instead of direct property access [key]",
+            "Use Object.freeze(Object.prototype) to prevent global pollution",
+        ],
+    },
 }
 
 
@@ -309,6 +340,8 @@ def _get_finding_knowledge(finding: dict) -> dict:
         return CONSTRUCTOR_PP_KNOWLEDGE
     if ftype == "hash_based_pp":
         return HASH_PP_KNOWLEDGE
+    if ftype == "storage_api_pollution":
+        return CVE_KNOWLEDGE.get("storage_api_pollution", {})
     return {}
 
 
@@ -374,7 +407,7 @@ class EnhancedReportGenerator:
             lines.append(f"|-------|-------|")
             lines.append(f"| **Target** | `{target}` |")
             lines.append(f"| **Date** | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} |")
-            lines.append(f"| **Scanner** | PPMAP v4.4.2 Enterprise |")
+            lines.append(f"| **Scanner** | PPMAP v4.5.0 Enterprise |")
             lines.append(f"| **Total Findings** | {len(findings)} |")
             lines.append(f"")
 
@@ -439,7 +472,9 @@ class EnhancedReportGenerator:
                     lines.append(f"")
                     lines.append(f"| Field | Value |")
                 lines.append(f"|-------|-------|")
-                lines.append(f"| **Severity** | {severity} |")
+                
+                cvss_score = f.get("cvss_score", 0.0)
+                lines.append(f"| **Severity** | {severity} (CVSS: {cvss_score}) |")
                 if cve:
                     lines.append(f'| **CVE** | [{cve}]({kb.get("reference", "")}) |')
                 if jquery_ver:
@@ -463,7 +498,12 @@ class EnhancedReportGenerator:
 
                 # Payload
                 payload = f.get("payload", "")
-                if payload:
+                test_url = f.get("test_url", "")
+                if test_url:
+                    lines.append(f"**PoC URL:**")
+                    lines.append(f"[`{test_url}`]({test_url})")
+                    lines.append(f"")
+                elif payload:
                     payload_str = (
                         json.dumps(payload, indent=2)
                         if isinstance(payload, (dict, list))
@@ -641,7 +681,7 @@ class EnhancedReportGenerator:
         <div class="meta">
             <span><strong>Target:</strong> {html_escape(target)}</span>
             <span><strong>Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
-            <span><strong>Scanner:</strong> PPMAP v4.0 Enterprise</span>
+            <span><strong>Scanner:</strong> PPMAP v4.5.0 Enterprise</span>
         </div>
     </div>
 
@@ -686,7 +726,7 @@ class EnhancedReportGenerator:
     <div class="finding">
         <div class="finding-header">
             <h3>#{idx} — {html_escape(str(name))}</h3>
-            <div><span class="badge badge-{sev_lower}">{html_escape(severity)}</span>{ver_label}</div>
+            <div><span class="badge badge-{sev_lower}">{html_escape(severity)} (CVSS: {f.get('cvss_score', 0.0):.1f})</span>{ver_label}</div>
         </div>
         <div class="finding-body">
             <div class="section">
@@ -705,8 +745,11 @@ class EnhancedReportGenerator:
                     if desc:
                         html += f'<div class="section"><div class="section-title">Description</div><p>{html_escape(str(desc))}</p></div>\n'
 
-                    # Payload
-                    if payload:
+                    # Payload / PoC URL
+                    test_url = f.get("test_url", "")
+                    if test_url:
+                        html += f'<div class="section"><div class="section-title">PoC URL</div><pre><code><a href="{html_escape(test_url)}" target="_blank" style="color:var(--blue);">{html_escape(test_url)}</a></code></pre></div>\n'
+                    elif payload:
                         payload_str = (
                             json.dumps(payload, indent=2)
                             if isinstance(payload, (dict, list))

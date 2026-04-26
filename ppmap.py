@@ -51,6 +51,8 @@ from ppmap.scanner.core import (
     Colors,
 )
 from ppmap.utils.update_checker import check_for_updates
+from ppmap.utils.burp_parser import parse_burp_request
+from ppmap.utils.cookie_parser import load_cookies_to_headers
 from ppmap.__init__ import __version__
 
 # Progress bar
@@ -322,6 +324,12 @@ ADVANCED OPTIONS:
         type=str,
         metavar="FILE",
         help="Scan from Burp Suite request file (authenticated scan)",
+    )
+    parser.add_argument(
+        "--cookies",
+        type=str,
+        metavar="FILE",
+        help="Load cookies from JSON file (authenticated scan)",
     )
 
     # Configuration
@@ -608,6 +616,17 @@ ADVANCED OPTIONS:
 
     logger.debug(f"Configuration: {PPMAP_CONFIG}")
 
+    # Handle cookies from JSON file
+    auth_headers = {}
+    if args.cookies:
+        try:
+            print(f"{Colors.BLUE}[*] Loading cookies from: {args.cookies}{Colors.ENDC}")
+            auth_headers = load_cookies_to_headers(args.cookies, auth_headers)
+            print(f"{Colors.GREEN}[✓] Cookies loaded successfully{Colors.ENDC}")
+        except Exception as e:
+            print(f"{Colors.FAIL}[!] Error loading cookies: {e}{Colors.ENDC}")
+            logger.error(f"Cookie loading error: {e}")
+
     # Handle scan from request file
     if args.request:
         if not parse_burp_request:
@@ -642,10 +661,10 @@ ADVANCED OPTIONS:
             scan_config = ScanConfig(
                 timeout=args.timeout,
                 max_workers=args.workers,
-                stealth_mode=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
-                disable_ssl_verify=not args.verify_ssl,
-                rate_limit=PPMAP_CONFIG["rate_limiting"].get("enabled", False),
-                requests_per_minute=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60)
+                stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
+                verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
+                rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
+                delay=args.delay
             )
 
             # Initialize custom headers list in config
@@ -817,10 +836,11 @@ ADVANCED OPTIONS:
             scan_config = ScanConfig(
                 timeout=PPMAP_CONFIG["scanning"]["timeout"],
                 max_workers=PPMAP_CONFIG["scanning"]["max_workers"],
-                stealth_mode=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
-                disable_ssl_verify=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
-                rate_limit=PPMAP_CONFIG["rate_limiting"].get("enabled", False),
-                requests_per_minute=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60)
+                stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
+                verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
+                rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
+                delay=args.delay,
+                custom_headers=auth_headers
             )
 
             all_findings = []

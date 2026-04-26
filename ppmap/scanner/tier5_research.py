@@ -241,7 +241,7 @@ class Tier5ResearchScanner(BaseTierScanner):
                             "method": f'STORAGE_{test["api"].upper()}',
                             "severity": "MEDIUM",
                             "api": test["api"],
-                            "description": f'{test["api"]} vulnerable to direct property access',
+                            "description": f'{test["api"]} is vulnerable to direct property access. The application reads storage values as object properties (storage.key) rather than using .getItem("key"), causing it to inherit values from Object.prototype.',
                             "reference": "refrensi.md line 98 - Storage API Gadgets",
                         })
                         print(f"{Colors.WARNING}[!] {test['api']} pollution detected{Colors.ENDC}")
@@ -261,13 +261,21 @@ class Tier5ResearchScanner(BaseTierScanner):
             "CRITICAL": Severity.CRITICAL, "HIGH": Severity.HIGH,
             "MEDIUM": Severity.MEDIUM, "LOW": Severity.LOW,
         }
+        type_map = {
+            "storage_api_pollution": VulnerabilityType.STORAGE_API,
+            "cors_header_pollution": VulnerabilityType.CORS_POLLUTION,
+            "third_party_gadget": VulnerabilityType.THIRD_PARTY_GADGET,
+            "elastic_xss": VulnerabilityType.ELASTIC_XSS,
+        }
+        
         return Finding(
             name=raw.get("description", raw.get("type", "PP Finding")),
             severity=severity_map.get(raw.get("severity", "MEDIUM"), Severity.MEDIUM),
-            type=VulnerabilityType.PROTOTYPE_POLLUTION,
+            type=type_map.get(raw.get("type"), VulnerabilityType.PROTOTYPE_POLLUTION),
             url=raw.get("test_url", url),
             method=raw.get("method", ""),
             payload=str(raw.get("payload", "")),
             evidence=str(raw.get("reference", raw.get("polluted_header", ""))),
             description=raw.get("description", ""),
+            metadata=raw
         )
