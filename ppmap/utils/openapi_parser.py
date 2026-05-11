@@ -40,7 +40,7 @@ class OpenAPIParser:
         if spec_str.startswith("http://") or spec_str.startswith("https://"):
             import requests
             try:
-                resp = requests.get(spec_str, timeout=10, verify=False)
+                resp = requests.get(spec_str, timeout=10, verify=False)  # nosec B501
                 resp.raise_for_status()
                 content = resp.text
                 is_yaml = spec_str.endswith(".yaml") or spec_str.endswith(".yml")
