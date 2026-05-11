@@ -3,7 +3,7 @@ Burp Suite Request Parser for PPMAP
 Parses raw HTTP request files (saved from Burp Suite) into usable request objects.
 
 Usage:
-    from utils.burp_parser import parse_burp_request
+    from ppmap.utils.burp_parser import parse_burp_request
     
     request = parse_burp_request("request.txt")
     # request = {

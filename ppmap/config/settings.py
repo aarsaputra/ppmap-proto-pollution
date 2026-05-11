@@ -1,3 +1,4 @@
+from ppmap.config import logger
 from ppmap.utils import Colors
 
 # ============================================================================
@@ -5,7 +6,7 @@ from ppmap.utils import Colors
 # ============================================================================
 # Try to import comprehensive payloads
 try:
-    from utils.payloads import (
+    from ppmap.payloads.advanced import (
         CLIENT_SIDE_PP_PAYLOADS,
         SERVER_SIDE_PP_PAYLOADS,
         WAF_BYPASS_PAYLOADS,
@@ -17,7 +18,7 @@ try:
 except ImportError:
     PAYLOADS_AVAILABLE = False
     print(
-        f"{Colors.WARNING}[!] Warning: utils/payloads not available, using fallback payloads{Colors.ENDC}"
+        f"{Colors.WARNING}[!] Warning: ppmap.payloads.advanced not available, using fallback payloads{Colors.ENDC}"
     )
 
 CONFIG = {
