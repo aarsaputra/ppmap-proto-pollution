@@ -96,7 +96,7 @@ def export_summary(summary: list, output_format: str, output_file: str):
    Prototype Pollution Multi-Purpose Assessment Platform
    v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
 """)
-        print(f"{'Target':<40} | {'Type':<30} | {'Severity':<10}")
+        print(f"{'Target':<60} | {'Type':<40} | {'Count':<5} | {'Severity':<10}")
         print("-" * 125)
 
         for item in summary:

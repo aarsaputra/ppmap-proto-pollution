@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from requests import RequestException
 
 from .models import Finding, VulnerabilityType, Severity
+from .discovery.parameter_discovery import ParameterDiscovery
 
 logger = logging.getLogger(__name__)
 
@@ -638,7 +639,7 @@ class CompleteSecurityScanner:
         # 3) OOB / Blind Checks (v4.0)
         if self.oob_enabled and self.oob_detector and self.oob_detector.session_valid:
             try:
-                from utils.payloads import SERVER_SIDE_PP_PAYLOADS
+                from .payloads.advanced import SERVER_SIDE_PP_PAYLOADS
 
                 oob_payloads = SERVER_SIDE_PP_PAYLOADS.get("blind_oob", [])
 

@@ -2,7 +2,7 @@
 Mobile App Testing Module for PPMAP v5.0
 Scan React Native, Capacitor, and Ionic apps for prototype pollution.
 """
-
+# pyrefly: ignore [missing-import]
 import os
 import re
 import json
