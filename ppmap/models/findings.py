@@ -53,6 +53,7 @@ class VulnerabilityType(str, Enum):
     PROTOTYPE_POLLUTION = "prototype_pollution"
     DOM_XSS_PP = "dom_xss_pp"
     METHOD_CLOBBERING = "method_clobbering"
+    TIMING_ANALYSIS = "timing_analysis"
 
 
 
@@ -84,7 +85,7 @@ class Finding:
             return 10.0 if self.verified else 9.5
         elif self.type in (VulnerabilityType.DOM_XSS_PP, VulnerabilityType.XSS, VulnerabilityType.POST_XSS, VulnerabilityType.JQUERY_PP):
             return 8.5 if self.verified else 7.5
-        elif self.type in (VulnerabilityType.BLIND_PP, VulnerabilityType.METHOD_CLOBBERING, VulnerabilityType.BLIND_OOB, VulnerabilityType.TIMING_ANALYSIS if hasattr(VulnerabilityType, 'TIMING_ANALYSIS') else None):
+        elif self.type in (VulnerabilityType.BLIND_PP, VulnerabilityType.METHOD_CLOBBERING, VulnerabilityType.BLIND_OOB, VulnerabilityType.TIMING_ANALYSIS):
             return 6.5 if self.verified else 5.3
             
         # Fallback to standard severity-based scoring

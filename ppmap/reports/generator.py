@@ -847,6 +847,16 @@ class EnhancedReportGenerator:
             except Exception as e:
                 logger.error(f"JSON report failed: {e}")
 
+        if "jsonl" in formats:
+            try:
+                fp = self.output_dir / f"report_{timestamp}.jsonl"
+                with open(fp, "w") as fh:
+                    for f in findings:
+                        fh.write(json.dumps(f) + "\n")
+                generated["jsonl"] = str(fp)
+            except Exception as e:
+                logger.error(f"JSONL report failed: {e}")
+
         if "md" in formats or "markdown" in formats:
             md = self.generate_markdown_report(
                 findings, target, f"report_{timestamp}.md"

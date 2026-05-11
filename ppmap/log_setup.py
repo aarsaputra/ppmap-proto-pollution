@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-def setup_logging(log_level=logging.INFO, log_file=None):
+def setup_logging(log_level=logging.INFO, log_file=None, **kwargs):
     """Setup structured logging system and return root logger."""
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)

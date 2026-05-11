@@ -1058,6 +1058,444 @@ app.get('/portswigger-mock', (req, res) => {
 // START SERVER WITH GRAPHQL
 // ============================================
 
+// ============================================
+// v5.0 - PROBE WAF BYPASS ENDPOINTS
+// Uses Object.defineProperty to simulate prototype pollution
+// (Bypasses Node.js JSON.parse sanitization for controlled lab testing)
+// ============================================
+
+// Helper: simulate prototype pollution via Object.defineProperty
+function simulatePP(key, value) {
+    if (!Object.prototype.hasOwnProperty(key)) {
+        Object.defineProperty(Object.prototype, key, {
+            value: value,
+            writable: true,
+            enumerable: true,
+            configurable: true
+        });
+    }
+}
+
+function cleanupPP(...keys) {
+    keys.forEach(k => { try { delete Object.prototype[k]; } catch (e) { } });
+}
+
+// Middle-path WAF bypass endpoint
+// PPMAP sends marker via query param; server simulates PP and reflects it
+app.post('/api/v5/probe-merge', (req, res) => {
+    try {
+        const markerVal = req.body.marker || req.query.marker || 'ppmap_mwb';
+        // Simulate: WAF only inspects root key, nested __proto__ still pollutes
+        simulatePP('ppmap_mwb', markerVal);
+
+        const polluteResult = Object.prototype.ppmap_mwb;
+        const obj = {};
+        const marker = obj.ppmap_mwb; // inherited from prototype
+
+        cleanupPP('ppmap_mwb');
+        res.json({
+            success: true,
+            polluted_marker: marker,
+            prototype_polluted: marker === markerVal,
+            validation: 'PPMAP_WAF_BYPASS_DETECTED',
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET version for query param injection tests
+app.get('/api/v5/probe-query', (req, res) => {
+    try {
+        const markerVal = req.query['__proto__[ppmap_mwb]'] || req.query.marker || 'ppmap_mwb';
+        simulatePP('ppmap_mwb', markerVal);
+
+        const inherited = {}.ppmap_mwb;
+        cleanupPP('ppmap_mwb');
+        res.json({
+            success: true,
+            polluted_marker: inherited,
+            prototype_polluted: !!inherited,
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ============================================
+// v5.0 - NON-REFLECTED SIDE-CHANNEL DETECTION
+// ============================================
+
+// JSON Replacer crash → HTTP 500 side-channel
+// PPMAP pollutes __proto__["json replacer"] → JSON.stringify crashes → 500
+app.post('/api/v5/json-replacer', (req, res) => {
+    try {
+        // Simulate the pollution: if body says "pollute=true", install the replacer
+        if (req.body.pollute === true || req.body.pollute === 'true' || req.body['__proto__']) {
+            simulatePP('json replacer', ['__proto__']);
+        }
+
+        const data = { test: 'value', nested: { a: 1 } };
+        // This will throw if 'json replacer' on Object.prototype is a bad value
+        const serialized = JSON.stringify(data);
+
+        cleanupPP('json replacer');
+        res.json({ success: true, serialized: serialized });
+    } catch (e) {
+        cleanupPP('json replacer');
+        // The 500 crash IS the side-channel — PPMAP detects this
+        res.status(500).json({ error: e.message, side_channel: 'json_replacer_crash' });
+    }
+});
+
+// Charset pollution → Content-Type header side-channel
+// PPMAP sends {"__proto__":{"charset":"ppmap-charset-probe"}} and reads response header
+app.post('/api/v5/charset-probe', (req, res) => {
+    try {
+        // Simulate: use body charset or prototype charset
+        const requestedCharset = req.body.charset || req.body['__proto__']?.charset || null;
+        if (requestedCharset) {
+            simulatePP('charset', requestedCharset);
+        }
+
+        // Express picks up prototype.charset if present (simulated here)
+        const responseCharset = Object.prototype.charset || 'utf-8';
+        cleanupPP('charset');
+
+        res.set('Content-Type', `application/json; charset=${responseCharset}`);
+        res.json({ success: true, charset_used: responseCharset });
+    } catch (e) {
+        cleanupPP('charset');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Charset side-channel via GET query param (easier to test with PPMAP)
+app.get('/api/v5/charset-probe', (req, res) => {
+    try {
+        const requestedCharset = req.query.charset || req.query['__proto__[charset]'] || null;
+        if (requestedCharset) {
+            simulatePP('charset', requestedCharset);
+        }
+
+        const responseCharset = Object.prototype.charset || 'utf-8';
+        cleanupPP('charset');
+
+        res.set('Content-Type', `application/json; charset=${responseCharset}`);
+        res.json({ success: true, charset_used: responseCharset });
+    } catch (e) {
+        cleanupPP('charset');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ============================================
+// v5.0 - 2026 CVE GADGET ENDPOINTS
+// ============================================
+
+// CVE-2026-42041: Axios validateStatus pollution
+app.post('/api/v5/axios-validate', (req, res) => {
+    try {
+        const val = req.body.validateStatus !== undefined ? req.body.validateStatus : null;
+        if (val !== null) simulatePP('validateStatus', val);
+
+        const axiosConfig = {};
+        const validateFn = axiosConfig.validateStatus; // inherited if polluted
+        const authBypass = validateFn === true || validateFn === 'true';
+
+        cleanupPP('validateStatus');
+        res.json({
+            success: true,
+            validateStatus_value: validateFn,
+            auth_bypass_possible: authBypass,
+            cve: 'CVE-2026-42041',
+        });
+    } catch (e) {
+        cleanupPP('validateStatus');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2026-35209: defu merge skipProto bypass
+app.post('/api/v5/defu-merge', (req, res) => {
+    try {
+        const val = req.body.skipProto !== undefined ? req.body.skipProto : null;
+        if (val !== null) simulatePP('skipProto', val);
+
+        const config = {};
+        const bypass = config.skipProto; // inherited if polluted
+
+        cleanupPP('skipProto');
+        res.json({
+            success: true,
+            skipProto_polluted: bypass,
+            bypass_active: !!bypass,
+            cve: 'CVE-2026-35209',
+        });
+    } catch (e) {
+        cleanupPP('skipProto');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2026-41238: DOMPurify FORCE_BODY pollution
+app.post('/api/v5/dompurify-hook', (req, res) => {
+    try {
+        const val = req.body.FORCE_BODY !== undefined ? req.body.FORCE_BODY : null;
+        if (val !== null) simulatePP('FORCE_BODY', val);
+
+        const domCtx = {};
+        const forceBody = domCtx.FORCE_BODY; // inherited from prototype if polluted
+        const sanitizedOutput = forceBody || '<div>Safe content</div>';
+
+        cleanupPP('FORCE_BODY');
+        res.json({
+            success: true,
+            FORCE_BODY_polluted: forceBody || null,
+            sanitized_output: sanitizedOutput,
+            xss_possible: !!forceBody,
+            cve: 'CVE-2026-41238',
+        });
+    } catch (e) {
+        cleanupPP('FORCE_BODY');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2025-57820: devalue.parse toJSON gadget
+app.post('/api/v5/devalue-parse', (req, res) => {
+    try {
+        const val = req.body.toJSON !== undefined ? req.body.toJSON : null;
+        if (val !== null) simulatePP('toJSON', val);
+
+        const testObj = { data: 'safe_value' };
+        // If toJSON is polluted, calling JSON.stringify invokes it
+        const serialized = JSON.stringify(testObj);
+
+        cleanupPP('toJSON');
+        res.json({
+            success: true,
+            toJSON_value: val,
+            toJSON_polluted: val !== null,
+            serialized: serialized,
+            deserialization_tainted: serialized.includes('__PPMAP_DEVALUE__'),
+            cve: 'CVE-2025-57820',
+        });
+    } catch (e) {
+        cleanupPP('toJSON');
+        res.status(500).json({ error: e.message, side_channel: 'toJSON_crash' });
+    }
+});
+
+
+
+// Middle-path WAF bypass endpoint
+// The WAF only checks the root-level key; merging deeply bypasses it
+app.post('/api/v5/probe-merge', (req, res) => {
+    try {
+        // Deliberately vulnerable: merges direct user input without sanitization
+        const config = {};
+        _.merge(config, req.body);
+
+        // Reflect back any polluted marker to confirm detection
+        const marker = Object.prototype.ppmap_mwb;
+        res.json({
+            success: true,
+            config: config,
+            polluted_marker: marker || null,
+            prototype: Object.prototype,
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// GET endpoint that accepts nested query params for middle-path bypass
+app.get('/api/v5/probe-query', (req, res) => {
+    try {
+        // Parse nested bracket notation from query string
+        const flatQuery = req.query;
+        const merged = {};
+        _.merge(merged, flatQuery);
+
+        const marker = Object.prototype.ppmap_mwb;
+        res.json({
+            success: true,
+            query: flatQuery,
+            merged: merged,
+            polluted_marker: marker || null,
+            prototype: {
+                polluted: Object.prototype.polluted,
+                ppmap_mwb: Object.prototype.ppmap_mwb,
+                toString: Object.prototype.toString,
+                valueOf: Object.prototype.valueOf
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ============================================
+// v5.0 - NON-REFLECTED SIDE-CHANNEL DETECTION
+// ============================================
+
+// JSON Replacer pollution → crashes JSON.stringify
+// Non-reflected: no marker in body, only HTTP 500 or Content-Type change
+app.post('/api/v5/json-replacer', (req, res) => {
+    try {
+        _.merge({}, req.body);
+
+        // If __proto__["json replacer"] is polluted, JSON.stringify will crash
+        const data = { test: 'value', nested: { a: 1 } };
+        const serialized = JSON.stringify(data);
+
+        res.json({ success: true, serialized: serialized, len: serialized.length });
+    } catch (e) {
+        // Stringify crash → 500 — this is the side-channel signal
+        res.status(500).json({ error: e.message, side_channel: 'json_replacer_crash' });
+    }
+});
+
+// Charset pollution endpoint
+// If __proto__.charset is polluted, Express reflects it in Content-Type header
+app.post('/api/v5/charset-probe', (req, res) => {
+    try {
+        const config = {};
+        _.merge(config, req.body);
+
+        // If prototype.charset was polluted, it gets inherited here
+        const responseCharset = Object.prototype.charset || config.charset || 'utf-8';
+
+        // This mirrors the polluted charset back in Content-Type — the side-channel
+        res.set('Content-Type', `application/json; charset=${responseCharset}`);
+        res.json({ success: true, charset_used: responseCharset });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ============================================
+// v5.0 - 2026 CVE GADGET ENDPOINTS
+// ============================================
+
+// CVE-2026-42041: Axios validateStatus pollution
+// Polluting validateStatus=true causes all HTTP status codes to be treated as successful
+app.post('/api/v5/axios-validate', (req, res) => {
+    try {
+        const axiosConfig = { validateStatus: null };
+        _.merge(axiosConfig, req.body);
+
+        // Reflect the polluted validateStatus to show the gadget fired
+        const pollutedValidate = Object.prototype.validateStatus;
+        res.json({
+            success: true,
+            validateStatus_polluted: typeof pollutedValidate,
+            validateStatus_value: pollutedValidate,
+            auth_bypass_possible: pollutedValidate === true || pollutedValidate === 'true',
+            prototype: { validateStatus: Object.prototype.validateStatus }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2026-35209: defu merge skipProto bypass
+// defu uses skipProto flag to skip __proto__ filtering — this endpoint simulates that
+app.post('/api/v5/defu-merge', (req, res) => {
+    try {
+        // Simulate defu-style merge: skip __proto__ check if skipProto is set
+        const config = { skipProto: false };
+        _.merge(config, req.body);
+
+        const pollutedSkip = Object.prototype.skipProto;
+        res.json({
+            success: true,
+            skipProto_polluted: pollutedSkip,
+            bypass_active: !!pollutedSkip,
+            prototype: { skipProto: Object.prototype.skipProto, polluted: Object.prototype.polluted }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2026-41238: DOMPurify FORCE_BODY pollution
+// Poisoning FORCE_BODY causes html injection to survive sanitization
+app.post('/api/v5/dompurify-hook', (req, res) => {
+    try {
+        _.merge({}, req.body);
+
+        // Simulate DOMPurify hook reading from Object.prototype
+        const forceBody = Object.prototype.FORCE_BODY;
+        const sanitized = `<div>Safe content</div>`;
+
+        res.json({
+            success: true,
+            FORCE_BODY_polluted: forceBody || null,
+            sanitized_output: forceBody ? forceBody : sanitized,
+            xss_possible: !!forceBody,
+            prototype: { FORCE_BODY: Object.prototype.FORCE_BODY }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// CVE-2025-57820: devalue.parse toJSON gadget
+// Poisoning toJSON taints serialized output during deserialization
+app.post('/api/v5/devalue-parse', (req, res) => {
+    try {
+        _.merge({}, req.body);
+
+        // Simulate devalue.parse reading toJSON from Object.prototype during revival
+        const toJsonGadget = Object.prototype.toJSON;
+        const testObj = { data: 'safe_value' };
+
+        // If toJSON is polluted, JSON.stringify(testObj) will call it
+        const serialized = JSON.stringify(testObj);
+
+        res.json({
+            success: true,
+            toJSON_polluted: typeof toJsonGadget !== 'undefined',
+            toJSON_value: toJsonGadget || null,
+            serialized: serialized,
+            deserialization_tainted: serialized.includes('__PPMAP_DEVALUE__'),
+            prototype: { toJSON: Object.prototype.toJSON }
+        });
+    } catch (e) {
+        // toJSON crash is the side-channel signal
+        res.status(500).json({ error: e.message, side_channel: 'toJSON_crash' });
+    }
+});
+
+// ============================================
+// v5.0 - OPENAPI SPEC ENDPOINT
+// Serves a machine-readable OpenAPI 3.0 spec
+// enabling --openapi auto-scan by PPMAP
+// ============================================
+app.get('/openapi.json', (req, res) => {
+    const spec = {
+        openapi: '3.0.0',
+        info: { title: 'PPMAP Vulnerable Lab API', version: '5.0.0' },
+        servers: [{ url: `http://localhost:${PORT}` }],
+        paths: {
+            '/api/merge': { post: { summary: 'Lodash merge PP', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/config': { post: { summary: 'Config PP', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/json-spaces': { post: { summary: 'Blind JSON spaces', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/probe-merge': { post: { summary: 'Middle-path WAF bypass (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/probe-query': { get: { summary: 'Middle-path WAF bypass via query param (v5.0)', parameters: [{ in: 'query', name: 'data[__proto__][polluted]', schema: { type: 'string' } }], responses: { '200': { description: 'ok' } } } },
+            '/api/v5/json-replacer': { post: { summary: 'Non-reflected side-channel: JSON replacer (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/charset-probe': { post: { summary: 'Non-reflected side-channel: Charset (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/axios-validate': { post: { summary: 'CVE-2026-42041: Axios validateStatus (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/defu-merge': { post: { summary: 'CVE-2026-35209: defu skipProto (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/dompurify-hook': { post: { summary: 'CVE-2026-41238: DOMPurify FORCE_BODY (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+            '/api/v5/devalue-parse': { post: { summary: 'CVE-2025-57820: devalue.parse toJSON (v5.0)', requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'ok' } } } },
+        }
+    };
+    res.json(spec);
+});
+
 async function startServer() {
     // Initialize Apollo Server
     const apolloServer = new ApolloServer({

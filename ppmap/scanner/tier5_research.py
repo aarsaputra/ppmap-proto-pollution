@@ -349,7 +349,7 @@ class Tier5ResearchScanner(BaseTierScanner):
 
     # ──────────────────────────────────────────────────────────────────────────
 
-    def _to_finding(raw: Dict[str, Any], url: str) -> Finding:
+    def _to_finding(self, raw: Dict[str, Any], url: str) -> Finding:
         severity_map = {
             "CRITICAL": Severity.CRITICAL, "HIGH": Severity.HIGH,
             "MEDIUM": Severity.MEDIUM, "LOW": Severity.LOW,

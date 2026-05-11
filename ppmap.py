@@ -21,6 +21,7 @@ authorization is a violation of computer fraud and abuse laws.
 USE AT YOUR OWN RISK - AUTHOR NOT LIABLE FOR ANY DAMAGES
 """
 
+from ppmap.engine import AsyncScanner
 import sys
 import time
 import json
@@ -485,7 +486,7 @@ ADVANCED OPTIONS:
         "--format",
         type=str,
         default="json,html,csv,xml,md",
-        help="Report formats (json,html,markdown,jupyter,csv,xml,md,pdf)",
+        help="Report formats (json,jsonl,html,markdown,jupyter,csv,xml,md,pdf)",
     )
     parser.add_argument(
         "--template",

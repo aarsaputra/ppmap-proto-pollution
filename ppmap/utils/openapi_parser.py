@@ -29,14 +29,29 @@ class OpenAPIParser:
     """
 
     def __init__(self, spec_path: str):
-        self.spec_path = Path(spec_path)
+        self.raw_path = str(spec_path)
         self.spec: Dict[str, Any] = {}
         self._load()
 
     def _load(self):
-        """Load and parse the spec file (JSON or YAML)."""
-        content = self.spec_path.read_text(encoding="utf-8")
-        if self.spec_path.suffix in (".yaml", ".yml"):
+        """Load and parse the spec file (JSON or YAML) from disk or URL."""
+        spec_str = self.raw_path
+        
+        if spec_str.startswith("http://") or spec_str.startswith("https://"):
+            import requests
+            try:
+                resp = requests.get(spec_str, timeout=10, verify=False)
+                resp.raise_for_status()
+                content = resp.text
+                is_yaml = spec_str.endswith(".yaml") or spec_str.endswith(".yml")
+            except Exception as e:
+                raise RuntimeError(f"Failed to fetch remote OpenAPI spec: {e}")
+        else:
+            local_path = Path(spec_str)
+            content = local_path.read_text(encoding="utf-8")
+            is_yaml = local_path.suffix in (".yaml", ".yml")
+
+        if is_yaml:
             try:
                 import yaml
                 self.spec = yaml.safe_load(content)
@@ -46,7 +61,7 @@ class OpenAPIParser:
                 )
         else:
             self.spec = json.loads(content)
-        logger.info(f"[OpenAPI] Loaded spec: {self.spec_path.name}")
+        logger.info(f"[OpenAPI] Loaded spec: {self.raw_path.split('/')[-1]}")
 
     @property
     def version(self) -> str:
