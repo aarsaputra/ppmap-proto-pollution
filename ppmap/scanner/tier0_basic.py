@@ -1034,7 +1034,8 @@ return window['{marker}'];
 
                     # Cek apakah server merespons dengan indikasi PP
                     # Cek apakah server merespons dengan indikasi PP
-                    if "Error establishing a Redis connection" in response.text or marker in response.text or "polluted" in response.text:
+                    # Only flag if there is a real server error or anomaly, NOT just string reflection of the payload.
+                    if "Error establishing a Redis connection" in response.text or "TypeError: Cannot read properties of undefined" in response.text:
                         print(
                             f"{Colors.FAIL}[!] Server-Side PP FOUND: Parameter '{param_name}'{Colors.ENDC}"
                         )
@@ -1069,7 +1070,8 @@ return window['{marker}'];
 
                 # Cek response untuk tanda PP
                 # Cek response untuk tanda PP
-                if "Error establishing a Redis connection" in response.text or marker in response.text or "exploited" in response.text:
+                # Only flag if there is a real server error or anomaly, NOT just string reflection of the payload.
+                if "Error establishing a Redis connection" in response.text or "TypeError: Cannot read properties of undefined" in response.text:
                     print(
                         f"{Colors.FAIL}[!] Server-Side PP FOUND: POST JSON Body{Colors.ENDC}"
                     )
