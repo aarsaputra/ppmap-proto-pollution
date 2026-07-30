@@ -56,10 +56,35 @@ class UnifiedBrowser:
     # Navigation
     def get(self, url: str, wait: float = 0):
         if self.backend == "selenium":
-            self.impl.get(url)
+            try:
+                self.impl.get(url)
+            except Exception as e:
+                # Catch TimeoutException or renderer stalls
+                if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                    logger.warning(
+                        f"Page load timed out for {url}, stopping renderer and proceeding with DOM..."
+                    )
+                    try:
+                        self.impl.execute_script("window.stop();")
+                    except Exception:
+                        pass
+                else:
+                    raise e
         else:
-            # Playwright: use page.goto
-            self.impl.goto(url, wait_until="load", timeout=30_000)
+            # Playwright: use page.goto with domcontentloaded wait_until
+            try:
+                self.impl.goto(url, wait_until="domcontentloaded", timeout=30_000)
+            except Exception as e:
+                if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                    logger.warning(
+                        f"Playwright page load timed out for {url}, stopping renderer..."
+                    )
+                    try:
+                        self.impl.evaluate("window.stop();")
+                    except Exception:
+                        pass
+                else:
+                    raise e
         if wait:
             import time
 
@@ -67,9 +92,27 @@ class UnifiedBrowser:
 
     def refresh(self):
         if self.backend == "selenium":
-            self.impl.refresh()
+            try:
+                self.impl.refresh()
+            except Exception as e:
+                if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                    try:
+                        self.impl.execute_script("window.stop();")
+                    except Exception:
+                        pass
+                else:
+                    raise e
         else:
-            self.impl.reload(wait_until="load", timeout=30_000)
+            try:
+                self.impl.reload(wait_until="domcontentloaded", timeout=30_000)
+            except Exception as e:
+                if "timeout" in str(e).lower() or "timed out" in str(e).lower():
+                    try:
+                        self.impl.evaluate("window.stop();")
+                    except Exception:
+                        pass
+                else:
+                    raise e
 
     # Execute arbitrary JS and return result
     def execute_script(self, script: str, *args):
@@ -171,7 +214,12 @@ class UnifiedBrowser:
 
 
 def get_browser(
-    headless: bool = True, timeout: int = 45, stealth: bool = True
+    headless: bool = True,
+    timeout: int = 15,
+    stealth: bool = True,
+    insecure: bool = False,
+    page_load_strategy: str = "eager",
+    user_agent: Optional[str] = None,
 ) -> Optional[UnifiedBrowser]:
     """Return a UnifiedBrowser instance using Selenium or Playwright fallback.
 
@@ -179,6 +227,11 @@ def get_browser(
     - If Selenium is unavailable or fails, tries Playwright (Chromium).
     - Returns None if no browser backend is available.
     """
+    ua = (
+        user_agent
+        or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
+
     # Try Selenium first
     try:
         from selenium import webdriver
@@ -188,6 +241,7 @@ def get_browser(
         from webdriver_manager.core.os_manager import ChromeType
 
         opts = Options()
+        opts.page_load_strategy = page_load_strategy
         if headless:
             try:
                 opts.add_argument("--headless=new")
@@ -201,11 +255,10 @@ def get_browser(
         opts.add_argument("--disable-extensions")
         opts.add_argument("--disable-infobars")
         opts.add_argument("--ignore-certificate-errors")
+        opts.add_argument("--ignore-ssl-errors=yes")
+        opts.add_argument("--allow-running-insecure-content")
         opts.add_argument("--window-size=1920,1080")
-        # Modern User-Agent (Chrome 131 — matches STEALTH_HEADERS in ppmap.py)
-        opts.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-        )
+        opts.add_argument(f"user-agent={ua}")
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
 
@@ -244,10 +297,11 @@ def get_browser(
         pw = pw_manager.start()
         browser = pw.chromium.launch(headless=headless)
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            user_agent=ua,
             viewport={"width": 1920, "height": 1080},
             locale="en-US",
             timezone_id="Asia/Jakarta",
+            ignore_https_errors=insecure,
         )
         page = context.new_page()
         logger.info("Playwright backend initialized successfully")

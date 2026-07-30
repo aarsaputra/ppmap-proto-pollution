@@ -28,6 +28,12 @@ CONFIG = {
         "stealth_mode": False,
         "disable_ssl_verify": False,
     },
+    "browser": {
+        "page_load_strategy": "eager",
+        "page_load_timeout": 15,
+        "script_timeout": 10,
+        "recycle_rate": 50,
+    },
     "reporting": {
         "format": ["json", "html"],
         "output_dir": "./reports",

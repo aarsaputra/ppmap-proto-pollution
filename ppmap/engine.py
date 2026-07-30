@@ -774,12 +774,12 @@ class QuickPoC:
         self.headless = headless
         self.driver = None
 
-    def setup_browser(self, target_url: str) -> bool:
+    def setup_browser(self, target_url: str, insecure: bool = False) -> bool:
         # Use centralized browser helper
         try:
             from .browser import get_browser
 
-            self.browser = get_browser(headless=self.headless)
+            self.browser = get_browser(headless=self.headless, insecure=insecure)
             if self.browser:
                 self.browser.get(target_url)
                 return True

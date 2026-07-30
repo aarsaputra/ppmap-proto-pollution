@@ -420,7 +420,18 @@ class CompleteSecurityScanner:
             return False
             
         try:
-            self.driver = get_browser(headless=True)
+            ua = self.session.headers.get("User-Agent")
+            insecure = not getattr(self.config, "verify_ssl", True)
+            self.driver = get_browser(
+                headless=True,
+                timeout=self.timeout,
+                stealth=self.stealth,
+                insecure=insecure,
+                user_agent=ua,
+            )
+            if not self.driver:
+                logger.error("Failed to initialize UnifiedBrowser backend")
+                return False
             self.driver.set_page_load_timeout(self.timeout)
             self.driver.get(target_url)
             # Add a short delay to allow JS frameworks to initialize

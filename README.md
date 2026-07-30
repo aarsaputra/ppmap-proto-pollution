@@ -25,6 +25,8 @@
 ### **Architecture & Reliability (NEW in v4.4.2)**
 - **Clean Architecture**: Modular tier-based design (SOLID compliant) for easier maintenance.
 - **Self-Healing Engine**: Automatic browser crash recovery and session re-initialization.
+- **WAF Tarpit & Timeout Resilience**: `eager` page loading strategy with JS `window.stop()` fallback prevents renderer timeouts on enterprise WAFs (F5 BIG-IP).
+- **Synchronized SSL Insecure Bypass**: Passing `--insecure` automatically overrides SSL verification across both HTTP requests and Selenium/Playwright browser engines.
 - **Smart FP Engine**: DOM-based validation for WAF & Sanitization bypass confirmation.
 - **Deduplicated Discovery**: Optimized crawler with URL normalization and JS API link extraction.
 - **Granular Logging**: Per-tier debug logging and `--debug` flag for deep tracing.
