@@ -94,8 +94,12 @@ class Tier8ClobberingScanner(BaseTierScanner):
                     
                     # Check for JS errors or unhandled exceptions in the DOM
                     logs = ctx.driver.get_log('browser')
-                    clobber_errors = [log for log in logs if "hasOwnProperty is not a function" in str(log) or "polluted" in str(log)]
-                    if clobber_errors:
+                    clobber_errors = [log for log in logs if "hasOwnProperty is not a function" in str(log)]
+                    
+                    # CRITICAL FIX: Only report as clobbering if Object.prototype.hasOwnProperty WAS TRULY POLLUTED/OVERRIDDEN
+                    is_really_polluted = ctx.driver.execute_script("return typeof Object.prototype.hasOwnProperty !== 'function' || Object.prototype.hasOwnProperty.toString().indexOf('[native code]') === -1;")
+                    
+                    if clobber_errors and is_really_polluted:
                         print(f"{Colors.WARNING}[!] MEDIUM: Client-side Method Clobbering detected!{Colors.ENDC}")
                         findings.append(Finding(
                             name="Client-side Method Clobbering",

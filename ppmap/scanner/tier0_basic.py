@@ -13,6 +13,7 @@ from ppmap.models.findings import Finding, VulnerabilityType, Severity
 from ppmap.scanner.base import BaseTierScanner, ScanContext
 from ppmap.scanner.helpers import Colors, progress_iter
 from ppmap.payloads.base import XSS_PAYLOADS, DEFAULT_XSS_PARAMS
+from ppmap.scanner.payloads import WAF_BYPASS_MUTATIONS
 from ppmap.config.settings import CONFIG
 from ppmap.utils.rate_limit import rate_limited
 from ppmap.utils.retry import retry_request

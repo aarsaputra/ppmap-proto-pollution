@@ -195,6 +195,8 @@ class Tier5ResearchScanner(BaseTierScanner):
     def _test_storage_api_pollution(self, ctx: ScanContext) -> List[Dict[str, Any]]:
         """
         localStorage/sessionStorage API Pollution via direct property access.
+        Verifies that setting a property on Object.prototype actually propagates to
+        Storage direct property access, AND that it was not already defined/overridden on the instance.
         """
         print(f"{Colors.BOLD}[→] Testing Storage API Pollution...{Colors.ENDC}")
         findings: List[Dict[str, Any]] = []
@@ -213,20 +215,46 @@ class Tier5ResearchScanner(BaseTierScanner):
                 {
                     "api": "localStorage",
                     "test_script": """
-                        Object.prototype.testItem = 'PPMAP_POLLUTED';
-                        var directAccess = localStorage.testItem;
-                        var safeAccess = localStorage.getItem('testItem');
-                        delete Object.prototype.testItem;
-                        return { vulnerable: directAccess === 'PPMAP_POLLUTED', directValue: directAccess, safeValue: safeAccess };
+                        try {
+                            var canary = 'ppmap_store_' + Date.now();
+                            // 1. Verify canary is not present in localStorage instance itself
+                            if (localStorage.hasOwnProperty(canary)) return { vulnerable: false, reason: 'instance_has_own' };
+                            
+                            // 2. Pollute Object.prototype
+                            Object.prototype[canary] = 'PPMAP_POLLUTED';
+                            
+                            // 3. Test direct property access vs getItem
+                            var directAccess = localStorage[canary];
+                            var safeAccess = localStorage.getItem(canary);
+                            
+                            // Clean up prototype
+                            delete Object.prototype[canary];
+                            
+                            // Vulnerable ONLY IF direct access inherits polluted prototype value AND getItem is clean
+                            var isVuln = (directAccess === 'PPMAP_POLLUTED') && (safeAccess === null || safeAccess === undefined);
+                            return { vulnerable: isVuln, directValue: directAccess, safeValue: safeAccess };
+                        } catch(e) {
+                            return { vulnerable: false, error: e.toString() };
+                        }
                     """,
                 },
                 {
                     "api": "sessionStorage",
                     "test_script": """
-                        Object.prototype.sessionTest = 'PPMAP_SESSION_POLLUTED';
-                        var result = sessionStorage.sessionTest === 'PPMAP_SESSION_POLLUTED';
-                        delete Object.prototype.sessionTest;
-                        return result;
+                        try {
+                            var canary = 'ppmap_sess_' + Date.now();
+                            if (sessionStorage.hasOwnProperty(canary)) return { vulnerable: false, reason: 'instance_has_own' };
+                            
+                            Object.prototype[canary] = 'PPMAP_POLLUTED';
+                            var directAccess = sessionStorage[canary];
+                            var safeAccess = sessionStorage.getItem(canary);
+                            delete Object.prototype[canary];
+                            
+                            var isVuln = (directAccess === 'PPMAP_POLLUTED') && (safeAccess === null || safeAccess === undefined);
+                            return { vulnerable: isVuln, directValue: directAccess, safeValue: safeAccess };
+                        } catch(e) {
+                            return { vulnerable: false, error: e.toString() };
+                        }
                     """,
                 },
             ]
