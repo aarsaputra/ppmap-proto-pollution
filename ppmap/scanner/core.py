@@ -100,6 +100,33 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class _MetricSession(requests.Session):
+    """requests.Session wrapper that feeds ScanMetrics as raw HTTP requests flow through.
+
+    Every request issued via the session increments total_requests; successful_requests
+    is bumped for responses with status < 400. Selenium/browser navigations are not
+    part of this metric; its semantics is "success rate of HTTP session requests".
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metrics_hook = None
+
+    def request(self, method, url, **kwargs):
+        hook = self.metrics_hook
+        try:
+            resp = super().request(method, url, **kwargs)
+            if hook is not None:
+                hook.total_requests += 1
+                if resp.status_code < 400:
+                    hook.successful_requests += 1
+            return resp
+        except Exception:
+            if hook is not None:
+                hook.total_requests += 1
+            raise
+
+
 def progress_iter(iterable, desc="Processing", disable=False):
     if tqdm is not None and not disable:
         return tqdm(
@@ -262,7 +289,7 @@ class CompleteSecurityScanner:
             pass  # We will lazy init in test_blind_oob or main scan to avoid startup delay
 
         # Initialize session with proper headers to avoid WAF fingerprinting
-        self.session = requests.Session()
+        self.session = _MetricSession()
         self.session.verify = self.config.verify_ssl
 
         if self.stealth:
@@ -455,15 +482,15 @@ class CompleteSecurityScanner:
         if not self.setup_browser(target_url):
             return []
 
-        # Reset and start metrics
+        # Reset and start metrics (and hook the request-counting wrapper)
         self.metrics = ScanMetrics(start_time=time.time())
+        self.session.metrics_hook = self.metrics
 
         # Fingerprint Frameworks
         if detect_frameworks is not None:
             print(f"{Colors.BLUE}[*] Detecting frameworks and technologies...{Colors.ENDC}")
             try:
                 resp = self.session.get(target_url, verify=self.session.verify, timeout=self.timeout)
-                self.metrics.total_requests += 1
 
                 detected = detect_frameworks(resp.text, resp.headers)
                 summary = fingerprint_summary(detected)
@@ -524,17 +551,26 @@ class CompleteSecurityScanner:
                     logger.error(f"[!] {tier.tier_name} failed: {e}")
 
             # Backwards compat for report generation requirements
+            # Categorization is now type-based (not only title-based) so that
+            # jquery_pp_count and xss_count stay consistent with actual findings
+            # (e.g. jQuery AJAX auto-eval finding carries type='xss' -> counted).
             jquery_findings = []
             xss_findings = []
             dom_xss_pp_findings = []
             
             for f in all_findings:
                 title = getattr(f, 'name', '') or str(f)
-                if 'jQuery' in title:
+                ftype = getattr(f, 'type', '') if not isinstance(f, dict) else f.get('type', '')
+                fcve = getattr(f, 'cve', '') if not isinstance(f, dict) else f.get('cve', '')
+                is_jquery_pp_cve = (
+                    (isinstance(fcve, str)and fcve == 'CVE-2019-11358')
+                    or (isinstance(fcve, list)and 'CVE-2019-11358' in fcve)
+                )
+                if ('jQuery' in title and ftype == 'prototype_pollution') or is_jquery_pp_cve:
                     jquery_findings.append(f)
-                elif 'XSS' in title:
+                if ftype in ('xss', 'dom_xss') or 'XSS' in title:
                     xss_findings.append(f)
-                    if 'DOM' in title:
+                    if 'DOM' in title or ftype == 'dom_xss':
                         dom_xss_pp_findings.append(f)
 
             total = len(all_findings)

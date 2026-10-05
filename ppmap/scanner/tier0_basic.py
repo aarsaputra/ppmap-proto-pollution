@@ -642,7 +642,6 @@ return window['{marker}'];
                             pass
 
                         self.driver.get(test_url)
-                        self.metrics.total_requests += 1
                         time.sleep(1 + attempt)  # Increase wait on retry
 
                         # Instead of just relying on JS injection via innerHTML containing payload,
@@ -883,7 +882,6 @@ return window['{marker}'];
         for payload in deep_payloads:
             try:
                 response = self.session.post(base_url, json=payload, timeout=5, verify=False)
-                self.metrics.total_requests += 1
                 if marker in response.text:
                     findings.append({
                         "type": "deep_chain_pp",
@@ -919,8 +917,7 @@ return window['{marker}'];
                 merged_headers.update(headers)
                 
                 response = self.session.get(base_url, headers=merged_headers, timeout=5, verify=False)
-                self.metrics.total_requests += 1
-                
+
                 if marker in response.text or "Error establishing a Redis connection" in response.text:
                     findings.append({
                         "type": "http_header_pp",
@@ -1031,7 +1028,6 @@ return window['{marker}'];
 
                     # Baca response
                     response = self.session.get(test_url, timeout=5, verify=False)
-                    self.metrics.total_requests += 1
 
                     # Cek apakah server merespons dengan indikasi PP
                     # Cek apakah server merespons dengan indikasi PP
@@ -1138,7 +1134,6 @@ return window['{marker}'];
                         data=injected_req["body"],
                         verify=False,
                     )
-                    self.metrics.total_requests += 1
 
                     # Global Check for Redis Errors (DoS)
                     if (

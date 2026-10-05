@@ -237,8 +237,8 @@ def get_browser(
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options
         from selenium.webdriver.chrome.service import Service
-        from webdriver_manager.chrome import ChromeDriverManager as WDM
-        from webdriver_manager.core.os_manager import ChromeType
+        # webdriver_manager is optional: we prefer the system chromedriver path
+        # below (no WDM download dependency needed to launch Selenium).
 
         opts = Options()
         opts.page_load_strategy = page_load_strategy
@@ -262,12 +262,13 @@ def get_browser(
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
 
-        try:
-            logger.info("Attempting to use CHROMIUM driver")
-            service = Service(WDM(chrome_type=ChromeType.CHROMIUM).install())
-        except Exception:
-            logger.warning("CHROMIUM driver failed, falling back to GOOGLE driver")
-            service = Service(WDM(chrome_type=ChromeType.GOOGLE).install())
+        import shutil
+        sys_driver = shutil.which("chromedriver")
+        if sys_driver:
+            logger.info(f"Using system chromedriver: {sys_driver}")
+            service = Service(sys_driver)
+        else:
+            raise RuntimeError("No system chromedriver found (webdriver_manager not installed)")
 
         driver = webdriver.Chrome(service=service, options=opts)
         # Remove navigator.webdriver flag via CDP

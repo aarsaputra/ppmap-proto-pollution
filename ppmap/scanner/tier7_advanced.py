@@ -421,35 +421,81 @@ class Tier7AdvancedScanner(BaseTierScanner):
         try:
             for name, payload, description in FRAMEWORK_DOS_PAYLOADS:
                 try:
-                    # Step 1: Get baseline response
+                    # Step 1: Baseline root URL
                     baseline = self.session.get(
                         target_url, timeout=self.timeout, verify=False
                     )
                     baseline_status = baseline.status_code
                     baseline_spaces = len(baseline.text) - len(baseline.text.replace(" ", ""))
-    
-                    # Step 2: Send PP payload
-                    resp = self.session.post(
+                    
+                    # Step 2: Control - same test URL BEFORE pollution (isolate WAF/transient noise)
+                    test_url = target_url + "?param1=a&param2=b&param3=c" if "?" not in target_url else target_url + "&param1=a&param2=b"
+                    control = self.session.get(
+                        test_url, timeout=self.timeout, verify=False
+                    )
+                    control_status = control.status_code
+                    control_spaces = len(control.text) - len(control.text.replace(" ", ""))
+                    
+                    # Step 3: Send PP payload
+                    self.session.post(
                         target_url, json=payload, timeout=self.timeout, verify=False
                     )
-    
-                    # Step 3: Check if behavior changed (include multiple parameters for limit testing)
-                    test_url = target_url + "?param1=a&param2=b&param3=c" if "?" not in target_url else target_url + "&param1=a&param2=b"
+                    
+                    # Step 4: Re-request test URL AFTER pollution
                     after = self.session.get(
                         test_url, timeout=self.timeout, verify=False
                     )
-    
+                    after_status = after.status_code
+                    after_spaces = len(after.text) - len(after.text.replace(" ", ""))
+                    
                     behavior_changed = False
                     change_detail = ""
-    
-                    if "status" in name and after.status_code != baseline_status:
-                        behavior_changed = True
-                        change_detail = f"Status: {baseline_status} → {after.status_code}"
-                    elif "json_spaces" in name:
-                        after_spaces = len(after.text) - len(after.text.replace(" ", ""))
-                        if abs(after_spaces - baseline_spaces) > 10:
+                    
+                    polluted = payload.get("__proto__", {}) if isinstance(payload, dict) else {}
+                    expected_status = None
+                    if "status" in polluted:
+                        expected_status = int(polluted["status"])
+                    elif "parameterLimit" in polluted:
+                        expected_status = 400
+                    
+                    if expected_status is not None:
+                        # STRICT:the exact polluted value must surface, and only after pollution
+                        if (
+                            after_status == expected_status
+                            and control_status != expected_status
+                            and baseline_status != expected_status
+                        ):
                             behavior_changed = True
-                            change_detail = f"JSON spacing changed: {baseline_spaces} → {after_spaces}"
+                            change_detail = (
+                                f"Status: {baseline_status} -> {after_status} "
+                                f"(expected {expected_status}, control {control_status})"
+                            )
+                        else:
+                            logger.debug(
+                                f"{name}: not confirmed (after={after_status}, expected={expected_status}, "
+                                f"control={control_status}, baseline={baseline_status})"
+                            )
+                    elif "json_spaces" in name:
+                        d_after = abs(after_spaces - baseline_spaces)
+                        d_ctrl = abs(control_spaces - baseline_spaces)
+                        if d_after > 10 and d_ctrl <= 10 and d_after > 2 * d_ctrl:
+                            behavior_changed = True
+                            change_detail = f"JSON spacing changed: {baseline_spaces} -> {after_spaces} (control {control_spaces})"
+                    else:
+                        # Generic delta: change is only valid when observed ONLY after pollution,
+                        # whilethe same URL without pollution behaves like baseline (WAF/transient noise excluded)
+                        if (
+                            after_status != baseline_status
+                            and after_status != control_status
+                            and control_status == baseline_status
+                        ):
+                            behavior_changed = True
+                            change_detail = f"Status: {baseline_status} -> {after_status} (control {control_status})"
+                        else:
+                            logger.debug(
+                                f"{name}: skipped (after={after_status}, baseline={baseline_status}, "
+                                f"control={control_status}) - noise or no change"
+                            )
     
                     if behavior_changed:
                         findings.append({
