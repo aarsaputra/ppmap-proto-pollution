@@ -876,5 +876,74 @@ class EnhancedReportGenerator:
             if html:
                 generated["html"] = html
 
+        # FIX v4.5.1: --format xml, jupyter, pdf diiklankan di help tapi
+        # tidak pernah dirender. Implementasi ringkas di sini.
+        if "xml" in formats:
+            try:
+                import xml.etree.ElementTree as ET
+                root = ET.Element("ppmap_report", {"target": target, "generated": timestamp})
+                for f in findings:
+                    fe = ET.SubElement(root, "finding")
+                    for k, v in (f.items() if isinstance(f, dict) else []):
+                        ET.SubElement(fe, str(k)).text = str(v)
+                fp = self.output_dir / f"report_{timestamp}.xml"
+                ET.ElementTree(root).write(fp, encoding="utf-8", xml_declaration=True)
+                generated["xml"] = str(fp)
+            except Exception as e:
+                logger.error(f"XML report failed: {e}")
+
+        if "jupyter" in formats or "ipynb" in formats:
+            try:
+                nb = {
+                    "cells": [{
+                        "cell_type": "markdown", "metadata": {},
+                        "source": [f"# PPMAP Report — {target}\n", f"Generated: {timestamp}\n",
+                                   f"Total findings: {len(findings)}\n",
+                                   "\n```json\n" + json.dumps(findings, indent=2)[:40000] + "\n```\n"],
+                    }],
+                    "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}},
+                    "nbformat": 4, "nbformat_minor": 5,
+                }
+                fp = self.output_dir / f"report_{timestamp}.ipynb"
+                with open(fp, "w") as fh:
+                    json.dump(nb, fh, indent=1)
+                generated["jupyter"] = str(fp)
+            except Exception as e:
+                logger.error(f"Jupyter report failed: {e}")
+
+        if "pdf" in formats:
+            # PDF tanpa dependency berat: render markdown ke file .pdf berbasis
+            # teks sederhana bila reportlab tidak ada (fallback jujur .txt_alias).
+            try:
+                md = self.generate_markdown_report(
+                    findings, target, f"report_{timestamp}_pdfsrc.md"
+                )
+                fp = self.output_dir / f"report_{timestamp}.pdf"
+                try:
+                    from reportlab.lib.pagesizes import A4
+                    from reportlab.lib.styles import getSampleStyleSheet
+                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+                    doc = SimpleDocTemplate(str(fp), pagesize=A4)
+                    styles = getSampleStyleSheet()
+                    story = [Paragraph("<b>PPMAP Report</b>", styles["Title"]),
+                             Paragraph(f"Target: {target}", styles["Normal"]),
+                             Spacer(1, 12)]
+                    for f in findings:
+                        title = str(f.get("name", f.get("type", "finding")))
+                        story.append(Paragraph(f"- <b>{title}</b> [{f.get('severity', '?')}]", styles["Normal"]))
+                        if f.get("description"):
+                            story.append(Paragraph(str(f["description"])[:400], styles["Normal"]))
+                    doc.build(story)
+                    generated["pdf"] = str(fp)
+                except ImportError:
+                    # Fallback jujur: simpan markdown terformat, beri catatan
+                    with open(fp, "w") as fh:
+                        fh.write("%PDF-lite (reportlab tidak terpasang)\n\n")
+                        fh.write(open(md, encoding="utf-8").read() if md else "(no content)")
+                    generated["pdf"] = str(fp)
+                    logger.warning("reportlab tidak terpasang — PDF disimpan sebagai teks sederhana")
+            except Exception as e:
+                logger.error(f"PDF report failed: {e}")
+
         self.output_dir = original_output_dir
         return generated

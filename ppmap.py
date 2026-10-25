@@ -628,10 +628,14 @@ ADVANCED OPTIONS:
 
     # Handle Diff Mode
     if args.diff:
+        from pathlib import Path
         from tools.analyze_scan_results import diff_scan_results
 
         try:
-            diff_scan_results(args.diff[0], args.diff[1])
+            # FIX: arg report_dir hilang (dulu langsung crash: missing positional argument).
+            # Gunakan dir dari file pertama sbg allowed_dir (penjara path untuk keamanan).
+            report_dir = str(Path(args.diff[0]).resolve().parent)
+            diff_scan_results(args.diff[0], args.diff[1], report_dir)
         except Exception as e:
             print(f"{Colors.FAIL}[!] Error running diff: {e}{Colors.ENDC}")
         sys.exit(0)
