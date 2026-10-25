@@ -4,6 +4,7 @@ Dipakai dari scanner/core.py atau CLI `--reach-check`. Non-destructive:
 hanya GET dengan payload di URL, tidak ada form submit/POST.
 """
 import json
+import logging
 import time
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +16,8 @@ from ppmap.scanner.reach_check import (
     make_canary,
     reach_verdict,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run_reach_check(base_url: str, driver=None, canary: Optional[str] = None,
@@ -70,9 +73,43 @@ def run_reach_check(base_url: str, driver=None, canary: Optional[str] = None,
             pass
         baseline_hits = collect_hits(driver)
 
-        # 3. jalankan tiap vektor
+        # 3. jalankan tiap vektor (standar) + GADGET VEKTOR (blackfan et al.)
         urls = build_reach_urls(base_url, canary)
-        for v in urls:
+
+        # [v4.5.1] Deteksi library pihak-ketiga di baseline lalu tambahkan
+        # vektor gadget spesifik (BlackFan/client-side-prototype-pollution).
+        gadget_results = []
+        try:
+            page_src = driver.page_source or ""
+        except Exception:
+            page_src = ""
+        detected_libs = []
+        try:
+            from ppmap.payloads.gadget_library import (
+                detect_libraries,
+                build_gadget_urls,
+                GADGET_TO_LIBRARY,
+            )
+            detected_libs = detect_libraries(page_src)
+        except Exception:
+            pass
+
+        gadget_vector_map = {}
+        if detected_libs:
+            try:
+                all_gadget_urls = build_gadget_urls(base_url, canary)
+                gadget_vector_map = {
+                    g["label"]: g for g in all_gadget_urls
+                    if GADGET_TO_LIBRARY.get(g["label"]) in detected_libs
+                }
+                logger.info(
+                    f"[reach] Library gadget terdeteksi: {detected_libs} — "
+                    f"{len(gadget_vector_map)} vektor gadget spesifik ditambahkan"
+                )
+            except Exception as e:
+                logger.debug(f"gadget vector build failed: {e}")
+
+        def _run_vector(v, kind="standard"):
             try:
                 driver.get(v["url"])
                 time.sleep(settle_seconds)
@@ -80,22 +117,29 @@ def run_reach_check(base_url: str, driver=None, canary: Optional[str] = None,
                 pass
             hits = collect_hits(driver)
             executed = execution_fired(driver, canary)
-            # pollution nyata? cek Object.prototype
             try:
                 polluted = bool(driver.execute_script(
                     f"return (function(){{var o={{}}; return ('{canary}' in o);}})();"
                 ))
             except Exception:
                 polluted = False
-            vector_results.append({
+            return {
                 "label": v["label"],
                 "url": v["url"][:200],
-                "desc": v["desc"],
+                "desc": v.get("desc") or v.get("gadget", ""),
+                "kind": kind,
                 "sink_calls": len(hits),
                 "canary_in_sink": any(canary in json.dumps(h, default=str) for h in hits),
                 "object_prototype_polluted": polluted,
                 "executed": executed,
-            })
+            }
+
+        for v in urls:
+            vector_results.append(_run_vector(v, kind="standard"))
+
+        # jalankan gadget vektor hanya untuk library yang terdeteksi
+        for label, gv in gadget_vector_map.items():
+            vector_results.append(_run_vector(gv, kind="gadget"))
 
         any_canary = any(r["canary_in_sink"] or r["object_prototype_polluted"] for r in vector_results)
         any_exec = any(r["executed"] for r in vector_results)

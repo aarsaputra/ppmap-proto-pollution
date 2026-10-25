@@ -243,6 +243,81 @@ class CVEDatabase:
                 "description": "XSS through the closeText option of the dialog widget when user input is passed",
             },
         },
+        "lodash_extra": {
+            "CVE-2025-13465": {
+                "title": "Lodash _.unset/_.omit Prototype Pollution (Deletion)",
+                "affected_versions": ">=4.0.0 <=4.17.22",
+                "fixed_version": "4.17.23",
+                "severity": "MEDIUM",
+                "description": "Path crafted membuat _.unset/_.omit menghapus properti Object.prototype.",
+            },
+            "CVE-2026-2950": {
+                "title": "Lodash _.unset/_.omit PP Bypass (array-wrapped paths)",
+                "affected_versions": "<=4.17.23",
+                "fixed_version": "4.18.0",
+                "severity": "HIGH",
+                "description": "Patch 4.17.23 hanya guard path string; array-wrapped path masih mendelete properti prototype.",
+            },
+            "CVE-2026-4800": {
+                "title": "Lodash _.template Code Injection",
+                "affected_versions": "<4.18.1",
+                "fixed_version": "4.18.1",
+                "severity": "CRITICAL",
+                "description": "_.template mengevaluasi source terpengaruh pollution -> eksekusi kode.",
+            },
+        },
+        "protobufjs": {
+            "CVE-2022-25878": {
+                "title": "protobuf.js Prototype Pollution (util.setProperty)",
+                "affected_versions": "<6.11.3",
+                "fixed_version": "6.11.3",
+                "severity": "HIGH",
+                "description": "util.setProperty mengizinkan path __proto__ menulis ke Object.prototype.",
+            },
+            "CVE-2023-36665": {
+                "title": "protobuf.js Prototype Pollution (parse/load/loadSync)",
+                "affected_versions": ">=6.10.0 <7.2.5",
+                "fixed_version": "7.2.5",
+                "severity": "HIGH",
+                "description": "Pola protobufjs kedua: parse on-the-fly / load .proto / setParsedOption.",
+            },
+        },
+        "dojo": {
+            "CVE-2020-5259": {
+                "title": "Dojo (dojox) jqMix Prototype Pollution",
+                "affected_versions": "<1.11.10",
+                "fixed_version": "1.16.2",
+                "severity": "HIGH",
+                "description": "jqMix tidak memfilter __proto__/constructor pada deep-mix.",
+            },
+        },
+        "utils_extend": {
+            "CVE-2024-57077": {
+                "title": "utils-extend lib.extend Prototype Pollution",
+                "affected_versions": "<=1.0.8",
+                "fixed_version": "unfixed",
+                "severity": "CRITICAL",
+                "description": "lib.extend menerima Object.prototype setter (CVSS 9.1).",
+            },
+        },
+        "synchrony": {
+            "CVE-2023-45811": {
+                "title": "synchrony deobfuscator LiteralMap PP",
+                "affected_versions": "<2.4.4",
+                "fixed_version": "2.4.4",
+                "severity": "MEDIUM",
+                "description": "JSON LiteralMap transformer menulis __proto__ ke Object.prototype.",
+            },
+        },
+        "jsgui": {
+            "CVE-2022-25301": {
+                "title": "jsgui-lang-essentials Prototype Pollution",
+                "affected_versions": "semua",
+                "fixed_version": "unfixed",
+                "severity": "HIGH",
+                "description": "attribut proto/constructor/prototype bisa diubah.",
+            },
+        },
     }
 
     @staticmethod
