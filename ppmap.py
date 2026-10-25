@@ -106,6 +106,32 @@ except ImportError:
 # ============================================================================
 # PRINT BANNER & DISCLAIMER
 # ============================================================================
+def print_short_usage() -> None:
+    """Ringkasan singkat untuk `ppmap.py` tanpa argumen.
+    Bantuan lengkap (semua opsi) tetap di `-h` / `--help`.
+    """
+    print(f"""{Colors.BOLD}{Colors.CYAN}MODE UTAMA:{Colors.ENDC}
+  {Colors.GREEN}--reach-check <URL>{Colors.ENDC}   Buktikan apakah pollution dari URL sampai sink (3-tier verdict)
+  {Colors.GREEN}--poc <URL>{Colors.ENDC}           Quick PoC cepat (non-destruktif)
+  {Colors.GREEN}--scan <URL ...>{Colors.ENDC}      Scan URL spesifik (tanpa crawl)
+  {Colors.GREEN}--scan-full <URL>{Colors.ENDC}     Full scan (discovery + attack)
+  {Colors.GREEN}--discover <URL>{Colors.ENDC}      Recon saja (tanpa attack)
+
+{Colors.BOLD}{Colors.CYAN}CONTOH CEPAT:{Colors.ENDC}
+  ppmap.py --reach-check https://target.com
+  ppmap.py --poc https://target.com
+  ppmap.py --scan https://target.com --stealth
+  subfinder -d target.com -silent | ppmap.py --scan --stdin
+
+{Colors.BOLD}{Colors.CYAN}PANDUAN VERDICT reach-check:{Colors.ENDC}
+  LIBRARY_VULNERABLE_ONLY → library rentan ada; JANGAN dilaporkan sbg vuln produktif
+  REACHABLE_FROM_URL      → canary dari URL sampai sink; jalur serangan terbukti
+  VERIFIED_EXECUTION      → payload dieksekusi nyata; full chain terkonfirmasi
+
+{Colors.WARNING}Bantuan lengkap semua opsi:{Colors.ENDC} ppmap.py -h
+""")
+
+
 def print_banner():
     banner = (
         Colors.BOLD
@@ -876,7 +902,7 @@ ADVANCED OPTIONS:
                 logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
 
     if not targets and not args.request:
-        parser.print_help()
+        print_short_usage()
         sys.exit(1)
 
     normalized_initial_targets = [normalize_url(t) for t in targets]
@@ -1072,7 +1098,7 @@ ADVANCED OPTIONS:
             # The parse_burp_request logic is already handled above in the script
             pass
         else:
-            parser.print_help()
+            print_short_usage()
 
     logger.info("PPMAP completed")
 
