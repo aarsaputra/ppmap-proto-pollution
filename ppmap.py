@@ -138,7 +138,8 @@ Use only with explicit permission on target systems.
 # ============================================================================
 # QUICK POC MODE
 # ============================================================================
-def run_quick_poc(url: str, headless: bool = True) -> None:
+def run_quick_poc(url: str, headless: bool = True, proxy: Optional[str] = None,
+                  user_agent: Optional[str] = None, browser: str = "chrome") -> None:
     """Run a fast non-destructive jQuery Prototype Pollution PoC on the target.
 
     Uses the QuickPoC class from ppmap.engine which tries Selenium first and
@@ -153,7 +154,7 @@ def run_quick_poc(url: str, headless: bool = True) -> None:
     ready = False
     try:
         print(f"{Colors.BLUE}[*] Setting up browser...{Colors.ENDC}")
-        ready = poc.setup_browser(url)
+        ready = poc.setup_browser(url, proxy=proxy, user_agent=user_agent, browser=browser)
     except Exception as e:
         print(f"{Colors.FAIL}[!] Browser setup failed: {e}{Colors.ENDC}")
         logger.error(f"Browser setup failed: {e}", exc_info=True)
@@ -534,6 +535,13 @@ ADVANCED OPTIONS:
         "--proxy", type=str, metavar="PROXY", help="HTTP proxy (http://proxy:port)"
     )
     parser.add_argument(
+        "--oob-url",
+        type=str,
+        metavar="DOMAIN",
+        help="Your own OOB domain (Burp Collaborator / self-hosted interactsh). "
+             "Canary payloads use <id>.<your-domain>; check interactions in your panel.",
+    )
+    parser.add_argument(
         "--diff",
         nargs=2,
         metavar=("FILE1", "FILE2"),
@@ -749,10 +757,30 @@ ADVANCED OPTIONS:
     if args.discover:
         targets.extend(args.discover)
 
+    # --- QUICK POC MODE (FIX: dulu argumennya ada tapi tidak pernah di-wire) ---
+    poc_headless = getattr(args, "headless", True)
+    poc_browser = getattr(args, "browser", "chrome") or "chrome"
+    if getattr(args, "poc", None):
+        run_quick_poc(args.poc, headless=poc_headless,
+                      proxy=getattr(args, "proxy", None),
+                      user_agent=getattr(args, "user_agent", None),
+                      browser=poc_browser)
+        return
+
+    # --- LOCAL QUICK POC (fallback Playwright/Selenium local) ---
+    if getattr(args, "quickpoc_local", None):
+        run_quick_poc(args.quickpoc_local, headless=poc_headless,
+                      proxy=getattr(args, "proxy", None),
+                      user_agent=getattr(args, "user_agent", None),
+                      browser=poc_browser)
+        return
+
     # --- REACH-CHECK MODE: standalone, sebelum fase lain ---
+    # NOTE: JANGAN import Colors di sini — import lokal membuat `Colors` jadi
+    # variabel lokal untuk seluruh main() dan mematahkan pemakaian global
+    # (UnboundLocalError di blok discovery). Import global di header file sudah cukup.
     if getattr(args, "reach_check", None):
         from ppmap.scanner.reach_runner import run_reach_check
-        from ppmap.utils import Colors
 
         print(f"{Colors.CYAN}[*] REACH-CHECK MODE (canary taint tracking){Colors.ENDC}")
         for rc_target in args.reach_check:
@@ -864,8 +892,27 @@ ADVANCED OPTIONS:
         # Apply stealth if needed
         if args.stealth:
             discovery_session.headers.update(STEALTH_HEADERS)
-            
-        discovery = EndpointDiscovery(session=discovery_session)
+        # FIX: --user-agent & --proxy kini diterapkan juga di discovery
+        if getattr(args, "user_agent", None):
+            discovery_session.headers["User-Agent"] = args.user_agent
+        if getattr(args, "proxy", None):
+            discovery_session.proxies = {"http": args.proxy, "https": args.proxy}
+
+        # FIX: --wordlist hanya relevan utk discovery
+        wl_paths = None
+        if getattr(args, "wordlist", None):
+            try:
+                with open(args.wordlist, "r", encoding="utf-8", errors="ignore") as wf:
+                    wl_paths = [ln for ln in wf.read().splitlines() if ln.strip()]
+                print(f"{Colors.BLUE}[*] Wordlist loaded: {len(wl_paths)} path(s){Colors.ENDC}")
+            except OSError as e:
+                print(f"{Colors.FAIL}[!] Gagal baca wordlist: {e}{Colors.ENDC}")
+
+        discovery = EndpointDiscovery(
+            session=discovery_session,
+            wordlist=wl_paths,
+            discover_assets=not getattr(args, "no_asset_discovery", False),
+        )
         
         for target in normalized_initial_targets:
             if target in visited_urls:
@@ -906,6 +953,24 @@ ADVANCED OPTIONS:
         for url in final_scan_queue:
             print(f"  -> {url}")
         sys.exit(0)
+
+    # --- FIX: --endpoints file = force-scan (bekerja dengan --scan & --scan-full) ---
+    if getattr(args, "endpoints", None):
+        try:
+            with open(args.endpoints, "r", encoding="utf-8", errors="ignore") as ef:
+                forced = [ln.strip() for ln in ef.read().splitlines()
+                          if ln.strip() and not ln.strip().startswith("#")]
+            parsed_base = urllib.parse.urlparse(normalized_initial_targets[0]) if normalized_initial_targets else None
+            origin = f"{parsed_base.scheme}://{parsed_base.netloc}" if parsed_base else ""
+            added = 0
+            for fep in forced:
+                full = fep if fep.startswith("http") else origin + (fep if fep.startswith("/") else "/" + fep)
+                if full not in final_scan_queue:
+                    final_scan_queue.append(full)
+                    added += 1
+            print(f"{Colors.GREEN}[✓] {len(forced)} endpoint(s) dari --endpoints ({added} baru) ditambahkan ke antrian.{Colors.ENDC}")
+        except OSError as e:
+            print(f"{Colors.FAIL}[!] Gagal baca endpoints file: {e}{Colors.ENDC}")
 
     # --- SCANNING PHASE ---
     if final_scan_queue:
@@ -956,7 +1021,10 @@ ADVANCED OPTIONS:
                 verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
                 rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
                 delay=args.delay,
-                custom_headers=auth_headers
+                custom_headers=auth_headers,
+                proxy=getattr(args, "proxy", None),
+                oob_url=getattr(args, "oob_url", None),
+                browser=poc_browser,
             )
 
             all_findings = []

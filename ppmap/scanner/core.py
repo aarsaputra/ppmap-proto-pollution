@@ -292,6 +292,14 @@ class CompleteSecurityScanner:
         self.session = _MetricSession()
         self.session.verify = self.config.verify_ssl
 
+        # FIX: wire --proxy ke requests session (dulu argumen diabaikan)
+        if getattr(self.config, "proxy", None):
+            self.session.proxies = {
+                "http": self.config.proxy,
+                "https": self.config.proxy,
+            }
+            logger.info(f"Proxy routing enabled: {self.config.proxy}")
+
         if self.stealth:
             # Apply realistic browser headers so WAF sees a real browser
             self.session.headers.update(STEALTH_HEADERS)
@@ -455,6 +463,8 @@ class CompleteSecurityScanner:
                 stealth=self.stealth,
                 insecure=insecure,
                 user_agent=ua,
+                proxy=getattr(self.config, "proxy", None),
+                browser=getattr(self.config, "browser", "chrome"),
             )
             if not self.driver:
                 logger.error("Failed to initialize UnifiedBrowser backend")

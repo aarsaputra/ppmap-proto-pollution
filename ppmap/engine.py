@@ -503,12 +503,14 @@ class CompleteSecurityScanner:
         verify_ssl: bool = True,
         oob_enabled: bool = False,
         stealth: bool = False,
+        oob_url: Optional[str] = None,
     ):
         self.timeout = timeout
         self.max_workers = max_workers
         self.verify_ssl = verify_ssl
         self.oob_enabled = oob_enabled
         self.stealth = stealth
+        self.oob_url = oob_url
         self.oob_detector = None
 
         # BUG-3 FIX: CompleteSecurityScanner needs self.session for OOB and request reuse
@@ -534,7 +536,8 @@ class CompleteSecurityScanner:
             # Lazy import to avoid circular dependencies if any
             from ppmap.oob import OOBDetector
 
-            self.oob_detector = OOBDetector()
+            # FIX: --oob-url (manual mode) diteruskan; interactsh jadi fallback
+            self.oob_detector = OOBDetector(oob_url=self.oob_url)
             self.oob_detector.register()
 
     def _fetch(
@@ -774,12 +777,21 @@ class QuickPoC:
         self.headless = headless
         self.driver = None
 
-    def setup_browser(self, target_url: str, insecure: bool = False) -> bool:
+    def setup_browser(self, target_url: str, insecure: bool = False,
+                      proxy: Optional[str] = None,
+                      user_agent: Optional[str] = None,
+                      browser: str = "chrome") -> bool:
         # Use centralized browser helper
         try:
             from .browser import get_browser
 
-            self.browser = get_browser(headless=self.headless, insecure=insecure)
+            self.browser = get_browser(
+                headless=self.headless,
+                insecure=insecure,
+                proxy=proxy,
+                user_agent=user_agent,
+                browser=browser,
+            )
             if self.browser:
                 self.browser.get(target_url)
                 return True

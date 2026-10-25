@@ -1,125 +1,89 @@
-import requests
+"""OOB detector v2: mode manual yang PASTI jalan + interact.sh best-effort.
+
+Realita: interact.sh modern butuh RSA registration (PyNaCl) dan
+https://interact.sh/register lama sudah mati. Solusi pragmatis:
+1. OOB_MANUAL: user beri domain sendiri (Burp Collaborator / self-hosted
+   interactsh / dnslog dsb) via --oob-url. Payload memakai subdomain canary,
+   verifikasi dilakukan user di panel OOB miliknya (korelasi via canary ID).
+2. OOB_INTERACTSH: best-effort register ke server kompatibel (self-hosted).
+"""
 import logging
 import random
 import string
-from typing import List, Dict
-from urllib.parse import urlencode  # FIXED: Import for proper URL encoding
+from typing import List, Dict, Optional
+
+import requests  # dipatch oleh tests (patch('ppmap.oob.requests.get'))
 
 logger = logging.getLogger(__name__)
 
 
 class OOBDetector:
     """
-    Handles Out-of-Band (OOB) interactions using ProjectDiscovery's interact.sh.
+    Out-of-Band detector dengan 2 mode:
+    - manual   : domain OOB disediakan user (default; selalu works)
+    - interactsh: auto-register ke server kompatibel (best-effort)
     """
 
-    def __init__(self):
-        self.server_url = "https://interact.sh"
-        self.correlation_id = None
+    def __init__(self, oob_url: Optional[str] = None, server_url: str = "https://interact.sh"):
+        self.server_url = server_url.rstrip("/")
+        self.correlation_id = "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=20)
+        )
         self.secret_key = None
         self.oob_domain = None
         self.session_valid = False
+        self.mode = "interactsh"
+
+        # Mode manual: --oob-url kolaborator.example.com (tanpa skema)
+        if oob_url:
+            domain = oob_url
+            if "://" in domain:
+                from urllib.parse import urlparse
+                domain = urlparse(domain).netloc or urlparse(domain).path
+            self.oob_domain = f"{self.correlation_id}.{domain}"
+            self.session_valid = True
+            self.mode = "manual"
+            logger.info(f"OOB manual mode: canary domain {self.oob_domain}")
 
     def register(self) -> bool:
-        """Register a new session with interact.sh"""
+        """Manual mode: selalu 'registered'. Interactsh: best-effort register."""
+        if self.mode == "manual" and self.oob_domain:
+            return True
         try:
-            # Generate a correlation ID (normally client-generated or server-assigned)
-            # Interact.sh API requires a specifically formatted request to registers
-            # For simplicity and reliability in this Python implementation without heavy deps,
-            # we will use the official API endpoint `register` if available or fallback.
-
-            # Note: The public interact.sh server behavior changes.
-            # A robust implementation often uses the chaos/interactsh client logic.
-            # Here we simulate a simplified client or use a known reliable public API wrapper if available.
-            # Since we can't easily implement the full crypto interaction of native interact.sh client here
-            # without PyNaCl, we might use a simplified approach or a different OAST service if interact.sh is strict.
-
-            # Alternative: Use a standard GET request to register (deprecated in newer interact.sh refs).
-            # Let's try to use the standard JSON API if possible.
-
-            # For this v4.0 implementation, we will use a generated correlation ID
-            # and a polling mechanism compatible with the protocol.
-
-            # Actually, without PyNaCl (which requires compilation), full interact.sh client is hard.
-            # We will use a mockup for now OR a lighter alternative if available.
-            # BUT, the user asked specifically for Interact.sh.
-            # Let's look for a simple HTTPS based interaction.
-
-            # Research: Interact.sh requires RSA/AES encryption for registration in recent versions.
-            # This might be too heavy for a single python file without deps.
-
-            # PIVOT: We will implement a "Placeholder" OOB client that *can* be easily swapped,
-            # but for actual functionality without heavy deps, we might need to rely on
-            # a different public OAST or just print the instruction to use a manual OAST for now
-            # if we can't implement the full crypto.
-
-            # WAIT: We can use `app.interactsh.com` which provides a web-based GUI
-            # but no API for scripts without a browser.
-
-            # Let's try `bxssh.com` or `requestbin`? No, OOB needs DNS.
-            # Let's implement a "Custom/Manual" OOB mode where user provides the URL,
-            # OR use a simpler service like `burpcollaborator` (if user has pro) or `pingb.in`.
-
-            # Let's stick to the plan but make it robust:
-            # If we can't auto-register, we ask the user to provide an OOB URL.
-            # But the requirement was "Integrasi Interact.sh".
-            # Let's try to implement a simple poller if possible.
-
-            # If strict integration is hard in pure python without libs:
-            # We will add a flag `--oob-url URL` to let user provide their own callback (interact.sh/burp/etc).
-            # AND we will try to auto-provision if possible.
-
-            # Let's implement the OOB url holder.
-            self.correlation_id = "".join(
-                random.choices(string.ascii_lowercase + string.digits, k=20)
-            )
-            self.oob_domain = f"{self.correlation_id}.oast.site"  # Dummy default, caller should likely override or we accept external param
-
-            # For the prototype, we will require the user to provide an Interact.sh URL via CLI
-            # OR we implement a "Manual Mode" where we just generate payloads.
-
-            # Let's refine: The user wants "Native integration".
-            # We'll use the standard `requests` to hit `https://interact.sh/register`
-            # IF that endpoint still works openly (it used to).
-            # If not, we fall back to manual OOB URL.
-
+            import requests
             response = requests.get(f"{self.server_url}/register", timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                self.correlation_id = data.get("correlation-id")
+                self.correlation_id = data.get("correlation-id", self.correlation_id)
                 self.secret_key = data.get("secret-key")
                 self.oob_domain = data.get("full-domain")
                 self.session_valid = True
                 logger.info(f"Registered OOB session: {self.oob_domain}")
                 return True
-        except requests.exceptions.ConnectionError:
-            logger.warning(
-                "[!] Network Error: Could not reach Interact.sh. Check internet connection."
-            )
-            return False
         except Exception as e:
-            logger.warning(f"OOB Registration Error: {str(e)[:100]}")
-
+            logger.warning(
+                f"Interactsh auto-register gagal ({str(e)[:80]}). "
+                f"Gunakan --oob-url <domain-kolaboratormu> untuk mode manual."
+            )
+        self.session_valid = False
         return False
 
     def poll(self) -> List[Dict]:
-        """Poll for interactions"""
+        """Poll interactions. Manual mode: tidak ada API polling (cek panel sendiri)."""
         if not self.session_valid:
             return []
-
+        if self.mode == "manual":
+            logger.debug("OOB manual: cek interaksi di panel kolaborator milikmu.")
+            return []
         try:
-            # FIXED: Properly URL-encode parameters to prevent parsing issues
-            params = {
-                'id': self.correlation_id,
-                'secret': self.secret_key
-            }
+            import requests
+            from urllib.parse import urlencode
+            params = {"id": self.correlation_id, "secret": self.secret_key}
             url = f"{self.server_url}/poll?{urlencode(params)}"
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                # data is usually a list of interactions
-                # {"protocol": "dns", "unique-id": "...", "full-id": "...", "remote-address": "..."}
-                return data.get("data", []) if data.get("data") else []
+                return data.get("data", []) or []
         except Exception as e:
             logger.debug(f"Poll missed: {e}")
         return []
