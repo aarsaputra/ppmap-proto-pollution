@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.5.0] - 2026-10-25 (Verdict Integrity & CLI Reliability Edition) ✅
+
+### Added
+- **`--reach-check` Mode (Canary Taint Tracking)**: 3-tier verdict yang membedakan
+  temuan berbasis versi dari eksploitasi nyata:
+  - Tier 1 `LIBRARY_VULNERABLE_ONLY` — library rentan ada, TIDAK ada jalur URL → sink
+  - Tier 1.5 `SINK_SEES_PROTO_STRING` — sink menerima string `__proto__` saja
+  - Tier 2 `REACHABLE_FROM_URL` — canary dari query/hash SAMPAI sink
+  - Tier 3 `VERIFIED_EXECUTION` — payload dieksekusi nyata di browser
+  - Teknik: instrumentasi sink pra-navigasi via CDP
+    (`addScriptToEvaluateOnNewDocument`) + `defineProperty` trap di
+    `window.jQuery`/`$` (menangkap library yang termuat belakangan) +
+    canary unik per-scan. 8 vektor URL: hash-JSON proto/ctor, query bracket,
+    query JSON, hash/query HTML (gadget `$(string)` khas jQuery <1.9).
+- **`--reach-check` juga menginstrumentasi `jQuery.parseJSON`, `jQuery.fn.html`,
+  `jQuery.fn.init` (deteksi HTML-string), `window.eval`, dan setter `innerHTML`.
+- **`--oob-url` (OOB Manual Mode)**: gunakan Burp Collaborator / self-hosted
+  interactsh / dnslog sendiri. Canary `<id>.<domain-mu>`; interaksi dicek di
+  panel milikmu. Interactsh auto-register menjadi best-effort fallback
+  (API `/register` publik lama sudah mati — butuh RSA/PyNaCl).
+- **`--browser firefox`**: Selenium geckodriver (auto-fallback ke Chrome bila
+  geckodrive tidak ada) + Playwright firefox fallback. Proxy & UA didukung.
+
+### Fixed — 10 flag CLI yang diterima tapi tidak pernah dieksekusi (dead flags)
+- **`--poc` / `--quickpoc-local`**: argumen ada + fungsi `run_quick_poc()` ada,
+  tapi tidak pernah dipanggil di `main()` → sebelumnya hanya print help + exit 0.
+  Kini benar-benar menjalankan QuickPoC (2 payload canary, non-destruktif).
+- **`--proxy`**: kini dirutekan ke requests session, Selenium
+  (`--proxy-server`), Playwright (`proxy.server`), discovery session, dan
+  QuickPoC. Terverifikasi: proxy mati menghasilkan `ProxyError` (routing jalan).
+- **`--user-agent`**: diterapkan di scanner session, discovery session,
+  QuickPoC, dan override UA Firefox.
+- **`--wordlist FILE`**: path guessing tambahan di EndpointDiscovery
+  (di-inject ke antrian crawl).
+- **`--endpoints FILE`**: force-scan queue — bekerja dengan `--scan` dan
+  `--scan-full` (dulu tidak dieksekusi sama sekali).
+- **`--no-asset-discovery`**: toggle nyata untuk spider file JS statis saat
+  discovery (default: aktif).
+
+### Fixed - Regressions
+- **`Colors` UnboundLocalError**: `from ppmap.utils import Colors` lokal di blok
+  reach-check membuat `Colors` menjadi variabel lokal untuk seluruh `main()`
+  dan mematahkan pemakaian global sebelum baris tersebut. Kini memakai import
+  global dari header.
+- **`ppmap.oob.requests`**: modul `requests` kini di-import di level modul agar
+  `patch('ppmap.oob.requests.get')` pada test lama tetap bekerja.
+
+### Changed
+- **Versi bump 4.4.2 → 4.5.0** (fitur baru + perbaikan luas: minor bump).
+
+### Verification (2026-10-25)
+- Lab positif (jQuery 1.4.2 + `$.extend(true,{},JSON.parse(hash))`):
+  `--reach-check` = VERIFIED_EXECUTION tier 3 (canary-in-sink +
+  Object.prototype polluted + onerror executed), `--poc` = CONFIRMED.
+- Lab negatif (jQuery 1.4.2 tanpa jalur URL → sink): LIBRARY_VULNERABLE_ONLY.
+- Kasus nyata bugs.php.net/bug.php?id=1 (jQuery 1.4.2): LIBRARY_VULNERABLE_ONLY
+  — konsisten dengan analisis manual; temuan versi-only, tidak layak dilaporkan
+  sebagai vulnerability produktif.
+- Firefox backend live: `Selenium Firefox backend initialized (geckodriver)`.
+- Proxy routing live: proxy mati → ProxyError (terbukti dirutekan).
+- `--endpoints` live: 2 endpoint ekstra masuk antrian scan.
+- Test suite: 287 passed / 0 failed (termasuk 13 test baru reach_check).
+- Commit: `a94d2c3` (reach-check), `da92688` (dead flags), + bump ini.
+
+---
+
 ## [4.4.2] - 2026-04-06 (Clean Architecture & Reliability Edition) ✅
 
 ### Added - Clean Architecture Refactor
