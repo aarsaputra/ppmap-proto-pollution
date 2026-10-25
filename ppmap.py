@@ -316,6 +316,13 @@ ADVANCED OPTIONS:
         "--discover", nargs="*", metavar="URL", help="Recon only: discover endpoints and parameters without attacking"
     )
     parser.add_argument(
+        "--reach-check",
+        nargs="*",
+        metavar="URL",
+        help="Reachability check: prove whether pollution input from URL/query/hash REACHES jQuery sinks "
+             "(canary taint tracking, 3-tier verdict: LIBRARY_VULNERABLE / REACHABLE_FROM_URL / VERIFIED_EXECUTION)",
+    )
+    parser.add_argument(
         "-ls",
         "--list",
         type=str,
@@ -741,6 +748,45 @@ ADVANCED OPTIONS:
         targets.extend(args.scan_full)
     if args.discover:
         targets.extend(args.discover)
+
+    # --- REACH-CHECK MODE: standalone, sebelum fase lain ---
+    if getattr(args, "reach_check", None):
+        from ppmap.scanner.reach_runner import run_reach_check
+        from ppmap.utils import Colors
+
+        print(f"{Colors.CYAN}[*] REACH-CHECK MODE (canary taint tracking){Colors.ENDC}")
+        for rc_target in args.reach_check:
+            if not rc_target.startswith(("http://", "https://")):
+                rc_target = "https://" + rc_target
+            print(f"{Colors.BLUE}[→] Checking reachability: {rc_target}{Colors.ENDC}")
+            result = run_reach_check(rc_target)
+            print()
+            tier = result.get("tier")
+            verdict = result.get("verdict", "UNAVAILABLE")
+            color = Colors.FAIL if tier == 3 else (Colors.WARNING if tier == 2 else Colors.GREEN)
+            print(f"{color}[=] VERDICT: {verdict} (tier {tier}){Colors.ENDC}")
+            if verdict == "LIBRARY_VULNERABLE_ONLY":
+                print("    Library rentan ADA, tapi TIDAK ada jalur input URL -> sink yang terbukti.")
+                print("    => Version-based finding; JANGAN dilaporkan sebagai vulnerability produktif.")
+            elif verdict == "REACHABLE_FROM_URL":
+                print("    Canary dari URL SAMPAI sink! Jalur serangan terbukti ada. Perlu analisis gadget lanjut.")
+            elif verdict == "VERIFIED_EXECUTION":
+                print("    Payload DIEKSEKUSI di browser. Full XSS/PP chain terkonfirmasi.")
+
+            for v in result.get("vector_results", []):
+                marks = []
+                if v.get("canary_in_sink"):
+                    marks.append("canary-in-sink")
+                if v.get("object_prototype_polluted"):
+                    marks.append("Object.prototype terpolusi")
+                if v.get("executed"):
+                    marks.append("EXECUTED")
+                mark_str = ("  <<< " + ", ".join(marks)) if marks else ""
+                print(f"    [{v['label']:18}] sink_calls={v['sink_calls']}{mark_str}")
+            if not result.get("instrumented_cdp"):
+                print(f"{Colors.WARNING}[!] CDP instrumentation gagal — hasil terbatas (fallback Selenium){Colors.ENDC}")
+            print()
+        return
 
     # --openapi: auto-generate targets from spec file
     if hasattr(args, "openapi") and args.openapi:
