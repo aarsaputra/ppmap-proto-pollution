@@ -258,6 +258,17 @@ def build_gadget_urls(base_url: str, canary: str) -> List[Dict[str, str]]:
     xs_enc = _quote(xs, safe="")
     for label, tpl, gadget, impact, source in GADGET_VECTORS:
         sfx = _render_vector(tpl, canary, xs_enc)
+        # Token {xs} hanya tersubstitusi kalau token itu ADA di template.
+        # 15 vektor bertipe string (onerror, alert(1), javascript:, srcdoc)
+        # menyisakan "{xs}" mentah di URL -> payload tidak terkirim dan
+        # canary hilang. Ganti token itu dengan payload exec yang SUDAH
+        # ter-encode (xs_enc), karena posisinya di dalam nilai param.
+        if _XS_TOKEN in sfx:
+            sfx = sfx.replace(_XS_TOKEN, xs_enc)
+        if _XS_ENC_TOKEN in sfx:
+            sfx = sfx.replace(_XS_ENC_TOKEN, xs_enc)
+        if _XS_ENC2_TOKEN in sfx:
+            sfx = sfx.replace(_XS_ENC2_TOKEN, xs_enc)
         if canary not in sfx:
             # Vektor string/JS: tempel properti netral pembawa canary supaya
             # objektif attribusi tetap terpenuhi walau payload khususnya
