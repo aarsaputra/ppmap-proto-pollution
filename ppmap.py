@@ -121,7 +121,11 @@ def print_short_usage() -> None:
   ppmap.py --reach-check https://target.com
   ppmap.py --poc https://target.com
   ppmap.py --scan https://target.com --stealth
-  subfinder -d target.com -silent | ppmap.py --scan --stdin
+  ppmap.py --scan --stdin --format json   # pipeline: 1 hasil per baris (jsonl)
+
+{Colors.BOLD}{Colors.CYAN}EXIT CODE (utk pipeline/CI):{Colors.ENDC}
+  0 = selesai tanpa temuan   1 = error/fatal   2 = ada temuan (vuln/reachable)
+  ppmap.py --scan --stdin --format jsonl || echo "temuan ada"
 
 {Colors.BOLD}{Colors.CYAN}PANDUAN VERDICT reach-check:{Colors.ENDC}
   LIBRARY_VULNERABLE_ONLY → library rentan ada; JANGAN dilaporkan sbg vuln produktif
@@ -1013,6 +1017,9 @@ ADVANCED OPTIONS:
     if final_scan_queue:
         logger.info(f"Starting Scan phase on {len(final_scan_queue)} unique URL(s)")
 
+        # Pipeline mode: output dikonsumsi sebagai stream (subfinder | ppmap --scan --stdin)
+        pipeline_mode = bool(getattr(args, "stdin", False))
+
         # Use async engine if enabled
         if args.async_scan:
             logger.info(
@@ -1027,7 +1034,7 @@ ADVANCED OPTIONS:
 
             # Generate enhanced reports (always save, even with 0 findings)
             findings = [r for r in results if r.get("success")] if results else []
-            report_gen = EnhancedReportGenerator(args.output)
+            report_gen = EnhancedReportGenerator(args.output, pipeline_mode=pipeline_mode)
             generated_reports = report_gen.generate_all_formats(
                 findings=findings,
                 target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),
@@ -1091,7 +1098,7 @@ ADVANCED OPTIONS:
                 logger.info("Scan interrupted by user. Generating partial report.")
 
             # Generate reports for traditional scan (always save, even with 0 findings)
-            report_gen = EnhancedReportGenerator(args.output)
+            report_gen = EnhancedReportGenerator(args.output, pipeline_mode=pipeline_mode)
             generated_reports = report_gen.generate_all_formats(
                 findings=all_findings,
                 target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),

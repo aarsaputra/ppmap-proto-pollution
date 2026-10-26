@@ -349,9 +349,12 @@ def _get_finding_knowledge(finding: dict) -> dict:
 # EnhancedReportGenerator
 # ==============================================================================
 class EnhancedReportGenerator:
-    def __init__(self, output_dir: str = "./reports"):
+    def __init__(self, output_dir: str = "./reports", pipeline_mode: bool = False):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # pipeline_mode: output dipakai sebagai stream (mis. `--scan --stdin`);
+        # JSON ditulis 1 objek/baris (indent=0) supaya `jq -c .` / grep per-baris valid.
+        self.pipeline_mode = pipeline_mode
 
     def _sanitize_domain(self, target_url: str) -> str:
         """Extract and sanitize domain from target URL for directory naming."""
@@ -861,7 +864,14 @@ class EnhancedReportGenerator:
             try:
                 fp = self.output_dir / f"report_{timestamp}.json"
                 with open(fp, "w") as fh:
-                    json.dump(findings, fh, indent=2)
+                    indent = 0 if self.pipeline_mode else 2
+                    non_pipeline_indent = indent
+                    if self.pipeline_mode:
+                        # 1 objek JSON per baris -> aman untuk jq -c / grep per-baris
+                        for item in findings:
+                            fh.write(json.dumps(item, indent=0).replace("\n", "") + "\n")
+                    else:
+                        json.dump(findings, fh, indent=non_pipeline_indent)
                 generated["json"] = str(fp)
             except Exception as e:
                 logger.error(f"JSON report failed: {e}")
