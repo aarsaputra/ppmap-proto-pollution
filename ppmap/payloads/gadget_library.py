@@ -212,6 +212,27 @@ def _encode_rvalue(val: str, keep_frag: bool = False) -> str:
     return _quote(val, safe=safe)
 
 
+_PH = {  # token -> placeholder alfanumerik (lolos semua encoder)
+    "{xs_enc2}": "PPMAPXS2PH",
+    "{xs_enc}": "PPMAPXS1PH",
+    "{x_k}": "PPMAPXKPH",
+    "{k}": "PPMAPKPH",
+    "{xs}": "PPMAPXSPH",
+}
+
+
+def _substitute_tokens_final(s: str, canary: str, xs_enc: str) -> str:
+    """Ganti placeholder dengan payload final (masih fresh, tak ter-encode ganda)."""
+    s = s.replace("PPMAPXS2PH", xs_enc)
+    s = s.replace("PPMAPXS1PH", xs_enc)
+    s = s.replace("PPMAPXSPH", xs_enc)
+    s = s.replace("PPMAPXKPH",
+                  _quote(f"<img src=x onerror={_EXEC_MARKER}=1;window['{canary}']=1>",
+                         safe=""))
+    s = s.replace("PPMAPKPH", canary)
+    return s
+
+
 def _render_vector(tpl: str, canary: str, xs_enc: str) -> str:
     """Render satu template vektor gadget jadi query-string final.
 
@@ -221,15 +242,19 @@ def _render_vector(tpl: str, canary: str, xs_enc: str) -> str:
     `%7Bxs%7D` — token tidak pernah tersubstitusi, request tidak membawa
     payload yang dimaksud (inilah bug AUDIT-22 butir a).
     """
+    tpl2 = tpl
+    for tok, ph in _PH.items():
+        tpl2 = tpl2.replace(tok, ph)
+
     parts = []
-    for seg in tpl.split("&"):
+    for seg in tpl2.split("&"):
         if "=" in seg:
             key, _, val = seg.partition("=")
             keep_frag = val.endswith("#") and "#" not in val[:-1]
             parts.append(f"{_encode_key(key)}={_encode_rvalue(val, keep_frag)}")
         else:
             parts.append(seg)
-    sfx = "&".join(parts)
+    sfx = _substitute_tokens_final("&".join(parts), canary, xs_enc)
     # AUDIT-22 (c): CR/LF pada token rusak — urllib.parse menghapus \r\n
     # (WHATWG URL parser), jadi payload multi-baris (lodash_merge_client)
     # harus di-encode eksplisit sebelum digabung ke URL.
