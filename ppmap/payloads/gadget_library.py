@@ -59,14 +59,35 @@ def detect_libraries(page_source: str) -> List[str]:
     if not page_source:
         return []
     src = page_source.lower()
+    markers_map = dict(LIBRARY_FINGERPRINTS)
+    markers_map.update(FINGERPRINT_OVERRIDES)
     found = []
-    for name, markers in LIBRARY_FINGERPRINTS.items():
+    for name, markers in markers_map.items():
         for mk in markers:
             if mk.lower() in src:
                 found.append(name)
                 break
     return found
 
+
+# --------------------------------------------------------------------------
+# 1b. FINGERPRINT HARUS-SPESIFIK (AUDIT-21)
+#     Marker generik seperti ".attr(", ".on(", "jquery" muncul di hampir semua
+#     halaman -> library dilaporkan terdeteksi padahal gadget aslinya TIDAK
+#     ada => false positive. Fingerprint di bawah MENIMPA marker generik:
+#     hanya string khas library yang boleh menyalakan deteksi.
+#     Catatan: googleapis jQuery 1.4.2 (dipakai lab) memang mengandung string
+#     versi, jadi lab tetap terdeteksi (bukan regresi).
+# --------------------------------------------------------------------------
+FINGERPRINT_OVERRIDES: Dict[str, List[str]] = {
+    "jquery_get":   ["jquery.get", "$.get(", "getjson(", "jquery-1.", "jquery/1."],
+    "jquery_attr":  ["jquery-1.", "jquery/1.", "jquery-2.", "jquery/2."],
+    "jquery_on":    ["jquery-1.", "jquery/1.", "jquery-2.", "jquery/2."],
+    "jquery_off":   ["jquery-1.", "jquery/1.", "jquery-2.", "jquery/2."],
+    "recaptcha":    ["recaptcha/api.js", "g-recaptcha", "google.com/recaptcha"],
+    "lodash_client": ["lodash.js", "lodash.min.js", "_.merge(", "lodash/"],
+    "vuejs":        ["vue.js", "vue.min.js", "vue@", "vue/"],
+}
 
 # --------------------------------------------------------------------------
 # 2. VEKTOR URL per gadget
