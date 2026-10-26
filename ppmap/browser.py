@@ -53,6 +53,16 @@ class UnifiedBrowser:
         self._pw = playwright_playwright
         self.switch_to = BrowserSwitchTo(self)
 
+    @property
+    def current_url(self) -> str:
+        """Expose current_url (tier0 reach annotation memakainya)."""
+        try:
+            if self.backend == "selenium":
+                return self.impl.current_url
+            return self.impl.url
+        except Exception:
+            return ""
+
     # Navigation
     def get(self, url: str, wait: float = 0):
         if self.backend == "selenium":
@@ -220,13 +230,17 @@ def get_browser(
     insecure: bool = False,
     page_load_strategy: str = "eager",
     user_agent: Optional[str] = None,
+    proxy: Optional[str] = None,
+    browser: str = "chrome",
 ) -> Optional[UnifiedBrowser]:
     """Return a UnifiedBrowser instance using Selenium or Playwright fallback.
 
     - Tries Selenium (webdriver + webdriver_manager) first.
     - If Selenium is unavailable or fails, tries Playwright (Chromium).
+    - FIX: --browser firefox kini bisa dipilih (geckodriver, Chrome fallback).
     - Returns None if no browser backend is available.
     """
+    browser = (browser or "chrome").lower()
     ua = (
         user_agent
         or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -239,6 +253,31 @@ def get_browser(
         from selenium.webdriver.chrome.service import Service
         # webdriver_manager is optional: we prefer the system chromedriver path
         # below (no WDM download dependency needed to launch Selenium).
+
+        # FIX: --browser firefox -> gunakan geckodriver bila tersedia
+        if browser == "firefox":
+            import shutil as _shutil
+            gecko = _shutil.which("geckodriver")
+            if gecko:
+                from selenium.webdriver.firefox.options import Options as FirefoxOptions
+                ff_opts = FirefoxOptions()
+                if headless:
+                    ff_opts.add_argument("-headless")
+                if proxy:
+                    log_proxy = proxy.replace("http://", "").replace("https://", "")
+                    ff_opts.set_preference("network.proxy.type", 1)
+                    ff_opts.set_preference("network.proxy.http", log_proxy.split(":")[0])
+                    ff_opts.set_preference("network.proxy.http_port", int(log_proxy.split(":")[1]) if ":" in log_proxy else 8080)
+                    ff_opts.set_preference("network.proxy.ssl", log_proxy.split(":")[0])
+                    ff_opts.set_preference("network.proxy.ssl_port", int(log_proxy.split(":")[1]) if ":" in log_proxy else 8080)
+                if user_agent:
+                    ff_opts.set_preference("general.useragent.override", user_agent)
+                ff_driver = webdriver.Firefox(options=ff_opts)
+                ff_driver.set_page_load_timeout(timeout)
+                ff_driver.set_script_timeout(timeout)
+                logger.info("Selenium Firefox backend initialized (geckodriver)")
+                return UnifiedBrowser("selenium", ff_driver)
+            logger.warning("--browser firefox diminta tapi geckodriver tidak ada; fallback ke Chrome.")
 
         opts = Options()
         opts.page_load_strategy = page_load_strategy
@@ -259,6 +298,9 @@ def get_browser(
         opts.add_argument("--allow-running-insecure-content")
         opts.add_argument("--window-size=1920,1080")
         opts.add_argument(f"user-agent={ua}")
+        # FIX: wire proxy ke browser (dulu --proxy diabaikan utk Selenium)
+        if proxy:
+            opts.add_argument(f"--proxy-server={proxy}")
         opts.add_experimental_option("excludeSwitches", ["enable-automation"])
         opts.add_experimental_option("useAutomationExtension", False)
 
@@ -296,8 +338,12 @@ def get_browser(
 
         pw_manager = sync_playwright()
         pw = pw_manager.start()
-        browser = pw.chromium.launch(headless=headless)
-        context = browser.new_context(
+        launch_kwargs: dict = {"headless": headless}
+        if proxy:
+            launch_kwargs["proxy"] = {"server": proxy}
+        # FIX: nama variabel 'browser' bentrok dgn argumen pilihan browser
+        pw_browser = pw.firefox.launch(**launch_kwargs) if browser == "firefox" else pw.chromium.launch(**launch_kwargs)
+        context = pw_browser.new_context(
             user_agent=ua,
             viewport={"width": 1920, "height": 1080},
             locale="en-US",

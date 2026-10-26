@@ -136,8 +136,22 @@ def diff_scan_results(file1_path: str, file2_path: str, report_dir: str):
             data2 = json.load(f2)
 
         # Helper to extract unique finding identifiers
+        # FIX: report generator v4.5 menghasilkan LIST of findings (bukan dict
+        # {target, findings}); dukung kedua format.
         def get_findings_set(data):
             findings = set()
+            if isinstance(data, list):
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    for f in item.get("findings", []) or ([item] if item.get("type") else []):
+                        target = item.get("target", item.get("url", "Unknown"))
+                        ftype = f.get("type", "unknown")
+                        param = f.get("parameter", "global")
+                        payload_str = json.dumps(f.get("payload", ""))
+                        payload_hash = hashlib.sha256(payload_str.encode()).hexdigest()[:12]
+                        findings.add((target, ftype, param, payload_hash))
+                return findings
             target = data.get("target", "Unknown")
             for f in data.get("findings", []):
                 # Create a unique tuple for each finding using a secure hash

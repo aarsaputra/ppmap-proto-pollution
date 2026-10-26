@@ -13,9 +13,13 @@ logger = logging.getLogger(__name__)
 class EndpointDiscovery:
     """Discover endpoints and parameters for testing"""
 
-    def __init__(self, session=None, timeout=10):
+    def __init__(self, session=None, timeout=10, wordlist=None, discover_assets=True):
         self.session = session or requests.Session()
         self.timeout = timeout
+        # FIX: --wordlist (path guesses tambahan selain hasil crawl)
+        self.wordlist = wordlist  # list path, mis. ["/admin", "/api/v2/users"]
+        # FIX: --no-asset-discovery = False -> spider file JS utk ekstrak endpoint
+        self.discover_assets = discover_assets
 
     def _normalize_url(self, url: str) -> str:
         """Normalize URL by stripping query parameter values to avoid testing ?id=1 and ?id=2 independently"""
@@ -41,6 +45,20 @@ class EndpointDiscovery:
                 continue
 
             visited.add(current_url)
+
+            # FIX: wordlist guessing — inject path dari wordlist user ke antrian
+            if self.wordlist and len(to_visit) <= 1:
+                parsed_base = urllib.parse.urlparse(base_url)
+                origin = f"{parsed_base.scheme}://{parsed_base.netloc}"
+                for wpath in self.wordlist:
+                    wpath = str(wpath).strip()
+                    if not wpath or wpath.startswith("#"):
+                        continue
+                    if not wpath.startswith("/"):
+                        wpath = "/" + wpath
+                    guess = origin + wpath
+                    if self._normalize_url(guess) not in visited_normalized and guess not in visited:
+                        to_visit.append(guess)
 
             try:
                 # Removed verify=False for general use; using self.session handles it
@@ -79,6 +97,32 @@ class EndpointDiscovery:
                                 discovered.add(full_url)
                                 visited_normalized.add(normalized_url)
                                 to_visit.append(full_url)
+
+                # FIX: asset discovery — ekstrak endpoint dari file JS statis
+                if self.discover_assets:
+                    for script in soup.find_all("script", src=True):
+                        try:
+                            src_url = urljoin(current_url, script["src"])
+                        except Exception:
+                            continue
+                        if urllib.parse.urlparse(src_url).netloc != urllib.parse.urlparse(base_url).netloc:
+                            continue
+                        if self._normalize_url(src_url) in visited_normalized:
+                            continue
+                        visited_normalized.add(self._normalize_url(src_url))
+                        try:
+                            js_resp = self.session.get(src_url, timeout=self.timeout, verify=False)
+                            if js_resp.status_code == 200:
+                                js_eps = re.findall(r'[\'"](/(?:api|v[0-9]+)/(?:[a-zA-Z0-9_\-/.]+))["\']', js_resp.text)
+                                for ep in js_eps:
+                                    full_url = urljoin(base_url, ep)
+                                    if urllib.parse.urlparse(full_url).netloc == urllib.parse.urlparse(base_url).netloc:
+                                        n = self._normalize_url(full_url)
+                                        if n not in visited_normalized:
+                                            discovered.add(full_url)
+                                            visited_normalized.add(n)
+                        except Exception:
+                            pass
 
             except Exception as e:
                 logger.debug(f"Discovery error on {current_url}: {e}")

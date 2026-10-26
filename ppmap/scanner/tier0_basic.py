@@ -44,6 +44,10 @@ class Tier0BasicScanner(BaseTierScanner):
         self.driver = ctx.driver
         self.session = ctx.session
         self.timeout = ctx.config.timeout
+        # [AUDIT-18b] disimpan SEBELUM tes apa pun; reach annotation wajib
+        # memakai URL bersih, bukan driver.current_url yang sudah tercemar
+        # payload vektor tes sebelumnya.
+        self.current_target_url = ctx.target_url
         self.metrics = ctx.legacy_metrics  # to mock self.metrics.total_requests
         
         # In a real refactoring we initialize param_discovery properly
@@ -537,6 +541,44 @@ class Tier0BasicScanner(BaseTierScanner):
         if not findings and cve_vulnerabilities:
             # Add version-based CVE findings (not browser-verified)
             findings.extend(cve_vulnerabilities)
+
+        # [AUDIT-18] REACH ANNOTATION: tandai setiap finding versi-based dengan
+        # hasil reach-check ringan memakai driver yang SUDAH terbuka (murah:
+        # baseline + 12 vektor, ~25 detik) supaya laporan membedakan
+        # 'library rentan' vs 'bisa diserang dari URL'.
+        jquery_version_findings = [
+            f for f in findings
+            if getattr(f, "cve", "") in ("CVE-2019-11358", "CVE-2020-11022",
+                                          "CVE-2020-11023", "CVE-2020-23064",
+                                          "CVE-2015-9251", "CVE-2012-6708")
+        ]
+        if jquery_version_findings and self.driver:
+            try:
+                from ppmap.scanner.reach_runner import run_reach_check
+                base = (getattr(self, "current_target_url", None)
+                        or getattr(self.driver, "current_url", "") or "")
+                # [AUDIT-18b] Jalankan pada URL BERSIH. driver.current_url bisa
+                # sudah tercemar payload vektor XSS/hash dari tes sebelumnya,
+                # yang membuat reach-check mengukur halaman yang salah.
+                if not base:
+                    raise ValueError("base URL tidak diketahui")
+                rc = run_reach_check(base, driver=self.driver, settle_seconds=2.0)
+                verdict = rc.get("verdict", "LIBRARY_VULNERABLE_ONLY")
+                self.last_reach_verdict = verdict
+                for f in jquery_version_findings:
+                    try:
+                        f.reach_verified = verdict
+                        f.description = (
+                            f"{f.description} [reach: {verdict}"
+                            + (" - JANGAN dilaporkan sbg vuln produktif"
+                               if verdict == "LIBRARY_VULNERABLE_ONLY" else "")
+                            + "]"
+                        )
+                    except Exception:
+                        pass
+                print(f"{Colors.WARNING}[*] Reach verdict: {verdict}{Colors.ENDC}")
+            except Exception as e:
+                logger.debug(f"reach annotation failed: {e}")
 
         if not findings:
             print(f"{Colors.GREEN}[✓] No jQuery vulnerabilities detected{Colors.ENDC}")

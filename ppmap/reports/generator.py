@@ -349,9 +349,12 @@ def _get_finding_knowledge(finding: dict) -> dict:
 # EnhancedReportGenerator
 # ==============================================================================
 class EnhancedReportGenerator:
-    def __init__(self, output_dir: str = "./reports"):
+    def __init__(self, output_dir: str = "./reports", pipeline_mode: bool = False):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # pipeline_mode: output dipakai sebagai stream (mis. `--scan --stdin`);
+        # JSON ditulis 1 objek/baris (indent=0) supaya `jq -c .` / grep per-baris valid.
+        self.pipeline_mode = pipeline_mode
 
     def _sanitize_domain(self, target_url: str) -> str:
         """Extract and sanitize domain from target URL for directory naming."""
@@ -601,6 +604,23 @@ class EnhancedReportGenerator:
                 if "HIGH" in str(f.get("severity", "")).upper()
                 and "CRITICAL" not in str(f.get("severity", "")).upper()
             )
+            # [AUDIT-19c] Generator legacy inilah yang dipakai `--scan` untuk
+            # menulis report.html. Sebelum ini badge reachability hanya ada di
+            # ppmap/reports/html_report.py (jalur CoreScanner lama), sehingga
+            # report.html hasil CLI tetap menampilkan LIBRARY_VULNERABLE_ONLY
+            # setara temuan yang jalurnya terbukti.
+            from ppmap.reports.html_report import _reach_badge, _reach_banner
+
+            _reach_banner_html = _reach_banner(findings)
+            _reach_note = (
+                '<p style="font-size:.8rem;color:var(--text2);margin-top:.8rem;">'
+                "Reachability: EXECUTED (tier 3) = payload dieksekusi; "
+                "REACHABLE (tier 2) = jalur URL sampai sink; "
+                "LIBRARY-ONLY (tier 1) = versi rentan saja, jalur serangan "
+                "TIDAK terbukti.</p>"
+                if _reach_banner_html
+                else ""
+            )
 
             html = f"""\
 <!DOCTYPE html>
@@ -683,6 +703,8 @@ class EnhancedReportGenerator:
             <span><strong>Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
             <span><strong>Scanner:</strong> PPMAP v4.5.0 Enterprise</span>
         </div>
+        {_reach_banner_html}
+        {_reach_note}
     </div>
 
     <div class="stats">
@@ -726,7 +748,7 @@ class EnhancedReportGenerator:
     <div class="finding">
         <div class="finding-header">
             <h3>#{idx} — {html_escape(str(name))}</h3>
-            <div><span class="badge badge-{sev_lower}">{html_escape(severity)} (CVSS: {f.get('cvss_score', 0.0):.1f})</span>{ver_label}</div>
+            <div>{_reach_badge(f)}<span class="badge badge-{sev_lower}">{html_escape(severity)} (CVSS: {f.get('cvss_score', 0.0):.1f})</span>{ver_label}</div>
         </div>
         <div class="finding-body">
             <div class="section">
@@ -842,7 +864,14 @@ class EnhancedReportGenerator:
             try:
                 fp = self.output_dir / f"report_{timestamp}.json"
                 with open(fp, "w") as fh:
-                    json.dump(findings, fh, indent=2)
+                    indent = 0 if self.pipeline_mode else 2
+                    non_pipeline_indent = indent
+                    if self.pipeline_mode:
+                        # 1 objek JSON per baris -> aman untuk jq -c / grep per-baris
+                        for item in findings:
+                            fh.write(json.dumps(item, indent=0).replace("\n", "") + "\n")
+                    else:
+                        json.dump(findings, fh, indent=non_pipeline_indent)
                 generated["json"] = str(fp)
             except Exception as e:
                 logger.error(f"JSON report failed: {e}")
@@ -875,6 +904,75 @@ class EnhancedReportGenerator:
             )
             if html:
                 generated["html"] = html
+
+        # FIX v4.5.1: --format xml, jupyter, pdf diiklankan di help tapi
+        # tidak pernah dirender. Implementasi ringkas di sini.
+        if "xml" in formats:
+            try:
+                import xml.etree.ElementTree as ET
+                root = ET.Element("ppmap_report", {"target": target, "generated": timestamp})
+                for f in findings:
+                    fe = ET.SubElement(root, "finding")
+                    for k, v in (f.items() if isinstance(f, dict) else []):
+                        ET.SubElement(fe, str(k)).text = str(v)
+                fp = self.output_dir / f"report_{timestamp}.xml"
+                ET.ElementTree(root).write(fp, encoding="utf-8", xml_declaration=True)
+                generated["xml"] = str(fp)
+            except Exception as e:
+                logger.error(f"XML report failed: {e}")
+
+        if "jupyter" in formats or "ipynb" in formats:
+            try:
+                nb = {
+                    "cells": [{
+                        "cell_type": "markdown", "metadata": {},
+                        "source": [f"# PPMAP Report — {target}\n", f"Generated: {timestamp}\n",
+                                   f"Total findings: {len(findings)}\n",
+                                   "\n```json\n" + json.dumps(findings, indent=2)[:40000] + "\n```\n"],
+                    }],
+                    "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}},
+                    "nbformat": 4, "nbformat_minor": 5,
+                }
+                fp = self.output_dir / f"report_{timestamp}.ipynb"
+                with open(fp, "w") as fh:
+                    json.dump(nb, fh, indent=1)
+                generated["jupyter"] = str(fp)
+            except Exception as e:
+                logger.error(f"Jupyter report failed: {e}")
+
+        if "pdf" in formats:
+            # PDF tanpa dependency berat: render markdown ke file .pdf berbasis
+            # teks sederhana bila reportlab tidak ada (fallback jujur .txt_alias).
+            try:
+                md = self.generate_markdown_report(
+                    findings, target, f"report_{timestamp}_pdfsrc.md"
+                )
+                fp = self.output_dir / f"report_{timestamp}.pdf"
+                try:
+                    from reportlab.lib.pagesizes import A4
+                    from reportlab.lib.styles import getSampleStyleSheet
+                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+                    doc = SimpleDocTemplate(str(fp), pagesize=A4)
+                    styles = getSampleStyleSheet()
+                    story = [Paragraph("<b>PPMAP Report</b>", styles["Title"]),
+                             Paragraph(f"Target: {target}", styles["Normal"]),
+                             Spacer(1, 12)]
+                    for f in findings:
+                        title = str(f.get("name", f.get("type", "finding")))
+                        story.append(Paragraph(f"- <b>{title}</b> [{f.get('severity', '?')}]", styles["Normal"]))
+                        if f.get("description"):
+                            story.append(Paragraph(str(f["description"])[:400], styles["Normal"]))
+                    doc.build(story)
+                    generated["pdf"] = str(fp)
+                except ImportError:
+                    # Fallback jujur: simpan markdown terformat, beri catatan
+                    with open(fp, "w") as fh:
+                        fh.write("%PDF-lite (reportlab tidak terpasang)\n\n")
+                        fh.write(open(md, encoding="utf-8").read() if md else "(no content)")
+                    generated["pdf"] = str(fp)
+                    logger.warning("reportlab tidak terpasang — PDF disimpan sebagai teks sederhana")
+            except Exception as e:
+                logger.error(f"PDF report failed: {e}")
 
         self.output_dir = original_output_dir
         return generated

@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.5.1] - 2026-10-26 (Gadget Library & Auto Reach-Annotation) ✅
+
+### Added
+- **`ppmap/payloads/gadget_library.py`**: 36 vektor gadget client-side dari riset
+  komunitas (BlackFan/client-side-prototype-pollution, Johan Carlsson intigriti
+  0124, s1r1us, Bentkowski, Kinugawa) + 18 fingerprint library (DOMPurify,
+  sanitize-html, js-xss, reCAPTCHA, hCaptcha, GTM, Segment, Pendo, Knockout,
+  Zepto, Vue, Lodash-client, i18next, Popper, Tealium, Akamai boomerang,
+  Marionette, Closure, purl/CVE-2021-20089, dll).
+- **Auto gadget vectors di `--reach-check`**: fingerprint halaman → library
+  terdeteksi → vektor gadget spesifik otomatis diujikan (`kind=gadget`).
+- **Reach-annotation otomatis di `--scan`** [AUDIT-18]: setiap finding jQuery
+  versi-based diberi label `reach_verified` = VERIFIED_EXECUTION /
+  REACHABLE_FROM_URL / LIBRARY_VULNERABLE_ONLY (+peringatan "JANGAN dilaporkan"
+  bila library-only). Laporan tak lagi membingungkan library rentan vs bisa diserang.
+- **CVEDatabase +9 CVE di 6 kategori baru**: lodash_extra (CVE-2025-13465,
+  CVE-2026-2950, CVE-2026-4800), protobufjs (CVE-2022-25878, CVE-2023-36665),
+  dojo (CVE-2020-5259), utils_extend (CVE-2024-57077), synchrony (CVE-2023-45811),
+  jsgui (CVE-2022-25301). Total 22 CVE di 9 kategori; jQuery 3.6.0 tetap bersih.
+- **Lab permanen** `lab/`: gql_server (8901), ws_server (8902), gadget_server
+  multi-page attr/purify/recaptcha (8903), www/ (positive/negative), README.
+  Terbukti reach per-gadget 3/3 REACHABLE_FROM_URL (AUDIT-19).
+
+### Fixed
+- [AUDIT-20] `--scan --stdin` kini menulis JSONL 1-objek-per-baris (pipeline aman).
+- [AUDIT-21] fingerprint gadget library spesifik — deteksi jQuery false-positive
+  tidak lagi memicu vektor gadget yang tidak relevan.
+- [AUDIT-22] substitusi token `{xs}` di 5 vektor gadget + encoding karakter
+  merusak URL pada key/value (spasi, `<`, `>`, `"`, `#`) — sebelumnya payload
+  tidak pernah terkirim utuh.
+- `UnifiedBrowser.current_url` property (dipakai reach-annotation).
+
+### Verification (2026-10-26)
+- pytest **315 passed / 0 failed**
+- reach lab: `/attr` 4-hit, `/purify` 2-hit, `/recaptcha` 2-hit, semua REACHABLE_FROM_URL
+- `--scan` lab: `[*] Reach verdict` muncul di output scan biasa
+
+---
+
+## [4.5.0] - 2026-10-25 (Verdict Integrity & CLI Reliability Edition) ✅
+
+### Added
+- **`--reach-check` Mode (Canary Taint Tracking)**: 3-tier verdict yang membedakan
+  temuan berbasis versi dari eksploitasi nyata:
+  - Tier 1 `LIBRARY_VULNERABLE_ONLY` — library rentan ada, TIDAK ada jalur URL → sink
+  - Tier 1.5 `SINK_SEES_PROTO_STRING` — sink menerima string `__proto__` saja
+  - Tier 2 `REACHABLE_FROM_URL` — canary dari query/hash SAMPAI sink
+  - Tier 3 `VERIFIED_EXECUTION` — payload dieksekusi nyata di browser
+  - Teknik: instrumentasi sink pra-navigasi via CDP
+    (`addScriptToEvaluateOnNewDocument`) + `defineProperty` trap di
+    `window.jQuery`/`$` (menangkap library yang termuat belakangan) +
+    canary unik per-scan. 8 vektor URL: hash-JSON proto/ctor, query bracket,
+    query JSON, hash/query HTML (gadget `$(string)` khas jQuery <1.9).
+- **`--reach-check` juga menginstrumentasi `jQuery.parseJSON`, `jQuery.fn.html`,
+  `jQuery.fn.init` (deteksi HTML-string), `window.eval`, dan setter `innerHTML`.
+- **`--oob-url` (OOB Manual Mode)**: gunakan Burp Collaborator / self-hosted
+  interactsh / dnslog sendiri. Canary `<id>.<domain-mu>`; interaksi dicek di
+  panel milikmu. Interactsh auto-register menjadi best-effort fallback
+  (API `/register` publik lama sudah mati — butuh RSA/PyNaCl).
+- **`--browser firefox`**: Selenium geckodriver (auto-fallback ke Chrome bila
+  geckodrive tidak ada) + Playwright firefox fallback. Proxy & UA didukung.
+
+### Fixed — 10 flag CLI yang diterima tapi tidak pernah dieksekusi (dead flags)
+- **`--poc` / `--quickpoc-local`**: argumen ada + fungsi `run_quick_poc()` ada,
+  tapi tidak pernah dipanggil di `main()` → sebelumnya hanya print help + exit 0.
+  Kini benar-benar menjalankan QuickPoC (2 payload canary, non-destruktif).
+- **`--proxy`**: kini dirutekan ke requests session, Selenium
+  (`--proxy-server`), Playwright (`proxy.server`), discovery session, dan
+  QuickPoC. Terverifikasi: proxy mati menghasilkan `ProxyError` (routing jalan).
+- **`--user-agent`**: diterapkan di scanner session, discovery session,
+  QuickPoC, dan override UA Firefox.
+- **`--wordlist FILE`**: path guessing tambahan di EndpointDiscovery
+  (di-inject ke antrian crawl).
+- **`--endpoints FILE`**: force-scan queue — bekerja dengan `--scan` dan
+  `--scan-full` (dulu tidak dieksekusi sama sekali).
+- **`--no-asset-discovery`**: toggle nyata untuk spider file JS statis saat
+  discovery (default: aktif).
+
+### Fixed - Regressions
+- **`Colors` UnboundLocalError**: `from ppmap.utils import Colors` lokal di blok
+  reach-check membuat `Colors` menjadi variabel lokal untuk seluruh `main()`
+  dan mematahkan pemakaian global sebelum baris tersebut. Kini memakai import
+  global dari header.
+- **`ppmap.oob.requests`**: modul `requests` kini di-import di level modul agar
+  `patch('ppmap.oob.requests.get')` pada test lama tetap bekerja.
+
+### Changed
+- **Versi bump 4.4.2 → 4.5.0** (fitur baru + perbaikan luas: minor bump).
+
+### Verification (2026-10-25)
+- Lab positif (jQuery 1.4.2 + `$.extend(true,{},JSON.parse(hash))`):
+  `--reach-check` = VERIFIED_EXECUTION tier 3 (canary-in-sink +
+  Object.prototype polluted + onerror executed), `--poc` = CONFIRMED.
+- Lab negatif (jQuery 1.4.2 tanpa jalur URL → sink): LIBRARY_VULNERABLE_ONLY.
+- Kasus nyata bugs.php.net/bug.php?id=1 (jQuery 1.4.2): LIBRARY_VULNERABLE_ONLY
+  — konsisten dengan analisis manual; temuan versi-only, tidak layak dilaporkan
+  sebagai vulnerability produktif.
+- Firefox backend live: `Selenium Firefox backend initialized (geckodriver)`.
+- Proxy routing live: proxy mati → ProxyError (terbukti dirutekan).
+- `--endpoints` live: 2 endpoint ekstra masuk antrian scan.
+- Test suite: 287 passed / 0 failed (termasuk 13 test baru reach_check).
+- Commit: `a94d2c3` (reach-check), `da92688` (dead flags), + bump ini.
+
+---
+
 ## [4.4.2] - 2026-04-06 (Clean Architecture & Reliability Edition) ✅
 
 ### Added - Clean Architecture Refactor

@@ -8,7 +8,7 @@ r"""
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.5.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 
 DISCLAIMER:
 ===========
@@ -106,6 +106,36 @@ except ImportError:
 # ============================================================================
 # PRINT BANNER & DISCLAIMER
 # ============================================================================
+def print_short_usage() -> None:
+    """Ringkasan singkat untuk `ppmap.py` tanpa argumen.
+    Bantuan lengkap (semua opsi) tetap di `-h` / `--help`.
+    """
+    print(f"""{Colors.BOLD}{Colors.CYAN}MODE UTAMA:{Colors.ENDC}
+  {Colors.GREEN}--reach-check <URL>{Colors.ENDC}   Buktikan apakah pollution dari URL sampai sink (3-tier verdict)
+  {Colors.GREEN}--poc <URL>{Colors.ENDC}           Quick PoC cepat (non-destruktif)
+  {Colors.GREEN}--scan <URL ...>{Colors.ENDC}      Scan URL spesifik (tanpa crawl)
+  {Colors.GREEN}--scan-full <URL>{Colors.ENDC}     Full scan (discovery + attack)
+  {Colors.GREEN}--discover <URL>{Colors.ENDC}      Recon saja (tanpa attack)
+
+{Colors.BOLD}{Colors.CYAN}CONTOH CEPAT:{Colors.ENDC}
+  ppmap.py --reach-check https://target.com
+  ppmap.py --poc https://target.com
+  ppmap.py --scan https://target.com --stealth
+  ppmap.py --scan --stdin --format json   # pipeline: 1 hasil per baris (jsonl)
+
+{Colors.BOLD}{Colors.CYAN}EXIT CODE (utk pipeline/CI):{Colors.ENDC}
+  0 = selesai tanpa temuan   1 = error/fatal   2 = ada temuan (vuln/reachable)
+  ppmap.py --scan --stdin --format jsonl || echo "temuan ada"
+
+{Colors.BOLD}{Colors.CYAN}PANDUAN VERDICT reach-check:{Colors.ENDC}
+  LIBRARY_VULNERABLE_ONLY → library rentan ada; JANGAN dilaporkan sbg vuln produktif
+  REACHABLE_FROM_URL      → canary dari URL sampai sink; jalur serangan terbukti
+  VERIFIED_EXECUTION      → payload dieksekusi nyata; full chain terkonfirmasi
+
+{Colors.WARNING}Bantuan lengkap semua opsi:{Colors.ENDC} ppmap.py -h
+""")
+
+
 def print_banner():
     banner = (
         Colors.BOLD
@@ -118,7 +148,7 @@ def print_banner():
    |_|   |_|   |_|  |_/_/   \_\_|    
                                      
    Prototype Pollution Multi-Purpose Assessment Platform
-   v4.4.2 Enterprise (Scanner | Browser | 0-Day | OOB)
+   v4.5.1 Enterprise (Scanner | Browser | 0-Day | OOB)
 """
         + Colors.ENDC
         + f"""
@@ -138,7 +168,8 @@ Use only with explicit permission on target systems.
 # ============================================================================
 # QUICK POC MODE
 # ============================================================================
-def run_quick_poc(url: str, headless: bool = True) -> None:
+def run_quick_poc(url: str, headless: bool = True, proxy: Optional[str] = None,
+                  user_agent: Optional[str] = None, browser: str = "chrome") -> None:
     """Run a fast non-destructive jQuery Prototype Pollution PoC on the target.
 
     Uses the QuickPoC class from ppmap.engine which tries Selenium first and
@@ -153,7 +184,7 @@ def run_quick_poc(url: str, headless: bool = True) -> None:
     ready = False
     try:
         print(f"{Colors.BLUE}[*] Setting up browser...{Colors.ENDC}")
-        ready = poc.setup_browser(url)
+        ready = poc.setup_browser(url, proxy=proxy, user_agent=user_agent, browser=browser)
     except Exception as e:
         print(f"{Colors.FAIL}[!] Browser setup failed: {e}{Colors.ENDC}")
         logger.error(f"Browser setup failed: {e}", exc_info=True)
@@ -259,7 +290,7 @@ def main():
     check_for_updates(__version__)
 
     parser = argparse.ArgumentParser(
-        description="PPMAP v4.4.2 - Prototype Pollution Assessment Platform (Enterprise Edition)",
+        description="PPMAP v4.5.1 - Prototype Pollution Assessment Platform (Enterprise Edition)",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 SCANNING MODES:
@@ -314,6 +345,19 @@ ADVANCED OPTIONS:
     )
     parser.add_argument(
         "--discover", nargs="*", metavar="URL", help="Recon only: discover endpoints and parameters without attacking"
+    )
+    parser.add_argument(
+        "--reach-check",
+        nargs="*",
+        metavar="URL",
+        help="Reachability check: prove whether pollution input from URL/query/hash REACHES jQuery sinks "
+             "(canary taint tracking, 3-tier verdict: LIBRARY_VULNERABLE / REACHABLE_FROM_URL / VERIFIED_EXECUTION)",
+    )
+    parser.add_argument(
+        "--no-reach-check",
+        action="store_true",
+        help="Matikan enrichment reach-check otomatis saat --scan/--scan-full "
+             "(default: aktif; verdict dipakai untuk verifikasi confidence)",
     )
     parser.add_argument(
         "-ls",
@@ -527,6 +571,13 @@ ADVANCED OPTIONS:
         "--proxy", type=str, metavar="PROXY", help="HTTP proxy (http://proxy:port)"
     )
     parser.add_argument(
+        "--oob-url",
+        type=str,
+        metavar="DOMAIN",
+        help="Your own OOB domain (Burp Collaborator / self-hosted interactsh). "
+             "Canary payloads use <id>.<your-domain>; check interactions in your panel.",
+    )
+    parser.add_argument(
         "--diff",
         nargs=2,
         metavar=("FILE1", "FILE2"),
@@ -544,7 +595,7 @@ ADVANCED OPTIONS:
         default=0,
         help="Verbose output (-v, -vv, -vvv)",
     )
-    parser.add_argument("--version", action="version", version="PPMAP v4.4.2")
+    parser.add_argument("--version", action="version", version="PPMAP v4.5.1")
 
     # Argument completion
     try:
@@ -587,10 +638,14 @@ ADVANCED OPTIONS:
 
     # Handle Diff Mode
     if args.diff:
+        from pathlib import Path
         from tools.analyze_scan_results import diff_scan_results
 
         try:
-            diff_scan_results(args.diff[0], args.diff[1])
+            # FIX: arg report_dir hilang (dulu langsung crash: missing positional argument).
+            # Gunakan dir dari file pertama sbg allowed_dir (penjara path untuk keamanan).
+            report_dir = str(Path(args.diff[0]).resolve().parent)
+            diff_scan_results(args.diff[0], args.diff[1], report_dir)
         except Exception as e:
             print(f"{Colors.FAIL}[!] Error running diff: {e}{Colors.ENDC}")
         sys.exit(0)
@@ -712,7 +767,8 @@ ADVANCED OPTIONS:
                 stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
                 verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
                 rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
-                delay=args.delay
+                delay=args.delay,
+                reach_check=not getattr(args, "no_reach_check", False),
             )
 
             # Initialize custom headers list in config
@@ -741,6 +797,65 @@ ADVANCED OPTIONS:
         targets.extend(args.scan_full)
     if args.discover:
         targets.extend(args.discover)
+
+    # --- QUICK POC MODE (FIX: dulu argumennya ada tapi tidak pernah di-wire) ---
+    poc_headless = getattr(args, "headless", True)
+    poc_browser = getattr(args, "browser", "chrome") or "chrome"
+    if getattr(args, "poc", None):
+        run_quick_poc(args.poc, headless=poc_headless,
+                      proxy=getattr(args, "proxy", None),
+                      user_agent=getattr(args, "user_agent", None),
+                      browser=poc_browser)
+        return
+
+    # --- LOCAL QUICK POC (fallback Playwright/Selenium local) ---
+    if getattr(args, "quickpoc_local", None):
+        run_quick_poc(args.quickpoc_local, headless=poc_headless,
+                      proxy=getattr(args, "proxy", None),
+                      user_agent=getattr(args, "user_agent", None),
+                      browser=poc_browser)
+        return
+
+    # --- REACH-CHECK MODE: standalone, sebelum fase lain ---
+    # NOTE: JANGAN import Colors di sini — import lokal membuat `Colors` jadi
+    # variabel lokal untuk seluruh main() dan mematahkan pemakaian global
+    # (UnboundLocalError di blok discovery). Import global di header file sudah cukup.
+    if getattr(args, "reach_check", None):
+        from ppmap.scanner.reach_runner import run_reach_check
+
+        print(f"{Colors.CYAN}[*] REACH-CHECK MODE (canary taint tracking){Colors.ENDC}")
+        for rc_target in args.reach_check:
+            if not rc_target.startswith(("http://", "https://")):
+                rc_target = "https://" + rc_target
+            print(f"{Colors.BLUE}[→] Checking reachability: {rc_target}{Colors.ENDC}")
+            result = run_reach_check(rc_target)
+            print()
+            tier = result.get("tier")
+            verdict = result.get("verdict", "UNAVAILABLE")
+            color = Colors.FAIL if tier == 3 else (Colors.WARNING if tier == 2 else Colors.GREEN)
+            print(f"{color}[=] VERDICT: {verdict} (tier {tier}){Colors.ENDC}")
+            if verdict == "LIBRARY_VULNERABLE_ONLY":
+                print("    Library rentan ADA, tapi TIDAK ada jalur input URL -> sink yang terbukti.")
+                print("    => Version-based finding; JANGAN dilaporkan sebagai vulnerability produktif.")
+            elif verdict == "REACHABLE_FROM_URL":
+                print("    Canary dari URL SAMPAI sink! Jalur serangan terbukti ada. Perlu analisis gadget lanjut.")
+            elif verdict == "VERIFIED_EXECUTION":
+                print("    Payload DIEKSEKUSI di browser. Full XSS/PP chain terkonfirmasi.")
+
+            for v in result.get("vector_results", []):
+                marks = []
+                if v.get("canary_in_sink"):
+                    marks.append("canary-in-sink")
+                if v.get("object_prototype_polluted"):
+                    marks.append("Object.prototype terpolusi")
+                if v.get("executed"):
+                    marks.append("EXECUTED")
+                mark_str = ("  <<< " + ", ".join(marks)) if marks else ""
+                print(f"    [{v['label']:18}] sink_calls={v['sink_calls']}{mark_str}")
+            if not result.get("instrumented_cdp"):
+                print(f"{Colors.WARNING}[!] CDP instrumentation gagal — hasil terbatas (fallback Selenium){Colors.ENDC}")
+            print()
+        return
 
     # --openapi: auto-generate targets from spec file
     if hasattr(args, "openapi") and args.openapi:
@@ -802,7 +917,7 @@ ADVANCED OPTIONS:
                 logger.info(f"Loaded {len(stdin_targets)} target(s) from stdin")
 
     if not targets and not args.request:
-        parser.print_help()
+        print_short_usage()
         sys.exit(1)
 
     normalized_initial_targets = [normalize_url(t) for t in targets]
@@ -818,8 +933,27 @@ ADVANCED OPTIONS:
         # Apply stealth if needed
         if args.stealth:
             discovery_session.headers.update(STEALTH_HEADERS)
-            
-        discovery = EndpointDiscovery(session=discovery_session)
+        # FIX: --user-agent & --proxy kini diterapkan juga di discovery
+        if getattr(args, "user_agent", None):
+            discovery_session.headers["User-Agent"] = args.user_agent
+        if getattr(args, "proxy", None):
+            discovery_session.proxies = {"http": args.proxy, "https": args.proxy}
+
+        # FIX: --wordlist hanya relevan utk discovery
+        wl_paths = None
+        if getattr(args, "wordlist", None):
+            try:
+                with open(args.wordlist, "r", encoding="utf-8", errors="ignore") as wf:
+                    wl_paths = [ln for ln in wf.read().splitlines() if ln.strip()]
+                print(f"{Colors.BLUE}[*] Wordlist loaded: {len(wl_paths)} path(s){Colors.ENDC}")
+            except OSError as e:
+                print(f"{Colors.FAIL}[!] Gagal baca wordlist: {e}{Colors.ENDC}")
+
+        discovery = EndpointDiscovery(
+            session=discovery_session,
+            wordlist=wl_paths,
+            discover_assets=not getattr(args, "no_asset_discovery", False),
+        )
         
         for target in normalized_initial_targets:
             if target in visited_urls:
@@ -861,9 +995,30 @@ ADVANCED OPTIONS:
             print(f"  -> {url}")
         sys.exit(0)
 
+    # --- FIX: --endpoints file = force-scan (bekerja dengan --scan & --scan-full) ---
+    if getattr(args, "endpoints", None):
+        try:
+            with open(args.endpoints, "r", encoding="utf-8", errors="ignore") as ef:
+                forced = [ln.strip() for ln in ef.read().splitlines()
+                          if ln.strip() and not ln.strip().startswith("#")]
+            parsed_base = urllib.parse.urlparse(normalized_initial_targets[0]) if normalized_initial_targets else None
+            origin = f"{parsed_base.scheme}://{parsed_base.netloc}" if parsed_base else ""
+            added = 0
+            for fep in forced:
+                full = fep if fep.startswith("http") else origin + (fep if fep.startswith("/") else "/" + fep)
+                if full not in final_scan_queue:
+                    final_scan_queue.append(full)
+                    added += 1
+            print(f"{Colors.GREEN}[✓] {len(forced)} endpoint(s) dari --endpoints ({added} baru) ditambahkan ke antrian.{Colors.ENDC}")
+        except OSError as e:
+            print(f"{Colors.FAIL}[!] Gagal baca endpoints file: {e}{Colors.ENDC}")
+
     # --- SCANNING PHASE ---
     if final_scan_queue:
         logger.info(f"Starting Scan phase on {len(final_scan_queue)} unique URL(s)")
+
+        # Pipeline mode: output dikonsumsi sebagai stream (subfinder | ppmap --scan --stdin)
+        pipeline_mode = bool(getattr(args, "stdin", False))
 
         # Use async engine if enabled
         if args.async_scan:
@@ -879,7 +1034,7 @@ ADVANCED OPTIONS:
 
             # Generate enhanced reports (always save, even with 0 findings)
             findings = [r for r in results if r.get("success")] if results else []
-            report_gen = EnhancedReportGenerator(args.output)
+            report_gen = EnhancedReportGenerator(args.output, pipeline_mode=pipeline_mode)
             generated_reports = report_gen.generate_all_formats(
                 findings=findings,
                 target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),
@@ -910,7 +1065,11 @@ ADVANCED OPTIONS:
                 verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
                 rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
                 delay=args.delay,
-                custom_headers=auth_headers
+                custom_headers=auth_headers,
+                proxy=getattr(args, "proxy", None),
+                oob_url=getattr(args, "oob_url", None),
+                browser=poc_browser,
+                reach_check=not getattr(args, "no_reach_check", False),
             )
 
             all_findings = []
@@ -939,7 +1098,7 @@ ADVANCED OPTIONS:
                 logger.info("Scan interrupted by user. Generating partial report.")
 
             # Generate reports for traditional scan (always save, even with 0 findings)
-            report_gen = EnhancedReportGenerator(args.output)
+            report_gen = EnhancedReportGenerator(args.output, pipeline_mode=pipeline_mode)
             generated_reports = report_gen.generate_all_formats(
                 findings=all_findings,
                 target=", ".join(normalized_initial_targets[:3]) + ("..." if len(normalized_initial_targets) > 3 else ""),
@@ -958,7 +1117,7 @@ ADVANCED OPTIONS:
             # The parse_burp_request logic is already handled above in the script
             pass
         else:
-            parser.print_help()
+            print_short_usage()
 
     logger.info("PPMAP completed")
 

@@ -35,6 +35,25 @@ class ScanConfig(BaseModel):
     delay: float = Field(
         default=0.5, ge=0.0, description="Delay between requests in seconds"
     )
+    proxy: Optional[str] = Field(
+        default=None,
+        description="HTTP(S) proxy for all requests + browser (e.g. http://127.0.0.1:8080)",
+    )
+    oob_url: Optional[str] = Field(
+        default=None,
+        description="User-provided OOB domain (Burp Collaborator / self-hosted interactsh). "
+                    "Enables manual OOB mode without interact.sh RSA registration.",
+    )
+    browser: str = Field(
+        default="chrome",
+        description="Browser backend for client-side tests: chrome | firefox",
+    )
+    reach_check: bool = Field(
+        default=True,
+        description="Setelah scan tier selesai, jalankan reach-check canary untuk "
+                    "membedakan LIBRARY_VULNERABLE_ONLY (version-only) dari "
+                    "REACHABLE_FROM_URL/VERIFIED_EXECUTION (jalur serangan nyata).",
+    )
 
     @field_validator("timeout")
     @classmethod

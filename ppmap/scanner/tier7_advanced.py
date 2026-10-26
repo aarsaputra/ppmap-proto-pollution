@@ -527,12 +527,14 @@ class Tier7AdvancedScanner(BaseTierScanner):
         """Test for Blind OOB RCE via Prototype Pollution (v4.0)"""
         print(f"{Colors.CYAN}[→] Testing Blind OOB RCE (Interact.sh)...{Colors.ENDC}")
         findings: List[Dict[str, Any]] = []
-    
+
         if not self.oob_detector:
             try:
                 from ppmap.oob import OOBDetector
-    
-                self.oob_detector = OOBDetector()
+
+                # FIX: manual OOB via config.oob_url (--oob-url)
+                cfg_url = getattr(getattr(self, "config", None), "oob_url", None)
+                self.oob_detector = OOBDetector(oob_url=cfg_url)
                 if not self.oob_detector.register():
                     print(
                         f"{Colors.WARNING}[!] Failed to register OOB session. Skipping blind tests.{Colors.ENDC}"

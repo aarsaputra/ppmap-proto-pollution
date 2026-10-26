@@ -10,6 +10,82 @@ from html import escape as html_escape
 from datetime import datetime
 from typing import List, Any
 
+
+# [AUDIT-19] Badge reachability: verdict reach-check harus TERLIHAT di laporan,
+# bukan cuma di metadata JSON. Tanpa ini, temuan LIBRARY_VULNERABLE_ONLY tampil
+# setara dengan temuan yang jalurnya terbukti (false-positive-by-presentation).
+_REACH_BADGES = {
+    "VERIFIED_EXECUTION": ("#b71c1c", "EXECUTED (tier 3)"),
+    "REACHABLE_FROM_URL": ("#e65100", "REACHABLE (tier 2)"),
+    "LIBRARY_VULNERABLE_ONLY": ("#37474f", "LIBRARY-ONLY (tier 1)"),
+    "NOT_REACHABLE": ("#1b5e20", "NOT REACHABLE"),
+    "UNAVAILABLE": ("#616161", "REACH N/A"),
+}
+
+
+def _reach_badge(finding) -> str:
+    """span badge HTML untuk verdict reach-check sebuah finding (kosong bila tak ada)."""
+    verdict = finding.get("reach_verdict")
+    if not verdict:
+        return ""
+    color, label = _REACH_BADGES.get(verdict, ("#616161", str(verdict)))
+    tier = finding.get("reach_tier")
+    tier_txt = f" · tier {html_escape(str(tier))}" if tier is not None else ""
+    return (
+        f'<span class="method-label" style="background-color:{color};color:#fff;">'
+        f"{html_escape(label)}{tier_txt}</span> "
+    )
+
+
+def _reach_banner(all_findings) -> str:
+    """Ringkasan 1 baris verdict reach-check seluruh scan (string kosong bila tak ada)."""
+    verdicts = [f.get("reach_verdict") for f in all_findings if f.get("reach_verdict")]
+    if not verdicts:
+        return ""
+    counts = {}
+    for v in verdicts:
+        counts[str(v)] = counts.get(str(v), 0) + 1
+    parts = ", ".join(f"{k} ×{v}" for k, v in sorted(counts.items()))
+    color, label = _REACH_BADGES.get(
+        sorted(counts, key=lambda k: (-counts[k], k))[0], ("#616161", "")
+    )
+    return (
+        f'<div class="section" style="border-left:6px solid {color};padding:14px 25px;">'
+        f'<strong>Reachability (reach-check):</strong> {html_escape(parts)}'
+        f'<br><span style="font-size:12px;color:#666;">'
+        "Hanya verdict EXECUTED (tier 3) berarti payload benar-benar dieksekusi; "
+        "REACHABLE (tier 2) = jalur URL terbukti sampai sink; "
+        "LIBRARY-ONLY = versi rentan saja, jalur serangan TIDAK terbukti."
+        "</span></div>"
+    )
+
+
+def _reach_block(finding) -> str:
+    """[AUDIT-19b] Badge + alasan tekstual per-finding.
+
+    Badge saja tidak cukup: verdict LIBRARY_VULNERABLE_ONLY tanpa alasan mudah
+    dibaca ulang sebagai 'tetap rentan'. Blok ini menuliskan APA yang terbukti
+    dan APA yang tidak, memakai reach_reason/source dari runner.
+    """
+    verdict = finding.get("reach_verdict")
+    if not verdict:
+        return ""
+    reason = finding.get("reach_reason") or finding.get("reach_source") or ""
+    why = ""
+    if reason:
+        why = (
+            '<div style="font-size:12px;color:#555;margin:4px 0 8px 0;">'
+            f"Bukti: {html_escape(str(reason))}</div>"
+        )
+    elif verdict == "LIBRARY_VULNERABLE_ONLY":
+        why = (
+            '<div style="font-size:12px;color:#555;margin:4px 0 8px 0;">'
+            "Bukti: hanya deteksi versi/library pada sumber; jalur serangan dari "
+            "URL target tidak terbukti (jangan dilaporkan sebagai confirmed).</div>"
+        )
+    return _reach_badge(finding) + why
+
+
 def generate_html_report(
     target_url,
     all_findings,
@@ -134,6 +210,8 @@ def generate_html_report(
         <h2>⚠️ Detailed Findings</h2>
 """
 
+    report_html += _reach_banner(all_findings)
+
     if len(all_findings) == 0:
         report_html += '<div class="success"><strong>✓ No security issues detected!</strong></div>'
     else:
@@ -152,6 +230,7 @@ def generate_html_report(
             <div style="margin-bottom: 12px;">
                 <strong>#{idx} - DOM XSS via Prototype Pollution Property: {html_escape(key)}</strong>
                 <span class="method-label critical">{severity}</span>
+                {_reach_block(finding)}
                 {' [✓ VERIFIED - Alert Triggered]' if alert_triggered else (' [⚠ Reflected]' if finding.get('reflected') else '')}
             </div>
             <div style="margin-bottom: 10px;">
@@ -561,6 +640,7 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         <div class="vulnerability">
             <strong>#{idx} - {escaped_name}</strong>
             <span class="method-label critical">{vuln.get('severity', 'CRITICAL')}</span><br>
+            {_reach_block(vuln)}
             <strong>Payload:</strong><br>
             <div class="payload-code">{escaped_payload_display}</div>
             {payload_has_div}
@@ -587,6 +667,7 @@ console.log(obj.polluted);  // Check if prototype was polluted</code><br><br>
         <div class="vulnerability">
             <strong>#{idx} - XSS in Parameter: {html_escape(param)}</strong>
             <span class="method-label high">{vuln.get('severity', 'HIGH')}</span><br>
+            {_reach_block(vuln)}
             <strong>Payload:</strong><br>
             <div class="payload-code">{html_escape(str(payload)[:200])}</div>
             <div style="margin-top: 10px;">

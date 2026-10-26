@@ -243,6 +243,81 @@ class CVEDatabase:
                 "description": "XSS through the closeText option of the dialog widget when user input is passed",
             },
         },
+        "lodash_extra": {
+            "CVE-2025-13465": {
+                "title": "Lodash _.unset/_.omit Prototype Pollution (Deletion)",
+                "affected_versions": ">=4.0.0 <=4.17.22",
+                "fixed_version": "4.17.23",
+                "severity": "MEDIUM",
+                "description": "Path crafted membuat _.unset/_.omit menghapus properti Object.prototype.",
+            },
+            "CVE-2026-2950": {
+                "title": "Lodash _.unset/_.omit PP Bypass (array-wrapped paths)",
+                "affected_versions": "<=4.17.23",
+                "fixed_version": "4.18.0",
+                "severity": "HIGH",
+                "description": "Patch 4.17.23 hanya guard path string; array-wrapped path masih mendelete properti prototype.",
+            },
+            "CVE-2026-4800": {
+                "title": "Lodash _.template Code Injection",
+                "affected_versions": "<4.18.1",
+                "fixed_version": "4.18.1",
+                "severity": "CRITICAL",
+                "description": "_.template mengevaluasi source terpengaruh pollution -> eksekusi kode.",
+            },
+        },
+        "protobufjs": {
+            "CVE-2022-25878": {
+                "title": "protobuf.js Prototype Pollution (util.setProperty)",
+                "affected_versions": "<6.11.3",
+                "fixed_version": "6.11.3",
+                "severity": "HIGH",
+                "description": "util.setProperty mengizinkan path __proto__ menulis ke Object.prototype.",
+            },
+            "CVE-2023-36665": {
+                "title": "protobuf.js Prototype Pollution (parse/load/loadSync)",
+                "affected_versions": ">=6.10.0 <7.2.5",
+                "fixed_version": "7.2.5",
+                "severity": "HIGH",
+                "description": "Pola protobufjs kedua: parse on-the-fly / load .proto / setParsedOption.",
+            },
+        },
+        "dojo": {
+            "CVE-2020-5259": {
+                "title": "Dojo (dojox) jqMix Prototype Pollution",
+                "affected_versions": "<1.11.10",
+                "fixed_version": "1.16.2",
+                "severity": "HIGH",
+                "description": "jqMix tidak memfilter __proto__/constructor pada deep-mix.",
+            },
+        },
+        "utils_extend": {
+            "CVE-2024-57077": {
+                "title": "utils-extend lib.extend Prototype Pollution",
+                "affected_versions": "<=1.0.8",
+                "fixed_version": "unfixed",
+                "severity": "CRITICAL",
+                "description": "lib.extend menerima Object.prototype setter (CVSS 9.1).",
+            },
+        },
+        "synchrony": {
+            "CVE-2023-45811": {
+                "title": "synchrony deobfuscator LiteralMap PP",
+                "affected_versions": "<2.4.4",
+                "fixed_version": "2.4.4",
+                "severity": "MEDIUM",
+                "description": "JSON LiteralMap transformer menulis __proto__ ke Object.prototype.",
+            },
+        },
+        "jsgui": {
+            "CVE-2022-25301": {
+                "title": "jsgui-lang-essentials Prototype Pollution",
+                "affected_versions": "semua",
+                "fixed_version": "unfixed",
+                "severity": "HIGH",
+                "description": "attribut proto/constructor/prototype bisa diubah.",
+            },
+        },
     }
 
     @staticmethod
@@ -503,12 +578,14 @@ class CompleteSecurityScanner:
         verify_ssl: bool = True,
         oob_enabled: bool = False,
         stealth: bool = False,
+        oob_url: Optional[str] = None,
     ):
         self.timeout = timeout
         self.max_workers = max_workers
         self.verify_ssl = verify_ssl
         self.oob_enabled = oob_enabled
         self.stealth = stealth
+        self.oob_url = oob_url
         self.oob_detector = None
 
         # BUG-3 FIX: CompleteSecurityScanner needs self.session for OOB and request reuse
@@ -534,7 +611,8 @@ class CompleteSecurityScanner:
             # Lazy import to avoid circular dependencies if any
             from ppmap.oob import OOBDetector
 
-            self.oob_detector = OOBDetector()
+            # FIX: --oob-url (manual mode) diteruskan; interactsh jadi fallback
+            self.oob_detector = OOBDetector(oob_url=self.oob_url)
             self.oob_detector.register()
 
     def _fetch(
@@ -774,12 +852,21 @@ class QuickPoC:
         self.headless = headless
         self.driver = None
 
-    def setup_browser(self, target_url: str, insecure: bool = False) -> bool:
+    def setup_browser(self, target_url: str, insecure: bool = False,
+                      proxy: Optional[str] = None,
+                      user_agent: Optional[str] = None,
+                      browser: str = "chrome") -> bool:
         # Use centralized browser helper
         try:
             from .browser import get_browser
 
-            self.browser = get_browser(headless=self.headless, insecure=insecure)
+            self.browser = get_browser(
+                headless=self.headless,
+                insecure=insecure,
+                proxy=proxy,
+                user_agent=user_agent,
+                browser=browser,
+            )
             if self.browser:
                 self.browser.get(target_url)
                 return True
