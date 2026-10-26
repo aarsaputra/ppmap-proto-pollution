@@ -601,6 +601,23 @@ class EnhancedReportGenerator:
                 if "HIGH" in str(f.get("severity", "")).upper()
                 and "CRITICAL" not in str(f.get("severity", "")).upper()
             )
+            # [AUDIT-19c] Generator legacy inilah yang dipakai `--scan` untuk
+            # menulis report.html. Sebelum ini badge reachability hanya ada di
+            # ppmap/reports/html_report.py (jalur CoreScanner lama), sehingga
+            # report.html hasil CLI tetap menampilkan LIBRARY_VULNERABLE_ONLY
+            # setara temuan yang jalurnya terbukti.
+            from ppmap.reports.html_report import _reach_badge, _reach_banner
+
+            _reach_banner_html = _reach_banner(findings)
+            _reach_note = (
+                '<p style="font-size:.8rem;color:var(--text2);margin-top:.8rem;">'
+                "Reachability: EXECUTED (tier 3) = payload dieksekusi; "
+                "REACHABLE (tier 2) = jalur URL sampai sink; "
+                "LIBRARY-ONLY (tier 1) = versi rentan saja, jalur serangan "
+                "TIDAK terbukti.</p>"
+                if _reach_banner_html
+                else ""
+            )
 
             html = f"""\
 <!DOCTYPE html>
@@ -683,6 +700,8 @@ class EnhancedReportGenerator:
             <span><strong>Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
             <span><strong>Scanner:</strong> PPMAP v4.5.0 Enterprise</span>
         </div>
+        {_reach_banner_html}
+        {_reach_note}
     </div>
 
     <div class="stats">
@@ -726,7 +745,7 @@ class EnhancedReportGenerator:
     <div class="finding">
         <div class="finding-header">
             <h3>#{idx} — {html_escape(str(name))}</h3>
-            <div><span class="badge badge-{sev_lower}">{html_escape(severity)} (CVSS: {f.get('cvss_score', 0.0):.1f})</span>{ver_label}</div>
+            <div>{_reach_badge(f)}<span class="badge badge-{sev_lower}">{html_escape(severity)} (CVSS: {f.get('cvss_score', 0.0):.1f})</span>{ver_label}</div>
         </div>
         <div class="finding-body">
             <div class="section">
