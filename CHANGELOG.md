@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.5.1] - 2026-10-26 (Gadget Library & Auto Reach-Annotation) ✅
+
+### Added
+- **`ppmap/payloads/gadget_library.py`**: 36 vektor gadget client-side dari riset
+  komunitas (BlackFan/client-side-prototype-pollution, Johan Carlsson intigriti
+  0124, s1r1us, Bentkowski, Kinugawa) + 18 fingerprint library (DOMPurify,
+  sanitize-html, js-xss, reCAPTCHA, hCaptcha, GTM, Segment, Pendo, Knockout,
+  Zepto, Vue, Lodash-client, i18next, Popper, Tealium, Akamai boomerang,
+  Marionette, Closure, purl/CVE-2021-20089, dll).
+- **Auto gadget vectors di `--reach-check`**: fingerprint halaman → library
+  terdeteksi → vektor gadget spesifik otomatis diujikan (`kind=gadget`).
+- **Reach-annotation otomatis di `--scan`** [AUDIT-18]: setiap finding jQuery
+  versi-based diberi label `reach_verified` = VERIFIED_EXECUTION /
+  REACHABLE_FROM_URL / LIBRARY_VULNERABLE_ONLY (+peringatan "JANGAN dilaporkan"
+  bila library-only). Laporan tak lagi membingungkan library rentan vs bisa diserang.
+- **CVEDatabase +9 CVE di 6 kategori baru**: lodash_extra (CVE-2025-13465,
+  CVE-2026-2950, CVE-2026-4800), protobufjs (CVE-2022-25878, CVE-2023-36665),
+  dojo (CVE-2020-5259), utils_extend (CVE-2024-57077), synchrony (CVE-2023-45811),
+  jsgui (CVE-2022-25301). Total 22 CVE di 9 kategori; jQuery 3.6.0 tetap bersih.
+- **Lab permanen** `lab/`: gql_server (8901), ws_server (8902), gadget_server
+  multi-page attr/purify/recaptcha (8903), www/ (positive/negative), README.
+  Terbukti reach per-gadget 3/3 REACHABLE_FROM_URL (AUDIT-19).
+
+### Fixed
+- [AUDIT-20] `--scan --stdin` kini menulis JSONL 1-objek-per-baris (pipeline aman).
+- [AUDIT-21] fingerprint gadget library spesifik — deteksi jQuery false-positive
+  tidak lagi memicu vektor gadget yang tidak relevan.
+- [AUDIT-22] substitusi token `{xs}` di 5 vektor gadget + encoding karakter
+  merusak URL pada key/value (spasi, `<`, `>`, `"`, `#`) — sebelumnya payload
+  tidak pernah terkirim utuh.
+- `UnifiedBrowser.current_url` property (dipakai reach-annotation).
+
+### Verification (2026-10-26)
+- pytest **315 passed / 0 failed**
+- reach lab: `/attr` 4-hit, `/purify` 2-hit, `/recaptcha` 2-hit, semua REACHABLE_FROM_URL
+- `--scan` lab: `[*] Reach verdict` muncul di output scan biasa
+
+---
+
 ## [4.5.0] - 2026-10-25 (Verdict Integrity & CLI Reliability Edition) ✅
 
 ### Added

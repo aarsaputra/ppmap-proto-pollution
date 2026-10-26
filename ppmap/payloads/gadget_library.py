@@ -178,46 +178,61 @@ GADGET_VECTORS = [
 
 from urllib.parse import quote as _quote
 
-# Nilai kanan-tanda-sama yang WAJIB di-encode walau berisi karakter mentah
-# (`?`, spasi, `<`, `>`). Bug AUDIT-22: pada 5 vektor, token {xs}/{xs_enc} tidak
-# tersubstitusi sehingga URL memuat literal "{xs}" DAN payload mentah (spasi),
-# artinya request yang dikirim tidak pernah membawa payload yang dimaksud.
+# AUDIT-22 (b): kunci asli sebelum di-encode. '=' dan '&' pada key WAJIB di-encode,
+# kalau tidak notasi bracket datar ala fase_query/mitmproxy-lution rusak
+# (mis. key `example[__proto__][callback][=21]`).
+_KEY_RAW_SAFE = "[]"
+
+# AUDIT-22 (d): marker eksekusi HARUS identik dengan reach_check.EXEC_MARKER_JS,
+# kalau tidak execution_fired() tidak pernah melihat efek payload gadget.
+try:
+    from ppmap.scanner.reach_check import EXEC_MARKER_JS as _EXEC_MARKER  # type: ignore
+except Exception:  # pragma: no cover - import siklik / pemakaian lepas
+    _EXEC_MARKER = "window.__ppmap_rc_exec"
+
 _XS_TOKEN = "{xs}"
 _XS_ENC_TOKEN = "{xs_enc}"
 _XS_ENC2_TOKEN = "{xs_enc2}"
 _XK_TOKEN = "{x_k}"
 _K_TOKEN = "{k}"
-_KNOWN_TOKENS = (_XS_ENC2_TOKEN, _XS_ENC_TOKEN, _XK_TOKEN, _K_TOKEN)
 
 
-def _encode_rvalue(segment: str) -> str:
-    """Encode karakter yang merusak URL di sisi nilai param: spasi, <, >, ", #, %."""
-    for ch, repl in ((" ", "%20"), ("<", "%3C"), (">", "%3E"),
-                     ('"', "%22"), ("#", "%23"), ("'", "%27"),
-                     ("[", "%5B"), ("]", "%5D")):
-        segment = segment.replace(ch, repl)
-    return segment
+def _encode_key(key: str) -> str:
+    """Percent-encode key, sisakan '[' ']' (struktur nested)."""
+    return _quote(key, safe=_KEY_RAW_SAFE)
+
+
+def _encode_rvalue(val: str, keep_frag: bool = False) -> str:
+    """Percent-encode nilai param sampai aman ditembak lewat URL.
+
+    `keep_frag=True` hanya untuk vektor yang SENGAJA memakai '#' sebagai
+    fragment-delimiter tersendiri (mis. `dataHost=//evil.example/x.js#`).
+    """
+    safe = "" if not keep_frag else "#"
+    return _quote(val, safe=safe)
 
 
 def _render_vector(tpl: str, canary: str, xs_enc: str) -> str:
-    """Encode struktur dulu, BARU substitusi token.
+    """Render satu template vektor gadget jadi query-string final.
 
-    Urutan penting: kalau token disubstitusi sebelum encoding, kurung kurawal
-    ikut ter-encode ("{xs}" -> "{xs}") dan token tidak pernah hilang.
-    Karena itu: (1) pecah per-segmen &, (2) encode karakter merusak pada
-    key DAN value (kecuali '[' ']' pada key = struktur __proto__),
-    (3) substitusi token pada hasil akhirnya.
+    Urutan WAJIB: encode struktur dulu, substitusi token belakangan.
+    Kalau token disubstitusi lebih dulu, payload `<img ... {canary} ...>`
+    ikut ter-encode seluruhnya dan `{xs}` di dalamnya berubah jadi
+    `%7Bxs%7D` — token tidak pernah tersubstitusi, request tidak membawa
+    payload yang dimaksud (inilah bug AUDIT-22 butir a).
     """
     parts = []
     for seg in tpl.split("&"):
         if "=" in seg:
             key, _, val = seg.partition("=")
-            key = key.replace("<", "%3C").replace(">", "%3E").replace(" ", "%20")
-            val = _encode_rvalue(val)
-            parts.append(f"{key}={val}")
+            keep_frag = val.endswith("#") and "#" not in val[:-1]
+            parts.append(f"{_encode_key(key)}={_encode_rvalue(val, keep_frag)}")
         else:
             parts.append(seg)
     sfx = "&".join(parts)
+    # AUDIT-22 (c): CR/LF pada token rusak — urllib.parse menghapus \r\n
+    # (WHATWG URL parser), jadi payload multi-baris (lodash_merge_client)
+    # harus di-encode eksplisit sebelum digabung ke URL.
     sfx = sfx.replace(_XS_ENC2_TOKEN, xs_enc).replace(_XS_ENC_TOKEN, xs_enc)
     sfx = sfx.replace(_XK_TOKEN, _quote(f"<img src=x onerror='{canary}'>", safe=""))
     sfx = sfx.replace(_K_TOKEN, canary)
@@ -225,14 +240,40 @@ def _render_vector(tpl: str, canary: str, xs_enc: str) -> str:
 
 
 def build_gadget_urls(base_url: str, canary: str) -> List[Dict[str, str]]:
-    """Bangun URL vektor gadget dgn canary di properti + payload exec marker."""
+    """Bangun URL vektor gadget dgn canary di properti + payload exec marker.
+
+    AUDIT-22 (d): canary yang dipakai reach_runner adalah `make_canary()`
+    mentah (mis. "PPMAP_CANARY_1234567") — TANPA `window['...']=1`. Dulu
+    hanya token `{xs}` yang menyisipkannya, sehingga vektor bertipe string
+    (alert(1), javascript:, onerror, whitelist) tidak pernah membawa canary
+    dan `execution_fired()` mustahil True. Kini setiap vektor dijamin
+    membawa marker eksekusi + canary.
+    """
     out = []
-    xs = f"<img src=x onerror=window.__ppmap_rc_exec=1;window['{canary}']=1>"
+    # Payload exec standar: marker global + canary global (tanpa alert).
+    # _EXEC_MARKER sudah berupa ekspresi window (`window.__ppmap_rc_exec`),
+    # jadi jangan ditambah prefix `window.` lagi.
+    xs = (f"<img src=x onerror={_EXEC_MARKER}=1;"
+          f"window['{canary}']=1>")
     xs_enc = _quote(xs, safe="")
     for label, tpl, gadget, impact, source in GADGET_VECTORS:
         sfx = _render_vector(tpl, canary, xs_enc)
+        if canary not in sfx:
+            # Vektor string/JS: tempel properti netral pembawa canary supaya
+            # objektif attribusi tetap terpenuhi walau payload khususnya
+            # tidak bisa dieksekusi di halaman ini.
+            js_probe = _quote(
+                f"{_EXEC_MARKER}=1;window['{canary}']=1", safe="#")
+            sep = "&" if sfx else ""
+            sfx = f"{sfx}{sep}__proto__[ppmapRc]={canary}"
+            sfx = f"{sfx}&__proto__[ppmapRcJs]={js_probe}"
+            out_note = "canary+probe sintetis"
+        else:
+            out_note = "canary in-vector"
         # vektor berformat &key=.. -> pastikan ada ? pertama di URL
-        if sfx.startswith("&"):
+        if not sfx.startswith(("?", "&", "#")):
+            sfx = ("&" if "?" in base_url else "?") + sfx
+        elif sfx.startswith("&"):
             sfx = ("&" if "?" in base_url else "?") + sfx[1:]
         out.append({
             "label": label,
@@ -240,6 +281,7 @@ def build_gadget_urls(base_url: str, canary: str) -> List[Dict[str, str]]:
             "gadget": gadget,
             "impact": impact,
             "source": source,
+            "canary_mode": out_note,
         })
     return out
 
