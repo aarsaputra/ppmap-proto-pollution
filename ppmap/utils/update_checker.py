@@ -13,8 +13,12 @@ _REPO_API = "https://api.github.com/repos/aarsaputra/ppmap-proto-pollution"
 
 
 def _fetch_json(url: str, timeout: float = 3.0):
+    # B310: URL berasal dari konstanta https-only di modul ini (bukan input
+    # pengguna); verify scheme https secara eksplisit lalu nosec.
+    if not url.startswith("https://"):
+        raise ValueError(f"non-https URL rejected: {url}")
     req = urllib.request.Request(url, headers={'User-Agent': 'PPMAP-Update-Checker'})
-    with urllib.request.urlopen(req, timeout=timeout) as response:
+    with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec B310
         if response.status == 200:
             return json.loads(response.read().decode())
     return None
