@@ -178,18 +178,59 @@ GADGET_VECTORS = [
 
 from urllib.parse import quote as _quote
 
+# Nilai kanan-tanda-sama yang WAJIB di-encode walau berisi karakter mentah
+# (`?`, spasi, `<`, `>`). Bug AUDIT-22: pada 5 vektor, token {xs}/{xs_enc} tidak
+# tersubstitusi sehingga URL memuat literal "{xs}" DAN payload mentah (spasi),
+# artinya request yang dikirim tidak pernah membawa payload yang dimaksud.
+_XS_TOKEN = "{xs}"
+_XS_ENC_TOKEN = "{xs_enc}"
+_XS_ENC2_TOKEN = "{xs_enc2}"
+_XK_TOKEN = "{x_k}"
+_K_TOKEN = "{k}"
+_KNOWN_TOKENS = (_XS_ENC2_TOKEN, _XS_ENC_TOKEN, _XK_TOKEN, _K_TOKEN)
+
+
+def _encode_rvalue(segment: str) -> str:
+    """Encode karakter yang merusak URL di sisi nilai param: spasi, <, >, ", #, %."""
+    for ch, repl in ((" ", "%20"), ("<", "%3C"), (">", "%3E"),
+                     ('"', "%22"), ("#", "%23"), ("'", "%27"),
+                     ("[", "%5B"), ("]", "%5D")):
+        segment = segment.replace(ch, repl)
+    return segment
+
+
+def _render_vector(tpl: str, canary: str, xs_enc: str) -> str:
+    """Encode struktur dulu, BARU substitusi token.
+
+    Urutan penting: kalau token disubstitusi sebelum encoding, kurung kurawal
+    ikut ter-encode ("{xs}" -> "{xs}") dan token tidak pernah hilang.
+    Karena itu: (1) pecah per-segmen &, (2) encode karakter merusak pada
+    key DAN value (kecuali '[' ']' pada key = struktur __proto__),
+    (3) substitusi token pada hasil akhirnya.
+    """
+    parts = []
+    for seg in tpl.split("&"):
+        if "=" in seg:
+            key, _, val = seg.partition("=")
+            key = key.replace("<", "%3C").replace(">", "%3E").replace(" ", "%20")
+            val = _encode_rvalue(val)
+            parts.append(f"{key}={val}")
+        else:
+            parts.append(seg)
+    sfx = "&".join(parts)
+    sfx = sfx.replace(_XS_ENC2_TOKEN, xs_enc).replace(_XS_ENC_TOKEN, xs_enc)
+    sfx = sfx.replace(_XK_TOKEN, _quote(f"<img src=x onerror='{canary}'>", safe=""))
+    sfx = sfx.replace(_K_TOKEN, canary)
+    return sfx
+
 
 def build_gadget_urls(base_url: str, canary: str) -> List[Dict[str, str]]:
     """Bangun URL vektor gadget dgn canary di properti + payload exec marker."""
     out = []
     xs = f"<img src=x onerror=window.__ppmap_rc_exec=1;window['{canary}']=1>"
-    xs_enc = _quote(xs)
+    xs_enc = _quote(xs, safe="")
     for label, tpl, gadget, impact, source in GADGET_VECTORS:
-        sfx = tpl.replace("{xs}", xs_enc).replace("{xs_enc}", xs_enc)
-        sfx = sfx.replace("{x_k}", _quote(f"<img src=x onerror='{canary}'>"))
-        # canary juga ditempel sebagai properti netral agar terlihat di sink
-        sfx = sfx.replace("{k}", f"{canary}")
-        sfx = sfx.replace("{xs_enc2}", _quote(xs))
+        sfx = _render_vector(tpl, canary, xs_enc)
         # vektor berformat &key=.. -> pastikan ada ? pertama di URL
         if sfx.startswith("&"):
             sfx = ("&" if "?" in base_url else "?") + sfx[1:]
