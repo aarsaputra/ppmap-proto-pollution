@@ -100,6 +100,38 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+# [AUDIT-18b] Tipe temuan yang klaimnya bergantung pada jalur client-side
+# (versi library / DOM sink). Reach-check hanya boleh mengubah confidence
+# tipe-tipe ini; temuan server-side (SQLi/XSS terkirim/endpoint) tidak.
+_REACH_TYPES = (
+    "jquery_pp",
+    "xss",
+    "post_xss",
+    "prototype_pollution",
+    "dom_xss_pp",
+    "persistent_pp",
+    "blind_pp_detected",
+    "function_prototype_pollution",
+    "third_party_gadget",
+    "descriptor_pollution",
+    "storage_api_pollution",
+    "fetch_api_pollution",
+)
+
+
+def _reach_relevant(finding) -> bool:
+    """True bila reach verdict relevan untuk klaim finding ini.
+
+    Menerima baik Finding (tipe = enum VulnerabilityType) maupun dict hasil
+    to_dict() (tipe = str), supaya aman dipakai di jalur mana pun.
+    """
+    ftype = getattr(finding, "type", None)
+    if ftype is None and isinstance(finding, dict):
+        ftype = finding.get("type")
+    value = getattr(ftype, "value", ftype)
+    return str(value) in _REACH_TYPES or "pollution" in str(value) or "xss" in str(value)
+
+
 class _MetricSession(requests.Session):
     """requests.Session wrapper that feeds ScanMetrics as raw HTTP requests flow through.
 
@@ -284,6 +316,8 @@ class CompleteSecurityScanner:
         self.stealth = self.config.stealth
         self.oob_enabled = self.config.oob_enabled
         self.oob_detector = None
+        # Diisi oleh scan_target setelah enrichment reach-check (None bila dilewati).
+        self.reach_result = None
 
         if self.oob_enabled:
             pass  # We will lazy init in test_blind_oob or main scan to avoid startup delay
@@ -481,6 +515,8 @@ class CompleteSecurityScanner:
 
     def scan_target(self, target_url, request_data=None, run_discovery=True):
         """Scan single target orchestrator"""
+        # [AUDIT-18] simpan utk reach annotation di tier0
+        self.current_target_url = target_url
         all_findings = []
 
         # Strict Liveness Check
@@ -559,6 +595,58 @@ class CompleteSecurityScanner:
                     ctx.driver = self.driver
                 except Exception as e:
                     logger.error(f"[!] {tier.tier_name} failed: {e}")
+
+            # --- REACH-CHECK ENRICHMENT (auto, gated) ---
+            # Tujuan: temuan berbasis versi (LIBRARY_VULNERABLE_ONLY) JANGAN
+            # dilaporkan setara dengan jalur serangan nyata. Verdict tier-2/3
+            # dipakai untuk menaikkan confidence + menandai verified.
+            # Wrapped: kegagalan reach-check TIDAK boleh membatalkan scan.
+            reach_result = None
+            if getattr(self.config, "reach_check", False):
+                try:
+                    from ppmap.scanner.reach_runner import run_reach_check
+                    print(f"{Colors.BLUE}[*] Reach-check (canary taint tracking)...{Colors.ENDC}")
+                    reach_result = run_reach_check(target_url, driver=self.driver)
+                    self.reach_result = reach_result
+                    rc_verdict = reach_result.get("verdict", "UNAVAILABLE")
+                    rc_tier = reach_result.get("tier")
+                    rc_color = (Colors.FAIL if rc_tier == 3
+                                else Colors.WARNING if (rc_tier or 0) >= 2
+                                else Colors.GREEN)
+                    print(f"{rc_color}[=] Reach verdict: {rc_verdict} (tier {rc_tier}){Colors.ENDC}")
+
+                    # Terapkan ke findings yang relevan, bukan bikin finding palsu.
+                    if rc_tier and rc_tier >= 2:
+                        for f in all_findings:
+                            if isinstance(f, Finding):
+                                if _reach_relevant(f):
+                                    f.confidence = max(f.confidence, 0.9)
+                                    f.metadata = dict(f.metadata or {})
+                                    f.metadata["reach_verdict"] = rc_verdict
+                                    f.metadata["reach_tier"] = rc_tier
+                                    # [AUDIT-18b] `verified` di repo ini = bukti
+                                    # eksekusi positif (to_dict hanya mengekspos
+                                    # `verified`). Tier 3 = canary benar-benar
+                                    # dieksekusi -> verified. Tier 2 = jalur URL
+                                    # terbukti sampai sink, BUKAN eksekusi:
+                                    # cukup confidence tinggi, JANGAN verified.
+                                    if rc_tier == 3:
+                                        f.verified = True
+                    elif rc_verdict == "LIBRARY_VULNERABLE_ONLY":
+                        # Turunkan klaim: versi rentan saja, jalur URL tidak terbukti.
+                        for f in all_findings:
+                            if isinstance(f, Finding):
+                                f.metadata = dict(f.metadata or {})
+                                f.metadata["reach_verdict"] = rc_verdict
+                                f.metadata["reach_tier"] = rc_tier
+                                if _reach_relevant(f):
+                                    # Versi rentan saja: turunkan klaim, jangan
+                                    # biarkan lolos sebagai temuan produktif.
+                                    f.confidence = min(f.confidence, 0.5)
+                except Exception as e:
+                    logger.warning(f"[!] Reach-check dilewati (non-fatal): {e}")
+                    reach_result = None
+            self.reach_result = reach_result
 
             # Backwards compat for report generation requirements
             # Categorization is now type-based (not only title-based) so that

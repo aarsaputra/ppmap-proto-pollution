@@ -53,6 +53,16 @@ class UnifiedBrowser:
         self._pw = playwright_playwright
         self.switch_to = BrowserSwitchTo(self)
 
+    @property
+    def current_url(self) -> str:
+        """Expose current_url (tier0 reach annotation memakainya)."""
+        try:
+            if self.backend == "selenium":
+                return self.impl.current_url
+            return self.impl.url
+        except Exception:
+            return ""
+
     # Navigation
     def get(self, url: str, wait: float = 0):
         if self.backend == "selenium":

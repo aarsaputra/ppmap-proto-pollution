@@ -48,6 +48,12 @@ class ScanConfig(BaseModel):
         default="chrome",
         description="Browser backend for client-side tests: chrome | firefox",
     )
+    reach_check: bool = Field(
+        default=True,
+        description="Setelah scan tier selesai, jalankan reach-check canary untuk "
+                    "membedakan LIBRARY_VULNERABLE_ONLY (version-only) dari "
+                    "REACHABLE_FROM_URL/VERIFIED_EXECUTION (jalur serangan nyata).",
+    )
 
     @field_validator("timeout")
     @classmethod

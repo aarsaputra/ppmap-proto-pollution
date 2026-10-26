@@ -350,6 +350,12 @@ ADVANCED OPTIONS:
              "(canary taint tracking, 3-tier verdict: LIBRARY_VULNERABLE / REACHABLE_FROM_URL / VERIFIED_EXECUTION)",
     )
     parser.add_argument(
+        "--no-reach-check",
+        action="store_true",
+        help="Matikan enrichment reach-check otomatis saat --scan/--scan-full "
+             "(default: aktif; verdict dipakai untuk verifikasi confidence)",
+    )
+    parser.add_argument(
         "-ls",
         "--list",
         type=str,
@@ -757,7 +763,8 @@ ADVANCED OPTIONS:
                 stealth=PPMAP_CONFIG["scanning"].get("stealth_mode", False),
                 verify_ssl=not PPMAP_CONFIG["scanning"].get("disable_ssl_verify", False),
                 rate_limit=PPMAP_CONFIG["rate_limiting"].get("requests_per_minute", 60) if PPMAP_CONFIG["rate_limiting"].get("enabled") else None,
-                delay=args.delay
+                delay=args.delay,
+                reach_check=not getattr(args, "no_reach_check", False),
             )
 
             # Initialize custom headers list in config
@@ -1055,6 +1062,7 @@ ADVANCED OPTIONS:
                 proxy=getattr(args, "proxy", None),
                 oob_url=getattr(args, "oob_url", None),
                 browser=poc_browser,
+                reach_check=not getattr(args, "no_reach_check", False),
             )
 
             all_findings = []
